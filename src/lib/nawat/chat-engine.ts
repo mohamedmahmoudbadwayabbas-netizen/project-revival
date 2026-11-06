@@ -76,7 +76,7 @@ async function callModel(contents: unknown[]) {
 function toContents(history: NawatMessage[]) {
   return history
     .filter((m) => !m.error && m.content.trim())
-    .slice(-20)
+    .slice(-40)
     .map((m) => {
       let text = m.content;
       if (m.products?.length) {

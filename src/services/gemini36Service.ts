@@ -488,7 +488,7 @@ ${executionMode === "suggest"
 Only report a change as completed after its tool returns a confirmed and verified success result.
 `;
 
-        const contents: any[] = history.slice(-6).map((h) => ({
+        const contents: any[] = history.slice(customerExperience ? -40 : -80).map((h) => ({
           role: h.role === "assistant" ? "model" : "user",
           parts: [{ text: h.content }],
         }));
