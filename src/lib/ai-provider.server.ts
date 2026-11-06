@@ -350,6 +350,18 @@ function isSwitchable(error: ProviderError) {
   return [404, 408, 429, 500, 502, 503, 504, 529].includes(error.status);
 }
 
+/** دمج إشارة الإلغاء مع مهلة؛ بدون AbortSignal.any لأنه غير متوفر في كل بيئات التشغيل. */
+function combineSignals(cancel: AbortSignal | undefined, timeoutMs: number): AbortSignal {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  if (cancel) {
+    if (cancel.aborted) ctrl.abort();
+    else cancel.addEventListener("abort", () => ctrl.abort(), { once: true });
+  }
+  ctrl.signal.addEventListener("abort", () => clearTimeout(timer), { once: true });
+  return ctrl.signal;
+}
+
 /** حدود Groq المجانية: تفكير قصير لنماذج gpt-oss، وسقف مخرجات صغير لـ qwen (حد 1000 توكن/دقيقة). */
 export function groqTune(body: Record<string, unknown>): Record<string, unknown> {
   const model = String(body.model ?? "");
@@ -378,7 +390,7 @@ async function callOneModel(
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
           body: JSON.stringify(body),
-          signal: cancel ? AbortSignal.any([cancel, AbortSignal.timeout(timeoutMs)]) : AbortSignal.timeout(timeoutMs),
+          signal: combineSignals(cancel, timeoutMs),
         });
         raw = await res.text();
       } catch (error) {
