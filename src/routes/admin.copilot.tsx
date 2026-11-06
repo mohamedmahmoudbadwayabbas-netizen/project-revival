@@ -704,6 +704,25 @@ function AdminCoPilotPage() {
                   </div>
                 );
               })}
+              {pendingAction && (
+                <div className="rounded-2xl border border-primary/30 bg-card p-3 shadow-sm" aria-live="polite">
+                  <p className="text-xs font-bold text-foreground">
+                    {AI_TOOL_SUITE.find((tool) => tool.name === pendingAction.toolName)?.labelAr || "إجراء متجر"} — {pendingAction.status === "executing" ? "جارٍ التنفيذ" : pendingAction.status === "blocked" ? "لم يُنفذ" : "بانتظار تأكيدك"}
+                  </p>
+                  <div className="mt-2 max-h-40 overflow-auto space-y-1 text-[11px] text-muted-foreground">
+                    {Object.entries(pendingAction.args).slice(0, 8).map(([k, v]) => (
+                      <div key={k} className="flex gap-2"><span className="font-bold text-foreground">{k}:</span><span className="truncate">{typeof v === "object" ? JSON.stringify(v) : String(v)}</span></div>
+                    ))}
+                  </div>
+                  {pendingAction.error && <p role="alert" className="mt-2 text-[11px] text-destructive">{pendingAction.error}</p>}
+                  <div className="mt-3 flex gap-2">
+                    <Button size="sm" disabled={pendingAction.status !== "pending"} onClick={handleApprovePendingAction} className="rounded-xl">
+                      {pendingAction.status === "executing" ? <Loader2 className="h-4 w-4 animate-spin" /> : "تأكيد التنفيذ"}
+                    </Button>
+                    <Button size="sm" variant="outline" disabled={pendingAction.status === "executing"} onClick={handleRejectPendingAction} className="rounded-xl">إلغاء</Button>
+                  </div>
+                </div>
+              )}
               {isProcessing && (
                 <div className="flex items-center gap-2 p-3 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-600 dark:text-zinc-400 shadow-xs">
                   <Sparkles className="h-4 w-4 animate-spin text-emerald-600" strokeWidth={1.5} />
