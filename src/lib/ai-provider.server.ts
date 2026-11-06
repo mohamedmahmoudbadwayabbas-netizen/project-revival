@@ -208,16 +208,26 @@ export class ProviderError extends Error {
  */
 export async function callOpenAICompatible(settings: AiSettings, contents: unknown, config: Record<string, any>): Promise<AdapterResponse> {
   const groqKey = process.env.GROQ_API_KEY;
+  // إعدادات Groq بلا مفتاح محفوظ (أو بلا إعدادات أصلًا): نستخدم مفتاح المشروع.
+  if (groqKey && (settings.provider === "groq" || /groq\.com/i.test(settings.base_url || "")) && !splitKeys(settings.api_key).length) {
+    settings = { ...settings, api_key: groqKey, base_url: settings.base_url || "https://api.groq.com/openai/v1", model: settings.model || "openai/gpt-oss-120b" };
+  }
   if (groqKey && !/groq\.com/i.test(settings.base_url || "") && settings.provider !== "groq") {
+    let groqError: unknown;
     try {
       const res = await callProviderChain(
-        { provider: "groq", api_key: groqKey, base_url: "https://api.groq.com/openai/v1", model: "qwen/qwen3.8-27b" },
+        { provider: "groq", api_key: groqKey, base_url: "https://api.groq.com/openai/v1", model: "openai/gpt-oss-120b" },
         contents,
         { ...config, deadlineMs: 20000, hedgeMs: 0 },
       );
       if (res.text.trim() || res.candidates[0]?.content.parts.some((p) => p.functionCall)) return res;
     } catch (error) {
+      groqError = error;
       console.warn("[ai] Groq failed, falling back:", String((error as Error)?.message ?? error).slice(0, 160));
+    }
+    // لا يوجد مزود احتياطي مضبوط: نُظهر خطأ Groq الحقيقي بدل رسالة "المفتاح غير موجود".
+    if (!splitKeys(settings.api_key).length) {
+      throw groqError instanceof ProviderError ? groqError : new ProviderError(String((groqError as Error)?.message ?? "لم يصل رد من Groq."), null);
     }
   }
   return callProviderChain(settings, contents, config);
@@ -332,7 +342,7 @@ export function isModelConcurrency(status: number | null, raw: string): boolean 
 /** نماذج احتياطية معروفة لكل بوابة. */
 export function fallbackModelsFor(baseUrl: string): string[] {
   // MiniMax هو الأقل ازدحامًا على خطة Dahl المجانية، لذا يأتي أولًا.
-  if (/groq\.com/i.test(baseUrl)) return ["qwen/qwen3.8-27b", "openai/gpt-oss-120b", "allam-2-7b"];
+  if (/groq\.com/i.test(baseUrl)) return ["openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.8-27b"];
   if (/dahl\.global/i.test(baseUrl)) return ["MiniMaxAI/MiniMax-M2.7", "zai-org/GLM-5.3-Flash", "deepseek-ai/DeepSeek-V4-Flash-0731"];
   return [];
 }
@@ -350,6 +360,27 @@ function isSwitchable(error: ProviderError) {
   return [404, 408, 429, 500, 502, 503, 504, 529].includes(error.status);
 }
 
+/** دمج إشارة الإلغاء مع مهلة؛ بدون AbortSignal.any لأنه غير متوفر في كل بيئات التشغيل. */
+function combineSignals(cancel: AbortSignal | undefined, timeoutMs: number): AbortSignal {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  if (cancel) {
+    if (cancel.aborted) ctrl.abort();
+    else cancel.addEventListener("abort", () => ctrl.abort(), { once: true });
+  }
+  ctrl.signal.addEventListener("abort", () => clearTimeout(timer), { once: true });
+  return ctrl.signal;
+}
+
+/** حدود Groq المجانية: تفكير قصير لنماذج gpt-oss، وسقف مخرجات صغير لـ qwen (حد 1000 توكن/دقيقة). */
+export function groqTune(body: Record<string, unknown>): Record<string, unknown> {
+  const model = String(body.model ?? "");
+  const out: Record<string, unknown> = { ...body };
+  if (/gpt-oss/i.test(model)) out.reasoning_effort = "low";
+  if (/qwen/i.test(model)) out.max_tokens = Math.min(Number(out.max_tokens) || 800, 800);
+  return out;
+}
+
 async function callOneModel(
   baseUrl: string,
   keys: string[],
@@ -360,6 +391,7 @@ async function callOneModel(
 ): Promise<AdapterResponse> {
   let res: Response | undefined;
   let raw = "";
+  if (/groq\.com/i.test(baseUrl)) body = groqTune(body);
   for (const key of keys) {
     // إعادة محاولة قصيرة عند ازدحام خوادم المزود المؤقت فقط.
     for (let attempt = 0; attempt < 2; attempt++) {
@@ -368,7 +400,7 @@ async function callOneModel(
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
           body: JSON.stringify(body),
-          signal: cancel ? AbortSignal.any([cancel, AbortSignal.timeout(timeoutMs)]) : AbortSignal.timeout(timeoutMs),
+          signal: combineSignals(cancel, timeoutMs),
         });
         raw = await res.text();
       } catch (error) {
