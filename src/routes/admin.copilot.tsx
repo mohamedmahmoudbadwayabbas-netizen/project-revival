@@ -288,6 +288,8 @@ function AdminCoPilotPage() {
     }
   };
 
+  const [showStatusPanel, setShowStatusPanel] = useState(false);
+
   const handleSendMessage = async (prompt: string, file: ProjectFileMeta | null = null) => {
     if ((!prompt.trim() && !file) || pendingAction) return;
 
@@ -562,7 +564,7 @@ function AdminCoPilotPage() {
         </div>
       </div>
 
-      <section className="mx-3 mt-2 shrink-0 rounded-xl border border-border bg-card px-3 py-2 shadow-sm sm:mx-4" aria-label="حالة بيانات المتجر ووضع التنفيذ">
+      <section className="mx-3 mt-1 shrink-0 rounded-xl border border-border bg-card px-3 py-1 shadow-sm sm:mx-4" aria-label="حالة بيانات المتجر ووضع التنفيذ">
         <div className="flex flex-row flex-wrap items-center justify-between gap-2">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-foreground">
@@ -572,8 +574,12 @@ function AdminCoPilotPage() {
                 <span className={`h-2 w-2 rounded-full ${storeDataStatus.state === "connected" ? "bg-emerald-600" : storeDataStatus.state === "offline" ? "bg-[#B6502E]" : "bg-amber-500 animate-pulse"}`} />
                 {storeDataStatus.state === "connected" ? "بيانات المتجر متصلة" : storeDataStatus.state === "offline" ? "تعذر الاتصال ببيانات المتجر" : "يتحقق من بيانات المتجر"}
               </span>
+              <button type="button" onClick={() => setShowStatusPanel((v) => !v)} aria-expanded={showStatusPanel} className="inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-[11px] font-semibold text-primary hover:bg-secondary">
+                {showStatusPanel ? "إخفاء" : "التفاصيل والوضع"}
+                <ChevronDown className={`h-3.5 w-3.5 transition ${showStatusPanel ? "rotate-180" : ""}`} />
+              </button>
             </div>
-            <div className="mt-1.5 hidden flex-wrap gap-1.5 text-[11px] text-muted-foreground md:flex">
+            <div className={`mt-1.5 flex-wrap gap-1.5 text-[11px] text-muted-foreground ${showStatusPanel ? "flex" : "hidden"}`}>
               <span className="rounded-full bg-secondary px-3 py-1">المنتجات · {storeDataStatus.products ?? "—"}</span>
               <span className="rounded-full bg-secondary px-3 py-1">تحت حد الأمان · {storeDataStatus.lowStock ?? "—"}</span>
               <span className="rounded-full bg-secondary px-3 py-1">الطلبات · {storeDataStatus.orders ?? "—"}</span>
@@ -581,7 +587,7 @@ function AdminCoPilotPage() {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 xl:justify-end">
+          <div className={`flex-wrap items-center gap-2 xl:justify-end ${showStatusPanel ? "flex" : "hidden"}`}>
             <span className="hidden text-[10px] font-semibold text-muted-foreground xl:inline">وضع عمل المساعد</span>
             <div className="inline-flex rounded-xl bg-secondary p-1" role="group" aria-label="وضع تنفيذ إجراءات المساعد">
               <button type="button" onClick={() => { setExecutionMode("suggest"); setPendingAction(null); }} aria-pressed={executionMode === "suggest"} className={`rounded-lg px-3 py-1.5 text-xs transition ${executionMode === "suggest" ? "bg-card font-bold text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
