@@ -209,6 +209,7 @@ export class ProviderError extends Error {
 export async function callOpenAICompatible(settings: AiSettings, contents: unknown, config: Record<string, any>): Promise<AdapterResponse> {
   const groqKey = process.env.GROQ_API_KEY;
   if (groqKey && !/groq\.com/i.test(settings.base_url || "") && settings.provider !== "groq") {
+    let groqError: unknown;
     try {
       const res = await callProviderChain(
         { provider: "groq", api_key: groqKey, base_url: "https://api.groq.com/openai/v1", model: "openai/gpt-oss-120b" },
@@ -217,7 +218,12 @@ export async function callOpenAICompatible(settings: AiSettings, contents: unkno
       );
       if (res.text.trim() || res.candidates[0]?.content.parts.some((p) => p.functionCall)) return res;
     } catch (error) {
+      groqError = error;
       console.warn("[ai] Groq failed, falling back:", String((error as Error)?.message ?? error).slice(0, 160));
+    }
+    // لا يوجد مزود احتياطي مضبوط: نُظهر خطأ Groq الحقيقي بدل رسالة "المفتاح غير موجود".
+    if (!splitKeys(settings.api_key).length) {
+      throw groqError instanceof ProviderError ? groqError : new ProviderError(String((groqError as Error)?.message ?? "لم يصل رد من Groq."), null);
     }
   }
   return callProviderChain(settings, contents, config);
