@@ -409,7 +409,7 @@ async function callOneModel(
   let res: Response | undefined;
   let raw = "";
   if (/groq\.com/i.test(baseUrl)) body = groqTune(body);
-  for (const key of orderKeys(keys)) {
+  for (const key of /groq\.com/i.test(baseUrl) ? orderKeys(keys) : keys) {
     // إعادة محاولة قصيرة عند ازدحام خوادم المزود المؤقت فقط.
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
@@ -429,7 +429,7 @@ async function callOneModel(
     // ازدحام النموذج نفسه: ننتقل فورًا للنموذج التالي بدل تجربة مفتاح آخر على نفس النموذج.
     if (res && isModelConcurrency(res.status, raw)) break;
     // حد المفتاح خلص: نبرّده ونقفز للمفتاح التالي فورًا بلا انتظار.
-    if (res && res.status === 429 && keys.length > 1) {
+    if (res && res.status === 429 && keys.length > 1 && /groq\.com/i.test(baseUrl)) {
       const after = Number(res.headers.get("retry-after"));
       markKeyCooldown(key, after > 0 ? Math.min(after * 1000, 600000) : 60000);
       continue;
