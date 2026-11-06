@@ -1,0 +1,1 @@
+COMMENT ON TABLE public.store_settings IS 'Single-row storefront configuration (read publicly, edited by admins).';

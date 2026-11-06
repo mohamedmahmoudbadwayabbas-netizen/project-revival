@@ -1,3 +1,4 @@
+import { SITE_URL } from "@/lib/brand";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
@@ -8,26 +9,41 @@ import {
   Scripts,
   type ErrorComponentProps,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useMemo, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { CartProvider } from "@/lib/cart-context";
+import { AuthProvider } from "@/lib/auth-context";
+import { SettingsProvider } from "@/lib/settings-context";
+import { ThemeProvider } from "@/lib/theme-context";
+import { ColorModeProvider } from "@/lib/color-mode-context";
+import { I18nProvider } from "@/lib/i18n-context";
+import { SearchProvider } from "@/lib/search-context";
+import { autoSeedDatabaseIfNeeded } from "@/lib/auto-seed";
+import { AnnouncementBar } from "@/components/storefront/AnnouncementBar";
+import { BottomNav } from "@/components/storefront/BottomNav";
+import { Header } from "@/components/storefront/Header";
+import { useRouterState } from "@tanstack/react-router";
+
+import { LayoutConfigProvider } from "@/lib/layout-config-context";
+import { Toaster } from "@/components/ui/sonner";
 
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2>
+        <h2 className="mt-4 text-xl font-semibold text-foreground">الصفحة غير موجودة</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          The page you're looking for doesn't exist or has been moved.
+          الصفحة التي تبحث عنها غير موجودة أو تم نقلها.
         </p>
         <div className="mt-6">
           <Link
             to="/"
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Go home
+            العودة للرئيسية
           </Link>
         </div>
       </div>
@@ -36,21 +52,21 @@ function NotFoundComponent() {
 }
 
 function ErrorComponent({ error, reset }: ErrorComponentProps) {
-  console.error(error);
+  const reportedError = useMemo(
+    () => error instanceof Error ? error : new Error(String(error)),
+    [error],
+  );
+  console.error(reportedError);
   const router = useRouter();
   useEffect(() => {
-    reportLovableError(error, { boundary: "tanstack_root_error_component" });
-  }, [error]);
+    reportLovableError(reportedError, { boundary: "tanstack_root_error_component" });
+  }, [reportedError]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          This page didn't load
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Something went wrong on our end. You can try refreshing or head back home.
-        </p>
+        <h1 className="text-xl font-semibold tracking-tight text-foreground">حدث خطأ ما</h1>
+        <p className="mt-2 text-sm text-muted-foreground">نعتذر، حدث خلل أثناء تحميل الصفحة.</p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
             onClick={() => {
@@ -59,13 +75,13 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
             }}
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Try again
+            إعادة المحاولة
           </button>
           <a
             href="/"
             className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
           >
-            Go home
+            الرئيسية
           </a>
         </div>
       </div>
@@ -78,23 +94,63 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { property: "og:site_name", content: "الوادي الأخضر" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
+      { title: "سوبرماركت الوادي الأخضر — سوبرماركت عائلتك 🛒" },
+      { property: "og:title", content: "سوبرماركت الوادي الأخضر — سوبرماركت عائلتك 🛒" },
+      { name: "twitter:title", content: "سوبرماركت الوادي الأخضر — سوبرماركت عائلتك 🛒" },
+      {
+        name: "description",
+        content:
+          "تسوّق جميع سلع البقالة والتموين، الألبان والأجبان، اللحوم البلدية والمنظفات من سوبرماركت الوادي الأخضر بأفضل الأسعار وتوصيل فوري لباب بيتك.",
+      },
+      {
+        property: "og:description",
+        content:
+          "تسوّق جميع سلع البقالة والتموين، الألبان والأجبان، اللحوم البلدية والمنظفات من سوبرماركت الوادي الأخضر بأفضل الأسعار وتوصيل فوري لباب بيتك.",
+      },
+      {
+        name: "twitter:description",
+        content:
+          "تسوّق جميع سلع البقالة والتموين، الألبان والأجبان، اللحوم البلدية والمنظفات من سوبرماركت الوادي الأخضر بأفضل الأسعار وتوصيل فوري لباب بيتك.",
+      },
+      {
+        property: "og:image",
+        content:
+          "https://storage.googleapis.com/gpt-engineer-file-uploads/7FGpG204P8ZoMaDVUrQDzFmMxBS2/social-images/social-1785331350061-1785331017982.webp",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://storage.googleapis.com/gpt-engineer-file-uploads/7FGpG204P8ZoMaDVUrQDzFmMxBS2/social-images/social-1785331350061-1785331017982.webp",
+      },
     ],
     links: [
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: appCss,
+        href: "https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Tajawal:wght@400;500;700;800;900&family=El+Messiri:wght@500;600;700&family=Readex+Pro:wght@300;400;500;600;700&display=swap",
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "stylesheet", href: appCss },
+    ],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          name: "الوادي الأخضر",
+          url: `${SITE_URL}/`,
+          logo: `${SITE_URL}/favicon.svg`,
+          description:
+            "سوبرماركت الوادي الأخضر أونلاين: سلع تموينية، لحوم بلدية، أجبان، منظفات وبقالة مع توصيل سريع.",
+        }),
+      },
     ],
   }),
+
   shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
@@ -103,7 +159,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="ar" dir="rtl">
       <head>
         <HeadContent />
       </head>
@@ -117,11 +173,61 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  
+  useEffect(() => {
+    // Attempt auto-seed ONLY IF Supabase products are empty (as requested)
+    autoSeedDatabaseIfNeeded().catch(console.error);
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <I18nProvider>
+        <SettingsProvider>
+          <ThemeProvider>
+            <ColorModeProvider storageKey="store-color-mode" defaultMode="light">
+              <LayoutConfigProvider>
+                <AuthProvider>
+                  <CartProvider>
+                    <SearchProvider>
+                      <StorefrontAnnouncement />
+                      <StorefrontHeader />
+                      <RouteFade>
+                        <div className="pb-20 md:pb-0">
+                          <Outlet />
+                        </div>
+                      </RouteFade>
+                      <BottomNav />
+                      <Toaster position="top-center" dir="rtl" richColors />
+                    </SearchProvider>
+                  </CartProvider>
+                </AuthProvider>
+              </LayoutConfigProvider>
+            </ColorModeProvider>
+          </ThemeProvider>
+        </SettingsProvider>
+      </I18nProvider>
     </QueryClientProvider>
   );
+}
+
+// صفحات لها شريطها الخاص: الأدمن، الدخول، وصفحة نواة (/assistant).
+function hasOwnChrome(pathname: string) {
+  return pathname.startsWith("/admin") || pathname.startsWith("/auth") || pathname.startsWith("/assistant");
+}
+
+function StorefrontAnnouncement() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  if (hasOwnChrome(pathname)) return null;
+  return <AnnouncementBar />;
+}
+
+function StorefrontHeader() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  if (hasOwnChrome(pathname)) return null;
+  return <Header />;
+}
+
+// Smooth route layout container without forced unmount
+function RouteFade({ children }: { children: ReactNode }) {
+  return <div className="transition-opacity duration-150">{children}</div>;
 }
