@@ -208,6 +208,10 @@ export class ProviderError extends Error {
  */
 export async function callOpenAICompatible(settings: AiSettings, contents: unknown, config: Record<string, any>): Promise<AdapterResponse> {
   const groqKey = process.env.GROQ_API_KEY;
+  // إعدادات Groq بلا مفتاح محفوظ (أو بلا إعدادات أصلًا): نستخدم مفتاح المشروع.
+  if (groqKey && (settings.provider === "groq" || /groq\.com/i.test(settings.base_url || "")) && !splitKeys(settings.api_key).length) {
+    settings = { ...settings, api_key: groqKey, base_url: settings.base_url || "https://api.groq.com/openai/v1", model: settings.model || "openai/gpt-oss-120b" };
+  }
   if (groqKey && !/groq\.com/i.test(settings.base_url || "") && settings.provider !== "groq") {
     let groqError: unknown;
     try {
