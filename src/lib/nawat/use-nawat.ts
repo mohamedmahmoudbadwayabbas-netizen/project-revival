@@ -158,7 +158,7 @@ export function useNawat(): NawatController {
           content: reply.text.slice(0, 4000),
           timestamp: timestamp(),
         },
-      ].slice(-12);
+      ].slice(-40);
 
       setSteps((previous) => applyProgress(previous, { step: "arrange", state: "done" }));
       setResult(resolved);

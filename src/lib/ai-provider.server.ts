@@ -206,8 +206,25 @@ export class ProviderError extends Error {
  * Groq (مفتاح GROQ_API_KEY في أسرار المشروع) هو المحرك الأساسي السريع؛
  * لو فشل أو غير موجود نرجع لإعدادات المسؤول (Dahl) كاحتياطي.
  */
+/** كل مفاتيح Groq: GROQ_API_KEY (يقبل عدة مفاتيح مفصولة) + GROQ_API_KEY_2 / _3 / ... */
+export function groqKeys(env: Record<string, string | undefined> = process.env): string[] {
+  const names = Object.keys(env).filter((k) => /^GROQ_API_KEY(_\d+)?$/.test(k)).sort();
+  return [...new Set(names.flatMap((k) => splitKeys(env[k])))];
+}
+
+/** مفاتيح انتهت حصتها مؤقتًا: نتخطاها فورًا حتى ينتهي التبريد. */
+const keyCooldown = new Map<string, number>();
+export function orderKeys(keys: string[], now = Date.now()): string[] {
+  const ready = keys.filter((k) => (keyCooldown.get(k) ?? 0) <= now);
+  const cooling = keys.filter((k) => (keyCooldown.get(k) ?? 0) > now).sort((a, b) => keyCooldown.get(a)! - keyCooldown.get(b)!);
+  return [...ready, ...cooling];
+}
+export function markKeyCooldown(key: string, ms = 60000) {
+  keyCooldown.set(key, Date.now() + ms);
+}
+
 export async function callOpenAICompatible(settings: AiSettings, contents: unknown, config: Record<string, any>): Promise<AdapterResponse> {
-  const groqKey = process.env.GROQ_API_KEY;
+  const groqKey = groqKeys().join(",") || undefined;
   // إعدادات Groq بلا مفتاح محفوظ (أو بلا إعدادات أصلًا): نستخدم مفتاح المشروع.
   if (groqKey && (settings.provider === "groq" || /groq\.com/i.test(settings.base_url || "")) && !splitKeys(settings.api_key).length) {
     settings = { ...settings, api_key: groqKey, base_url: settings.base_url || "https://api.groq.com/openai/v1", model: settings.model || "openai/gpt-oss-120b" };
@@ -392,7 +409,7 @@ async function callOneModel(
   let res: Response | undefined;
   let raw = "";
   if (/groq\.com/i.test(baseUrl)) body = groqTune(body);
-  for (const key of keys) {
+  for (const key of /groq\.com/i.test(baseUrl) ? orderKeys(keys) : keys) {
     // إعادة محاولة قصيرة عند ازدحام خوادم المزود المؤقت فقط.
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
@@ -411,6 +428,12 @@ async function callOneModel(
     }
     // ازدحام النموذج نفسه: ننتقل فورًا للنموذج التالي بدل تجربة مفتاح آخر على نفس النموذج.
     if (res && isModelConcurrency(res.status, raw)) break;
+    // حد المفتاح خلص: نبرّده ونقفز للمفتاح التالي فورًا بلا انتظار.
+    if (res && res.status === 429 && keys.length > 1 && /groq\.com/i.test(baseUrl)) {
+      const after = Number(res.headers.get("retry-after"));
+      markKeyCooldown(key, after > 0 ? Math.min(after * 1000, 600000) : 60000);
+      continue;
+    }
     // عند نفاذ الحصة أو رفض المفتاح ننتقل للمفتاح التالي.
     if (!res || res.ok || !classifyProviderError(res.status, raw)) break;
   }
