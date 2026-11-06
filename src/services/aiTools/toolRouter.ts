@@ -54,7 +54,7 @@ async function _executeAiToolInner(
       (typeof process !== "undefined" && process.env?.VITE_SUPABASE_URL) ||
       "";
 
-    if (supabaseUrl && !supabaseUrl.includes("gpoqacclpjadzbhevgal")) {
+    if (!supabaseUrl) {
       return {
         tool,
         ok: false,
