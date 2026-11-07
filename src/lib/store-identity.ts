@@ -1,5 +1,5 @@
 export const STORE_IDENTITY = {
-  green: "#2F5D4B",
+  green: "#15803D",
   cream: "#F8F5EB",
   soft: "#EEEEDA",
   ink: "#283C31",

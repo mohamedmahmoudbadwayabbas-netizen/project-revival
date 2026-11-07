@@ -64,16 +64,16 @@
   --radius-panel: 1rem;
 
   /* Elwadi visual identity from the approved Figma design system */
-  --brand-green: #2f5d4b;
-  --brand-cream: #f8f5eb;
-  --brand-soft: #eeeeda;
-  --brand-ink: #283c31;
+  --brand-green: #15803d;
+  --brand-cream: #f4faf5;
+  --brand-soft: #e3f4e7;
+  --brand-ink: #11291c;
   --brand-secondary-ink: #4d5a52;
-  --brand-border: #ddded4;
-  --brand-rust: #b6502e;
+  --brand-border: #dbe8de;
+  --brand-rust: #f2650f;
   --brand-disabled: #e2e5de;
-  --gradient-hero: linear-gradient(135deg, #2f5d4b 0%, #234b3b 100%);
-  --gradient-primary: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(153 33% 24%) 100%);
+  --gradient-hero: linear-gradient(135deg, #15803d 0%, #0f5c2c 100%);
+  --gradient-primary: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(155 80% 24%) 100%);
   --gradient-shimmer: linear-gradient(
     90deg,
     hsl(var(--muted)) 0%,
