@@ -84,39 +84,40 @@
 
 :root {
   --radius: 1rem;
-  --background: 42 38% 97%;
-  --foreground: 160 30% 10%;
+  --background: 140 25% 97%;
+  --foreground: 155 35% 11%;
   --card: 0 0% 100%;
-  --card-foreground: 160 30% 10%;
+  --card-foreground: 155 35% 11%;
   --popover: 0 0% 100%;
-  --popover-foreground: 160 30% 10%;
-  --primary: 160 58% 17%;
-  --primary-foreground: 42 50% 96%;
-  --secondary: 42 35% 92%;
-  --secondary-foreground: 160 30% 12%;
-  --muted: 42 28% 93%;
-  --muted-foreground: 160 8% 38%;
-  --accent: 14 62% 46%;
+  --popover-foreground: 155 35% 11%;
+  --primary: 148 72% 30%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 140 35% 93%;
+  --secondary-foreground: 150 45% 16%;
+  --muted: 140 18% 94%;
+  --muted-foreground: 155 10% 38%;
+  --accent: 24 95% 52%;
   --accent-foreground: 0 0% 100%;
-  --gold: 40 62% 52%;
-  --gold-foreground: 160 40% 10%;
-  --ink: 162 45% 8%;
-  --destructive: 0 72% 50%;
-  --destructive-foreground: 0 0% 98%;
-  --border: 42 20% 86%;
-  --input: 42 20% 86%;
-  --ring: 160 58% 17%;
-  --sidebar: 165 38% 8%;
-  --sidebar-foreground: 40 25% 88%;
-  --sidebar-primary: 41 70% 55%;
-  --sidebar-primary-foreground: 165 40% 8%;
-  --sidebar-accent: 165 28% 14%;
-  --sidebar-accent-foreground: 40 40% 97%;
-  --sidebar-border: 165 22% 16%;
-  --sidebar-ring: 41 70% 55%;
-  --shadow-card: 0 1px 2px hsl(160 40% 10% / 0.04), 0 12px 32px -18px hsl(160 40% 10% / 0.18);
-  --shadow-elegant: 0 24px 60px -28px hsl(160 58% 12% / 0.45);
-  --gradient-gold: linear-gradient(135deg, hsl(40 70% 60%), hsl(36 60% 44%));
+  --gold: 42 96% 54%;
+  --gold-foreground: 155 40% 10%;
+  --ink: 155 45% 9%;
+  --destructive: 0 78% 52%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 140 16% 87%;
+  --input: 140 16% 85%;
+  --ring: 148 72% 30%;
+  --sidebar: 155 45% 10%;
+  --sidebar-foreground: 140 20% 90%;
+  --sidebar-primary: 24 95% 55%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 155 30% 16%;
+  --sidebar-accent-foreground: 140 30% 97%;
+  --sidebar-border: 155 25% 18%;
+  --sidebar-ring: 24 95% 55%;
+  --shadow-card: 0 1px 2px hsl(150 40% 15% / 0.05), 0 10px 28px -16px hsl(150 50% 15% / 0.22);
+  --shadow-elegant: 0 22px 50px -24px hsl(148 72% 20% / 0.45);
+  --gradient-gold: linear-gradient(135deg, hsl(36 100% 58%), hsl(20 95% 52%));
+  --gradient-fresh: linear-gradient(135deg, hsl(148 72% 30%), hsl(160 80% 38%));
 }
 
 /* ─── DYNAMIC THEME PALETTES (Configured via AI Co-Pilot) ─── */
@@ -188,31 +189,31 @@
   --gold-foreground: 160 40% 8%;
   --ink: 162 45% 4%;
   /* Rich Deep Luxury Dark Mode HSL */
-  --background: 240 10% 3.9%;
-  --foreground: 0 0% 98%;
-  --card: 240 10% 6%;
-  --card-foreground: 0 0% 98%;
-  --popover: 240 10% 6%;
+  --background: 155 25% 6%;
+  --foreground: 140 15% 96%;
+  --card: 155 20% 9%;
+  --card-foreground: 140 15% 96%;
+  --popover: 155 20% 9%;
   --popover-foreground: 0 0% 98%;
 
   /* Emerald Green Primary */
   --primary: 142.1 76.2% 36.5%;
   --primary-foreground: 355.7 100% 97.3%;
 
-  --secondary: 240 3.7% 12%;
-  --secondary-foreground: 0 0% 98%;
+  --secondary: 155 18% 14%;
+  --secondary-foreground: 140 15% 96%;
 
-  --muted: 240 3.7% 12%;
-  --muted-foreground: 240 5% 64.9%;
+  --muted: 155 15% 13%;
+  --muted-foreground: 150 8% 66%;
 
-  --accent: 14 85% 53%;
+  --accent: 24 95% 55%;
   --accent-foreground: 0 0% 100%;
 
   --destructive: 0 62.8% 30.6%;
   --destructive-foreground: 0 0% 98%;
 
-  --border: 240 3.7% 15.9%;
-  --input: 240 3.7% 15.9%;
+  --border: 155 14% 18%;
+  --input: 155 14% 18%;
   --ring: 142.1 76.2% 36.5%;
 
   --sidebar: 240 10% 4.5%;
@@ -1762,3 +1763,16 @@ html:not(.dark) [class*="text-orange-600"] { color: var(--brand-rust) !important
 .elwadi-main-header, .figma-admin-shell header { background: hsl(var(--background)) !important; backdrop-filter: none !important; }
 [role="dialog"], [role="menu"], [role="listbox"], [data-radix-popper-content-wrapper] > * { backdrop-filter: none !important; }
 [role="dialog"]:not([data-state="closed"]).bg-background\/95, .bg-popover\/95 { background: hsl(var(--popover)) !important; }
+
+@utility bg-fresh {
+  background-image: var(--gradient-fresh);
+}
+@utility tap {
+  min-height: 44px;
+  min-width: 44px;
+}
+@layer base {
+  html { -webkit-tap-highlight-color: transparent; }
+  body { overflow-x: hidden; }
+  img { max-width: 100%; }
+}
