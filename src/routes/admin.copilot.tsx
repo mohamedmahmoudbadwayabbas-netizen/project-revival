@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import React, { useState, useEffect, useRef } from "react";
 import {
   Sparkles,
@@ -225,15 +225,22 @@ function AdminCoPilotPage() {
   useEffect(() => {
     let cancelled = false;
     const loadStoreHealth = async () => {
-      const [products, lowStock, orders, missingImages] = await Promise.all([
-        supabase.from("products").select("id", { count: "exact", head: true }),
-        supabase.from("products").select("id", { count: "exact", head: true }).lte("stock", 5),
-        supabase.from("orders").select("id", { count: "exact", head: true }),
-        supabase
-          .from("products")
-          .select("id", { count: "exact", head: true })
-          .is("image_url", null),
-      ]);
+      const [products, lowStock, outOfStock, orders, missingImages, recentOrders] =
+        await Promise.all([
+          supabase.from("products").select("id", { count: "exact", head: true }),
+          supabase.from("products").select("id", { count: "exact", head: true }).lte("stock", 5),
+          supabase.from("products").select("id", { count: "exact", head: true }).lte("stock", 0),
+          supabase.from("orders").select("id", { count: "exact", head: true }),
+          supabase
+            .from("products")
+            .select("id", { count: "exact", head: true })
+            .is("image_url", null),
+          supabase
+            .from("orders")
+            .select("total_amount,status,created_at")
+            .order("created_at", { ascending: false })
+            .limit(2000),
+        ]);
       if (cancelled) return;
       setStoreDataStatus({
         state:
@@ -245,6 +252,22 @@ function AdminCoPilotPage() {
         orders: orders.error ? null : (orders.count ?? 0),
         missingImages: missingImages.error ? null : (missingImages.count ?? 0),
       });
+      if (!recentOrders.error) {
+        const rows = recentOrders.data ?? [];
+        const validOrders = rows.filter((order) => order.status !== "cancelled");
+        const revenue = validOrders.reduce(
+          (sum, order) => sum + Number(order.total_amount || 0),
+          0,
+        );
+        setKpis({
+          totalRevenue: revenue,
+          totalOrders: validOrders.length,
+          averageOrderValue: validOrders.length ? revenue / validOrders.length : 0,
+          outOfStockCount: outOfStock.count ?? 0,
+          lowStockCount: lowStock.count ?? 0,
+          topSellingCategory: "بيانات المتجر الحالية",
+        });
+      }
     };
     void loadStoreHealth();
     const timer = window.setInterval(() => void loadStoreHealth(), 45_000);
@@ -780,6 +803,26 @@ function AdminCoPilotPage() {
               );
             })}
           </nav>
+          <div className="mt-4 flex w-full flex-col items-center gap-2 border-t border-slate-200 pt-4 dark:border-white/10">
+            {(
+              [
+                ["/admin/orders", "طلبات", ClipboardList],
+                ["/admin/products", "منتجات", Package],
+                ["/admin/forecasting", "توقعات", TrendingUp],
+              ] as const
+            ).map(([to, label, Icon]) => (
+              <Link
+                key={to}
+                to={to}
+                className="group flex w-full flex-col items-center gap-1.5 py-2 text-[10px] font-bold text-slate-400 transition hover:text-primary dark:text-slate-500"
+              >
+                <span className="grid h-9 w-9 place-items-center rounded-xl transition group-hover:bg-primary/10">
+                  <Icon className="h-4 w-4" />
+                </span>
+                <span>{label}</span>
+              </Link>
+            ))}
+          </div>
           <div className="mt-auto flex flex-col items-center gap-3 text-[10px] font-bold text-slate-400">
             <button
               type="button"
@@ -1314,6 +1357,31 @@ function AdminCoPilotPage() {
                           يقرأ معلومات المتجر من قاعدة البيانات. لا يغيّر صلاحيات أو ملفات المشروع،
                           ولا ينفّذ تعديلًا في وضع «اقتراح فقط».
                         </p>
+                      </section>
+                      <section className="rounded-2xl border border-border bg-card p-4">
+                        <h3 className="text-xs font-bold text-foreground">
+                          انتقل إلى البيانات الأصلية
+                        </h3>
+                        <div className="mt-3 grid grid-cols-3 gap-2">
+                          <Link
+                            to="/admin/orders"
+                            className="rounded-xl border border-border px-2 py-2 text-center text-[11px] font-bold text-muted-foreground transition hover:border-primary hover:text-primary"
+                          >
+                            الطلبات
+                          </Link>
+                          <Link
+                            to="/admin/products"
+                            className="rounded-xl border border-border px-2 py-2 text-center text-[11px] font-bold text-muted-foreground transition hover:border-primary hover:text-primary"
+                          >
+                            المنتجات
+                          </Link>
+                          <Link
+                            to="/admin/forecasting"
+                            className="rounded-xl border border-border px-2 py-2 text-center text-[11px] font-bold text-muted-foreground transition hover:border-primary hover:text-primary"
+                          >
+                            التوقعات
+                          </Link>
+                        </div>
                       </section>
                     </>
                   ))}

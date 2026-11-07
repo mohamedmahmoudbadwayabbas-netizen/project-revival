@@ -52,6 +52,7 @@ Full details and pre-solved blockers: IMPORT_PROTOCOL.md section 6.
 - [x] Refreshed assistant typography, empty state, quick actions, and mobile approval presentation.
 - [x] Rebranded the admin copilot as «نبراس» and completed the responsive visual redesign for desktop, tablet, and mobile.
 - [x] Added the operational navigation rail and decision-review card treatment from the approved assistant direction.
+- [x] Wired assistant shortcuts to live admin routes and populated executive KPIs from current Supabase orders and inventory.
 
 ## Phase A — AI unification + admin fixes
 
