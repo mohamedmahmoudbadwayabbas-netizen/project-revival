@@ -24,7 +24,7 @@ export function AnnouncementBar() {
       style={{ backgroundColor: bgStyle }}
       dir="rtl"
     >
-      <div className="mx-auto max-w-6xl px-3 py-2 leading-relaxed">{s.announcement_text}</div>
+      <div className="mx-auto max-w-6xl truncate px-3 py-1.5 leading-relaxed">{s.announcement_text}</div>
     </div>
   );
 }
