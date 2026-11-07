@@ -721,6 +721,78 @@ function AdminCoPilotPage() {
 
       {/* ─── 2. MAIN SPLIT WORKSPACE ─── */}
       <div className="flex-1 min-h-0 flex flex-col lg:flex-row relative">
+        {/* DESKTOP NAVIGATION RAIL */}
+        <aside
+          className="hidden w-[82px] shrink-0 border-s border-slate-200 bg-white/80 py-5 lg:flex lg:flex-col lg:items-center dark:border-white/10 dark:bg-[#0d1117]"
+          aria-label="تنقل نبراس"
+        >
+          <div className="mb-6 grid h-10 w-10 place-items-center rounded-2xl bg-primary/10 text-primary">
+            <span className="text-lg font-black">ن</span>
+          </div>
+          <nav className="flex w-full flex-1 flex-col items-center gap-3">
+            {(
+              [
+                ["review", "محادثة", MessageSquare],
+                ["review", "قرارات", ClipboardList],
+                ["advisory", "تقارير", BarChart3],
+                ["store-engine", "واجهتي", Layout],
+                ["live-preview", "معاينة", Eye],
+              ] as const
+            ).map(([mode, label, Icon], index) => {
+              const isSelected =
+                (mode === "review" &&
+                  activeMode === "review" &&
+                  ((index === 0 && !pendingAction) || (index === 1 && Boolean(pendingAction)))) ||
+                (mode !== "review" && activeMode === mode);
+              return (
+                <button
+                  key={`${label}-${index}`}
+                  type="button"
+                  onClick={() => {
+                    setActiveMode(mode);
+                    setMobilePane(mode === "review" && index === 0 ? "chat" : "panel");
+                    if (index === 1) setReviewTab("review");
+                  }}
+                  className={`group relative flex w-full flex-col items-center gap-1.5 py-2 text-[10px] font-bold transition ${
+                    isSelected
+                      ? "text-primary"
+                      : "text-slate-400 hover:text-slate-700 dark:text-slate-500 dark:hover:text-slate-200"
+                  }`}
+                  aria-label={label}
+                >
+                  {isSelected && (
+                    <span className="absolute inset-y-1 start-0 w-1 rounded-e-full bg-primary" />
+                  )}
+                  <span
+                    className={`grid h-10 w-10 place-items-center rounded-2xl transition ${
+                      isSelected
+                        ? "bg-primary/10 shadow-sm"
+                        : "group-hover:bg-slate-100 dark:group-hover:bg-white/5"
+                    }`}
+                  >
+                    <Icon className="h-5 w-5" />
+                    {index === 1 && pendingAction && (
+                      <span className="absolute end-3 top-1 h-2.5 w-2.5 rounded-full border-2 border-white bg-amber-500 dark:border-[#0d1117]" />
+                    )}
+                  </span>
+                  <span>{label}</span>
+                </button>
+              );
+            })}
+          </nav>
+          <div className="mt-auto flex flex-col items-center gap-3 text-[10px] font-bold text-slate-400">
+            <button
+              type="button"
+              onClick={() => setToolsSheetOpen(true)}
+              className="grid h-10 w-10 place-items-center rounded-2xl transition hover:bg-slate-100 hover:text-primary dark:hover:bg-white/5"
+              aria-label="الأدوات"
+            >
+              <Wrench className="h-5 w-5" />
+            </button>
+            <span>أدوات</span>
+          </div>
+        </aside>
+
         {/* RIGHT PANE: CHAT (First in RTL) */}
         <div
           className={`${mobilePane === "chat" ? "flex" : "hidden"} lg:flex relative z-10 mt-3 min-h-0 w-full flex-1 flex-col border-t border-slate-200 bg-white shadow-sm lg:mt-3 lg:min-w-0 lg:border-s lg:border-t-0 lg:border-slate-200/80 dark:border-white/10 dark:bg-[#0f131a]`}
@@ -928,7 +1000,7 @@ function AdminCoPilotPage() {
                       size="sm"
                       disabled={pendingAction.status !== "pending"}
                       onClick={handleApprovePendingAction}
-                      className="rounded-xl"
+                      className="h-10 rounded-xl px-4 font-bold"
                     >
                       {pendingAction.status === "executing" ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -1076,9 +1148,16 @@ function AdminCoPilotPage() {
         >
           {activeMode === "review" ? (
             <>
-              <div className="flex-none border-b border-border bg-card px-3 py-3">
+              <div className="flex-none border-b border-slate-200/80 bg-white/80 px-4 py-4 dark:border-white/10 dark:bg-white/[0.03]">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h2 className="text-sm font-bold text-foreground">مراجعة عمل المساعد</h2>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
+                      مركز التشغيل
+                    </p>
+                    <h2 className="mt-1 text-base font-black text-foreground">
+                      {pendingAction ? "قرارات تنتظرك" : "مراجعة عمل المساعد"}
+                    </h2>
+                  </div>
                   <div
                     className="inline-flex rounded-xl bg-secondary p-1"
                     role="tablist"
@@ -1110,7 +1189,7 @@ function AdminCoPilotPage() {
                 {reviewTab === "review" &&
                   (pendingAction ? (
                     <section
-                      className={`rounded-2xl border bg-card p-4 shadow-sm ${pendingAction.status === "blocked" ? "border-[#B6502E]" : "border-primary/30"}`}
+                      className={`rounded-[1.5rem] border bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.07)] dark:bg-[#151b23] ${pendingAction.status === "blocked" ? "border-[#B6502E]" : "border-primary/30"}`}
                       aria-live="polite"
                     >
                       <div className="flex items-start justify-between gap-3">
@@ -1124,7 +1203,7 @@ function AdminCoPilotPage() {
                                 ? "جارٍ التحقق والتنفيذ"
                                 : "بانتظار موافقتك"}
                           </span>
-                          <h3 className="mt-3 text-base font-bold text-foreground">
+                          <h3 className="mt-3 text-lg font-black text-foreground">
                             {AI_TOOL_SUITE.find((tool) => tool.name === pendingAction.toolName)
                               ?.labelAr || "إجراء متجر"}
                           </h3>
@@ -1137,9 +1216,28 @@ function AdminCoPilotPage() {
                           <ShieldCheck className="h-5 w-5 shrink-0 text-primary" />
                         )}
                       </div>
-                      <p className="mt-2 text-xs leading-6 text-muted-foreground">
-                        راجع الحقول أدناه. لن تُكتب أي بيانات حتى تضغط «اعتماد وتنفيذ».
+                      <p className="mt-2 text-sm leading-7 text-muted-foreground">
+                        راجع التأثير المتوقع والحقول أدناه. لن تُكتب أي بيانات حتى تضغط «اعتماد
+                        وتنفيذ».
                       </p>
+                      <div className="mt-4 grid grid-cols-2 gap-2">
+                        <div className="rounded-xl bg-emerald-50 px-3 py-2.5 dark:bg-emerald-950/30">
+                          <span className="block text-[10px] font-bold text-emerald-700 dark:text-emerald-300">
+                            مستوى الأمان
+                          </span>
+                          <span className="mt-1 block text-sm font-black text-emerald-800 dark:text-emerald-200">
+                            مراجعة مطلوبة
+                          </span>
+                        </div>
+                        <div className="rounded-xl bg-slate-100 px-3 py-2.5 dark:bg-zinc-800">
+                          <span className="block text-[10px] font-bold text-muted-foreground">
+                            نطاق التغيير
+                          </span>
+                          <span className="mt-1 block truncate text-sm font-black text-foreground">
+                            {Object.keys(pendingAction.args).length} حقول
+                          </span>
+                        </div>
+                      </div>
                       <dl className="mt-3 space-y-2 rounded-xl bg-slate-100 p-3 dark:bg-zinc-800">
                         {Object.entries(pendingAction.args)
                           .filter(([key]) => !/(token|secret|password|api.?key)/i.test(key))
@@ -1181,7 +1279,7 @@ function AdminCoPilotPage() {
                         <Button
                           disabled={pendingAction.status !== "pending"}
                           onClick={handleApprovePendingAction}
-                          className="rounded-xl bg-primary text-primary-foreground hover:bg-primary/90"
+                          className="h-10 rounded-xl bg-primary px-4 font-bold text-primary-foreground hover:bg-primary/90"
                         >
                           {pendingAction.status === "executing" ? (
                             <>
