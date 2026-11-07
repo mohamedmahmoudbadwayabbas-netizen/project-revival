@@ -1657,36 +1657,36 @@ html:not(.dark) [class*="text-orange-600"] { color: var(--brand-rust) !important
 /* ─── BRAND SYSTEM (single source of truth; swap colors here only) ─── */
 :root:not(.dark) {
   --radius: 1rem;
-  --background: 45 44% 96%;      /* #faf8f2 */
-  --foreground: 147 20% 20%;     /* #283c31 */
+  --background: 140 30% 97%;
+  --foreground: 155 35% 12%;
   --card: 0 0% 100%;
-  --card-foreground: 147 20% 20%;
+  --card-foreground: 155 35% 12%;
   --popover: 0 0% 100%;
-  --popover-foreground: 147 20% 20%;
-  --primary: 150 60% 30%;        /* #1f7a4d */
+  --popover-foreground: 155 35% 12%;
+  --primary: 148 74% 31%;
   --primary-foreground: 0 0% 100%;
   --primary-dark: 157 48% 15%;   /* #14392b */
-  --secondary: 70 29% 92%;       /* #eef0e4 soft */
-  --secondary-foreground: 147 20% 20%;
-  --muted: 70 29% 92%;
-  --muted-foreground: 143 8% 33%; /* #4d5a52 */
-  --accent: 17 73% 45%;          /* offer #c9501f */
+  --secondary: 142 45% 93%;
+  --secondary-foreground: 150 50% 18%;
+  --muted: 140 22% 94%;
+  --muted-foreground: 155 10% 36%;
+  --accent: 24 95% 52%;
   --accent-foreground: 0 0% 100%;
-  --offer: 17 73% 45%;
-  --offer-soft: 19 80% 92%;      /* #fbe6dc */
+  --offer: 8 85% 52%;
+  --offer-soft: 20 100% 93%;
   --success: 138 45% 34%;        /* #2f7d47 */
   --success-soft: 107 39% 91%;   /* #e3f1df */
-  --highlight: 41 88% 57%;       /* #f2b632 small badges only */
+  --highlight: 42 96% 54%;
   --disabled: 90 10% 88%;        /* #e2e5de */
-  --gold: 150 60% 30%;           /* legacy gold → brand green */
+  --gold: 148 74% 31%;
   --gold-foreground: 0 0% 100%;
   --ink: 157 48% 15%;
-  --border: 51 20% 87%;          /* #e5e3d8 */
-  --input: 51 20% 87%;
-  --ring: 150 60% 30%;
-  --shadow-card: 0 1px 2px hsl(147 20% 20% / 0.04), 0 6px 18px -12px hsl(147 20% 20% / 0.14);
-  --shadow-elegant: 0 12px 32px -20px hsl(147 20% 20% / 0.25);
-  --gradient-gold: hsl(150 60% 30%);
+  --border: 140 18% 88%;
+  --input: 140 18% 86%;
+  --ring: 148 74% 31%;
+  --shadow-card: 0 1px 2px hsl(150 40% 15% / 0.05), 0 10px 24px -14px hsl(150 50% 18% / 0.22);
+  --shadow-elegant: 0 16px 40px -18px hsl(148 74% 20% / 0.4);
+  --gradient-gold: linear-gradient(135deg, hsl(36 100% 58%), hsl(20 95% 52%));
 }
 @theme inline {
   --color-primary-dark: hsl(var(--primary-dark));
