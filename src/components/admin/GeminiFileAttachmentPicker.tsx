@@ -66,7 +66,8 @@ export function GeminiFileAttachmentPicker({
                 اختر ملف من المشروع لتعديله مع Gemini 📁
               </DialogTitle>
               <DialogDescription className="text-xs text-muted-foreground">
-                الفهرس هنا للتنقل فقط؛ محتوى الملف الحقيقي يجب أن يأتي من Project Engine قبل أي اقتراح تعديل.
+                الفهرس هنا للتنقل فقط؛ محتوى الملف الحقيقي يجب أن يأتي من Project Engine قبل أي
+                اقتراح تعديل.
               </DialogDescription>
             </div>
           </div>

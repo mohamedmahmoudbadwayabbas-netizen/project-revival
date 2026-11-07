@@ -180,16 +180,33 @@ const CUSTOMER_SHOPPING_DIRECTIVE = `
 تحدث بالعربية المصرية الطبيعية وباختصار.
 `;
 
-function requiredStoreRead(message: string, customerExperience: boolean): AiToolName | "unsupported" | null {
+function requiredStoreRead(
+  message: string,
+  customerExperience: boolean,
+): AiToolName | "unsupported" | null {
   const text = message.toLowerCase();
-  if (/عميل|عملاء|بيانات المتجر|إعدادات المتجر|اعدادات المتجر|مخزن|مخازن|توصيل|منطقة|مناطق|كوبون|عروض المتجر|store settings|delivery zone|warehouse|customer details/i.test(text)) {
+  if (
+    /عميل|عملاء|بيانات المتجر|إعدادات المتجر|اعدادات المتجر|مخزن|مخازن|توصيل|منطقة|مناطق|كوبون|عروض المتجر|store settings|delivery zone|warehouse|customer details/i.test(
+      text,
+    )
+  ) {
     return "unsupported";
   }
-  if (/منتج|منتجات|سلع|جبن|جبنة|لبن|سعر|أسعار|بكام|متوفر|مخزون|كمية|كتالوج|product|price|stock|available/i.test(text) ||
-    customerExperience && /فطار|إفطار|غداء|عشاء|وجبة|ميزانية|احتياجات|عايز|عايزة|محتاج|محتاجة|رشح|اقترح|قائمة|اشتري|شراء|breakfast|lunch|dinner|meal|budget|recommend|shopping/i.test(text)) {
+  if (
+    /منتج|منتجات|سلع|جبن|جبنة|لبن|سعر|أسعار|بكام|متوفر|مخزون|كمية|كتالوج|product|price|stock|available/i.test(
+      text,
+    ) ||
+    (customerExperience &&
+      /فطار|إفطار|غداء|عشاء|وجبة|ميزانية|احتياجات|عايز|عايزة|محتاج|محتاجة|رشح|اقترح|قائمة|اشتري|شراء|breakfast|lunch|dinner|meal|budget|recommend|shopping/i.test(
+        text,
+      ))
+  ) {
     return "searchProducts";
   }
-  if (customerExperience && !/^(مرحبا|أهلاً|اهلا|السلام عليكم|شكرا|شكرًا|hi|hello|thanks)[!.؟\s]*$/i.test(text)) {
+  if (
+    customerExperience &&
+    !/^(مرحبا|أهلاً|اهلا|السلام عليكم|شكرا|شكرًا|hi|hello|thanks)[!.؟\s]*$/i.test(text)
+  ) {
     return "searchProducts";
   }
   if (/قسم|أقسام|تصنيف|فئة|category|categories/i.test(text)) return "getCategories";
@@ -200,20 +217,41 @@ function requiredStoreRead(message: string, customerExperience: boolean): AiTool
 }
 
 function isReadOnlyStoreRequest(message: string): boolean {
-  if (/^(هل|هل يمكن|ممكن|أقدر|اقدر|should i|can i|is it possible)/i.test(message.trim())) return true;
-  if (/\b(add|create|update|delete|remove)\b|أضف|اضف|ضيف|إضافة|اضافة|أنشئ|انشئ|إنشاء|انشاء|حدّث|حدث|تعديل|عدّل|عدل|احذف|حذف|امسح/i.test(message)) return false;
-  return /\b(show|list|find|search|what|how much|is there|available|price|stock)\b|هل|ما |ماذا|كم|بكام|كام سعر|اعرض|وريني|ابحث|متوفر|عندكم|عندنا|معلومات|تفاصيل|اعرف/i.test(message);
+  if (/^(هل|هل يمكن|ممكن|أقدر|اقدر|should i|can i|is it possible)/i.test(message.trim()))
+    return true;
+  if (
+    /\b(add|create|update|delete|remove)\b|أضف|اضف|ضيف|إضافة|اضافة|أنشئ|انشئ|إنشاء|انشاء|حدّث|حدث|تعديل|عدّل|عدل|احذف|حذف|امسح/i.test(
+      message,
+    )
+  )
+    return false;
+  return /\b(show|list|find|search|what|how much|is there|available|price|stock)\b|هل|ما |ماذا|كم|بكام|كام سعر|اعرض|وريني|ابحث|متوفر|عندكم|عندنا|معلومات|تفاصيل|اعرف/i.test(
+    message,
+  );
 }
 
-function hasSuccessfulSupabaseRead(steps: ExecutedToolStep[], requiredTool: AiToolName | "unsupported"): boolean {
+function hasSuccessfulSupabaseRead(
+  steps: ExecutedToolStep[],
+  requiredTool: AiToolName | "unsupported",
+): boolean {
   if (requiredTool === "unsupported") return false;
   return steps.some((step) => {
     if (step.tool === requiredTool && step.isWrite === false) return step.res.ok === true;
     // Catalog mutation tools perform their own fail-closed Supabase preflight
     // to prevent duplicate creation and stale-record edits.
     const resultData = step.res.data as Record<string, unknown> | undefined;
-    if (requiredTool === "searchProducts" && step.tool === "manageProduct" && resultData?.catalogPreflight === true) return true;
-    if (requiredTool === "getCategories" && step.tool === "manageCategories" && resultData?.categoryPreflight === true) return true;
+    if (
+      requiredTool === "searchProducts" &&
+      step.tool === "manageProduct" &&
+      resultData?.catalogPreflight === true
+    )
+      return true;
+    if (
+      requiredTool === "getCategories" &&
+      step.tool === "manageCategories" &&
+      resultData?.categoryPreflight === true
+    )
+      return true;
     return false;
   });
 }
@@ -224,7 +262,11 @@ const UNVERIFIED_STORE_DATA_REPLY =
 // Production model fallback sequence
 const PRODUCTION_FALLBACK_MODELS: GeminiModelChoice[] = [...GEMINI_PRODUCTION_FALLBACK_MODELS];
 
-async function generateWithTransientRetry(request: { model: string; contents: unknown; config?: Record<string, unknown> }) {
+async function generateWithTransientRetry(request: {
+  model: string;
+  contents: unknown;
+  config?: Record<string, unknown>;
+}) {
   const maxAttempts = 4;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
@@ -472,7 +514,9 @@ export async function runAdminCoPilotChat(
 
     for (const currentModel of modelsToTry) {
       try {
-        const systemInstruction = customerExperience ? CUSTOMER_SHOPPING_DIRECTIVE : `
+        const systemInstruction = customerExperience
+          ? CUSTOMER_SHOPPING_DIRECTIVE
+          : `
 ${AUTONOMOUS_ADMIN_COPILOT_DIRECTIVE}
 ${ROLE_PROMPTS[selectedRole]}
 ${SUPABASE_SCHEMA_CONTEXT_INSTRUCTION}
@@ -482,9 +526,11 @@ ${PROJECT_ENGINE_CONTEXT}
 Use only the functions supplied for this request. Product, order, price, and stock
 claims must come from successful live Supabase reads. Never invent a tool result.
 
-${executionMode === "suggest"
-  ? "SUGGESTION-ONLY MODE: Do not invoke any state-changing tool. Read-only tools may be used to ground suggestions."
-  : "APPROVAL MODE: Read-only tools may run to prepare an exact proposal. Never execute a state-changing tool in this chat turn; return its exact function name and arguments for the admin to review and approve in the UI."}
+${
+  executionMode === "suggest"
+    ? "SUGGESTION-ONLY MODE: Do not invoke any state-changing tool. Read-only tools may be used to ground suggestions."
+    : "APPROVAL MODE: Read-only tools may run to prepare an exact proposal. Never execute a state-changing tool in this chat turn; return its exact function name and arguments for the admin to review and approve in the UI."
+}
 Only report a change as completed after its tool returns a confirmed and verified success result.
 `;
 
@@ -506,7 +552,9 @@ Only report a change as completed after its tool returns a confirmed and verifie
         // Execute Gemini call with dynamic tool routing
         const activeTools = getActiveTools({ page, userRole }).filter((declaration) => {
           if (executionMode !== "suggest") return true;
-          return AI_TOOL_SUITE.find((tool) => tool.name === declaration.name)?.mutatesState !== true;
+          return (
+            AI_TOOL_SUITE.find((tool) => tool.name === declaration.name)?.mutatesState !== true
+          );
         });
 
         // تجربة العميل لا تستخدم أدوات جوجل المدمجة، لذلك لا نرسل أعلام الدمج
@@ -554,7 +602,10 @@ Only report a change as completed after its tool returns a confirmed and verifie
               ? {
                   ...config,
                   toolConfig: {
-                    functionCallingConfig: { mode: "ANY", allowedFunctionNames: ["searchProducts"] },
+                    functionCallingConfig: {
+                      mode: "ANY",
+                      allowedFunctionNames: ["searchProducts"],
+                    },
                   },
                 }
               : config;
@@ -577,10 +628,7 @@ Only report a change as completed after its tool returns a confirmed and verifie
             emit("compare", "done");
             emit("arrange", "current");
             // Model gave its final natural-language answer — stop looping.
-            finalModelText = (
-              response.text ||
-              parts.map((p: any) => p.text || "").join("")
-            ).trim();
+            finalModelText = (response.text || parts.map((p: any) => p.text || "").join("")).trim();
 
             const metadata = candidate?.groundingMetadata;
             if (metadata?.groundingChunks) {
@@ -610,7 +658,11 @@ Only report a change as completed after its tool returns a confirmed and verifie
             const isWrite = isWriteToolName(toolName);
             const storeReadBeforeWrite = requiredStoreRead(message, customerExperience);
 
-            if (isWrite && (storeReadBeforeWrite === "unsupported" || (storeReadBeforeWrite && isReadOnlyStoreRequest(message)))) {
+            if (
+              isWrite &&
+              (storeReadBeforeWrite === "unsupported" ||
+                (storeReadBeforeWrite && isReadOnlyStoreRequest(message)))
+            ) {
               return {
                 text: "طلبك استعلام عن بيانات المتجر فقط؛ لم أجهز أو أنفذ أي تعديل.",
                 modelUsed: currentModel,
@@ -620,14 +672,19 @@ Only report a change as completed after its tool returns a confirmed and verifie
               };
             }
 
-            if (isWrite && storeReadBeforeWrite && !hasSuccessfulSupabaseRead(steps, storeReadBeforeWrite)) {
+            if (
+              isWrite &&
+              storeReadBeforeWrite &&
+              !hasSuccessfulSupabaseRead(steps, storeReadBeforeWrite)
+            ) {
               functionResponseParts.push({
                 functionResponse: {
                   name: toolName,
                   response: {
                     ok: false,
                     success: false,
-                    messageAr: "لم أجهّز التعديل بعد. اقرأ مصدر Supabase المطلوب أولًا ثم أعد تقديم الإجراء للمراجعة.",
+                    messageAr:
+                      "لم أجهّز التعديل بعد. اقرأ مصدر Supabase المطلوب أولًا ثم أعد تقديم الإجراء للمراجعة.",
                     verified: false,
                   },
                 },
@@ -657,18 +714,29 @@ Only report a change as completed after its tool returns a confirmed and verifie
             }
 
             const requiredRead = requiredStoreRead(message, customerExperience);
-            if (isWrite && (requiredRead === "unsupported" || requiredRead && isReadOnlyStoreRequest(message))) {
+            if (
+              isWrite &&
+              (requiredRead === "unsupported" || (requiredRead && isReadOnlyStoreRequest(message)))
+            ) {
               const rejected: ToolExecutionResult = {
                 tool: toolName,
                 ok: false,
                 success: false,
-                messageAr: "هذا الطلب استعلام عن بيانات؛ لم أنفذ أي تعديل. أحتاج إلى قراءة Supabase المناسبة أولاً.",
+                messageAr:
+                  "هذا الطلب استعلام عن بيانات؛ لم أنفذ أي تعديل. أحتاج إلى قراءة Supabase المناسبة أولاً.",
               };
               steps.push({ tool: toolName, args: toolArgs, res: rejected, isWrite: true });
               functionResponseParts.push({
                 functionResponse: {
                   name: toolName,
-                  response: { ok: false, success: false, messageAr: rejected.messageAr, data: null, error: null, verified: false },
+                  response: {
+                    ok: false,
+                    success: false,
+                    messageAr: rejected.messageAr,
+                    data: null,
+                    error: null,
+                    verified: false,
+                  },
                 },
               });
               continue;
@@ -736,9 +804,10 @@ Only report a change as completed after its tool returns a confirmed and verifie
           const availableMatches = verifiedMatches.filter(
             (product: any) => Number(product.stock ?? product.stock_quantity) > 0,
           );
-          const verifiedCatalogPreflight = steps.some((step) =>
-            step.tool === "manageProduct" &&
-            (step.res.data as Record<string, unknown> | undefined)?.catalogPreflight === true,
+          const verifiedCatalogPreflight = steps.some(
+            (step) =>
+              step.tool === "manageProduct" &&
+              (step.res.data as Record<string, unknown> | undefined)?.catalogPreflight === true,
           );
           if (customerExperience && verifiedMatches.length > 0 && availableMatches.length === 0) {
             return {
@@ -792,7 +861,9 @@ Only report a change as completed after its tool returns a confirmed and verifie
         const errorMessage = String(err?.message || err || "");
         missingServerGeminiKey = /GEMINI_API_KEY is not configured/i.test(errorMessage);
         const diagnostics = diagnoseGeminiError(err);
-        console.warn(`[AI Engine] Model ${currentModel} returned an issue (${diagnostics.code}). Trying fallback...`);
+        console.warn(
+          `[AI Engine] Model ${currentModel} returned an issue (${diagnostics.code}). Trying fallback...`,
+        );
 
         // If it's a 401 Auth error, trying other models won't help; break to local fallback
         if (diagnostics.isAuthError || missingServerGeminiKey) {
@@ -811,7 +882,10 @@ Only report a change as completed after its tool returns a confirmed and verifie
 
     if (lastError) {
       const diagnostics = diagnoseGeminiError(lastError);
-      console.warn("[AI Engine] Live Gemini attempts exhausted; no tool was executed without a model decision.", diagnostics.code);
+      console.warn(
+        "[AI Engine] Live Gemini attempts exhausted; no tool was executed without a model decision.",
+        diagnostics.code,
+      );
       return {
         text: `تعذر إكمال الطلب عبر Gemini (${diagnostics.code}).${diagnostics.safeDetail ? `\nالتفصيل: ${diagnostics.safeDetail}` : ""}\nلم أنفذ أي أداة احتياطيًا أو أخمّن معاملات الطلب.`,
         modelUsed: "gemini-request-failed",
@@ -859,16 +933,21 @@ export async function verifyCopilotExecution(): Promise<CopilotSelfTestResult> {
       };
     }
 
-    const [{ data: products, error: productsError }, { data: categories, error: categoriesError }] = await Promise.all([
-      supabase.from("products").select("id").eq("is_active", true).limit(1),
-      supabase.from("categories").select("id").limit(1),
-    ]);
+    const [{ data: products, error: productsError }, { data: categories, error: categoriesError }] =
+      await Promise.all([
+        supabase.from("products").select("id").eq("is_active", true).limit(1),
+        supabase.from("categories").select("id").limit(1),
+      ]);
     if (productsError || categoriesError) {
       return {
         success: false,
         step: "database_read",
         message: "فشل اختبار القراءة من جداول المنتجات أو الأقسام في Supabase.",
-        details: { productsError: productsError?.message, categoriesError: categoriesError?.message, geminiConfigured: env.geminiReady },
+        details: {
+          productsError: productsError?.message,
+          categoriesError: categoriesError?.message,
+          geminiConfigured: env.geminiReady,
+        },
         latencyMs: Date.now() - startTime,
       };
     }
@@ -882,11 +961,13 @@ export async function verifyCopilotExecution(): Promise<CopilotSelfTestResult> {
           config: {
             systemInstruction: "Connectivity check. Reply with OK. Do not call any function.",
             maxOutputTokens: 8,
-            tools: [{
-              functionDeclarations: AI_TOOL_SUITE
-                .filter((tool) => tool.name === "searchProducts" || tool.name === "getCategories")
-                .map((tool) => tool.declaration),
-            }],
+            tools: [
+              {
+                functionDeclarations: AI_TOOL_SUITE.filter(
+                  (tool) => tool.name === "searchProducts" || tool.name === "getCategories",
+                ).map((tool) => tool.declaration),
+              },
+            ],
             toolConfig: {
               functionCallingConfig: { mode: "NONE" },
             },
@@ -911,7 +992,9 @@ export async function verifyCopilotExecution(): Promise<CopilotSelfTestResult> {
     }
 
     const latency = Date.now() - startTime;
-    console.info(`[AI Engine Self-Test] ✅ Supabase and Gemini connectivity passed in ${latency}ms.`);
+    console.info(
+      `[AI Engine Self-Test] ✅ Supabase and Gemini connectivity passed in ${latency}ms.`,
+    );
 
     return {
       success: true,
@@ -949,7 +1032,9 @@ export async function generateExecutiveSummary(
 ): Promise<ExecutiveSummaryResult> {
   if (!isSupabaseConfigured()) throw new Error("تعذر إنشاء التقرير لأن اتصال Supabase غير مهيأ.");
 
-  const readAll = async <T,>(readPage: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: any }>) => {
+  const readAll = async <T>(
+    readPage: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: any }>,
+  ) => {
     const rows: T[] = [];
     const pageSize = 500;
     for (let from = 0; from < 50_000; from += pageSize) {
@@ -963,16 +1048,43 @@ export async function generateExecutiveSummary(
   };
 
   const [orders, products] = await Promise.all([
-    readAll((from, to) => supabaseLoose.from("orders").select("id,total_price,status,created_at").range(from, to)),
-    readAll((from, to) => supabaseLoose.from("products").select("id,name,stock_quantity,is_active").eq("is_active", true).range(from, to)),
+    readAll((from, to) =>
+      supabaseLoose.from("orders").select("id,total_price,status,created_at").range(from, to),
+    ),
+    readAll((from, to) =>
+      supabaseLoose
+        .from("products")
+        .select("id,name,stock_quantity,is_active")
+        .eq("is_active", true)
+        .range(from, to),
+    ),
   ]);
   const since = Date.now() - 30 * 24 * 60 * 60 * 1000;
-  const recentOrders = orders.filter((order: any) => order.status !== "cancelled" && new Date(order.created_at).getTime() >= since);
-  const totalRevenue = recentOrders.reduce((sum: number, order: any) => sum + (Number(order.total_price) || 0), 0);
+  const recentOrders = orders.filter(
+    (order: any) => order.status !== "cancelled" && new Date(order.created_at).getTime() >= since,
+  );
+  const totalRevenue = recentOrders.reduce(
+    (sum: number, order: any) => sum + (Number(order.total_price) || 0),
+    0,
+  );
   const averageOrderValue = recentOrders.length ? totalRevenue / recentOrders.length : 0;
-  const lowStockProducts = products.filter((product: any) => Number(product.stock_quantity ?? 0) > 0 && Number(product.stock_quantity) <= 10);
-  const outOfStockProducts = products.filter((product: any) => Number(product.stock_quantity ?? 0) <= 0);
-  const health = Math.max(40, Math.min(100, 70 + Math.min(recentOrders.length, 25) - (lowStockProducts.length ? 5 : 0) - outOfStockProducts.length));
+  const lowStockProducts = products.filter(
+    (product: any) =>
+      Number(product.stock_quantity ?? 0) > 0 && Number(product.stock_quantity) <= 10,
+  );
+  const outOfStockProducts = products.filter(
+    (product: any) => Number(product.stock_quantity ?? 0) <= 0,
+  );
+  const health = Math.max(
+    40,
+    Math.min(
+      100,
+      70 +
+        Math.min(recentOrders.length, 25) -
+        (lowStockProducts.length ? 5 : 0) -
+        outOfStockProducts.length,
+    ),
+  );
 
   return {
     headline: `آخر 30 يوماً في Supabase: ${recentOrders.length} طلب، بإيراد ${totalRevenue.toFixed(2)} ج.م`,
@@ -980,11 +1092,16 @@ export async function generateExecutiveSummary(
     insights: [
       `متوسط قيمة الطلب في البيانات المقروءة: ${averageOrderValue.toFixed(2)} ج.م.`,
       `قرأت ${products.length} منتجاً نشطاً من Supabase؛ منها ${lowStockProducts.length} منخفض المخزون و${outOfStockProducts.length} نافد.`,
-      recentOrders.length ? "الأرقام محسوبة من سجلات الطلبات غير الملغاة خلال آخر 30 يوماً." : "لم تُرجع Supabase طلبات غير ملغاة خلال آخر 30 يوماً.",
+      recentOrders.length
+        ? "الأرقام محسوبة من سجلات الطلبات غير الملغاة خلال آخر 30 يوماً."
+        : "لم تُرجع Supabase طلبات غير ملغاة خلال آخر 30 يوماً.",
     ],
     actionableTips: [
       {
-        title: lowStockProducts.length || outOfStockProducts.length ? "مراجعة المنتجات منخفضة المخزون" : "متابعة المخزون المسجل",
+        title:
+          lowStockProducts.length || outOfStockProducts.length
+            ? "مراجعة المنتجات منخفضة المخزون"
+            : "متابعة المخزون المسجل",
         description: `قراءة Supabase الحالية تُظهر ${lowStockProducts.length} منتجاً منخفض المخزون و${outOfStockProducts.length} منتجاً نافداً.`,
         impact: lowStockProducts.length || outOfStockProducts.length ? "Urgent" : "Medium",
         category: "Inventory",
@@ -1020,25 +1137,45 @@ export async function generateAbandonedCartRecovery(
   if (!cartRows?.length) throw new Error("لم تعد هناك سلة متروكة مطابقة في Supabase.");
 
   const productIds = [...new Set(cartRows.map((row: any) => row.product_id).filter(Boolean))];
-  const lastActivity = Math.max(...cartRows.map((row: any) => new Date(row.created_at ?? 0).getTime()));
+  const lastActivity = Math.max(
+    ...cartRows.map((row: any) => new Date(row.created_at ?? 0).getTime()),
+  );
   const [profileResult, productsResult, ordersResult] = await Promise.all([
     supabaseLoose.from("profiles").select("id,full_name,phone").eq("id", userId).maybeSingle(),
-    supabaseLoose.from("products").select("id,name,price_per_unit,is_active").in("id", productIds).eq("is_active", true),
-    supabaseLoose.from("orders").select("id").eq("user_id", userId).gte("created_at", new Date(lastActivity).toISOString()).limit(1),
+    supabaseLoose
+      .from("products")
+      .select("id,name,price_per_unit,is_active")
+      .in("id", productIds)
+      .eq("is_active", true),
+    supabaseLoose
+      .from("orders")
+      .select("id")
+      .eq("user_id", userId)
+      .gte("created_at", new Date(lastActivity).toISOString())
+      .limit(1),
   ]);
-  if (profileResult.error) throw new Error(`تعذر قراءة ملف العميل من Supabase: ${profileResult.error.message}`);
-  if (productsResult.error) throw new Error(`تعذر قراءة منتجات السلة من Supabase: ${productsResult.error.message}`);
-  if (ordersResult.error) throw new Error(`تعذر التحقق من الطلبات الحديثة في Supabase: ${ordersResult.error.message}`);
-  if (ordersResult.data?.length) throw new Error("أُنشئ طلب بعد آخر نشاط للسلة؛ لم أجهز رسالة استرداد.");
+  if (profileResult.error)
+    throw new Error(`تعذر قراءة ملف العميل من Supabase: ${profileResult.error.message}`);
+  if (productsResult.error)
+    throw new Error(`تعذر قراءة منتجات السلة من Supabase: ${productsResult.error.message}`);
+  if (ordersResult.error)
+    throw new Error(`تعذر التحقق من الطلبات الحديثة في Supabase: ${ordersResult.error.message}`);
+  if (ordersResult.data?.length)
+    throw new Error("أُنشئ طلب بعد آخر نشاط للسلة؛ لم أجهز رسالة استرداد.");
   if (!profileResult.data?.phone) throw new Error("لا يوجد رقم هاتف موثق لهذا العميل في Supabase.");
 
-  const productMap = new Map((productsResult.data ?? []).map((product: any) => [product.id, product]));
+  const productMap = new Map(
+    (productsResult.data ?? []).map((product: any) => [product.id, product]),
+  );
   if (cartRows.some((row: any) => !row.product_id || !productMap.has(row.product_id))) {
     throw new Error("بعض منتجات السلة لم تعد نشطة أو لم يمكن التحقق منها في Supabase.");
   }
   const items = cartRows.map((row: any) => {
     const product = productMap.get(row.product_id)!;
-    return { name: product.name, lineTotal: Number(product.price_per_unit || 0) * Number(row.quantity || 0) };
+    return {
+      name: product.name,
+      lineTotal: Number(product.price_per_unit || 0) * Number(row.quantity || 0),
+    };
   });
   const total = items.reduce((sum, item) => sum + item.lineTotal, 0);
   const name = profileResult.data.full_name || "عميل المتجر";
@@ -1047,28 +1184,43 @@ export async function generateAbandonedCartRecovery(
   if (requestedCode) {
     const { data: couponRow, error } = await supabaseLoose
       .from("coupons")
-      .select("code,discount_type,discount_value,expires_at,is_active,first_order_only,max_uses,uses_count,min_order_amount")
+      .select(
+        "code,discount_type,discount_value,expires_at,is_active,first_order_only,max_uses,uses_count,min_order_amount",
+      )
       .eq("code", requestedCode)
       .maybeSingle();
     if (error) throw new Error(`تعذر التحقق من كوبون الخصم في Supabase: ${error.message}`);
-    const isLive = couponRow?.is_active && (!couponRow.expires_at || new Date(couponRow.expires_at).getTime() > Date.now());
-    const underUseLimit = couponRow?.max_uses == null || Number(couponRow.uses_count) < Number(couponRow.max_uses);
-    const meetsMinimum = couponRow?.min_order_amount == null || total >= Number(couponRow.min_order_amount);
+    const isLive =
+      couponRow?.is_active &&
+      (!couponRow.expires_at || new Date(couponRow.expires_at).getTime() > Date.now());
+    const underUseLimit =
+      couponRow?.max_uses == null || Number(couponRow.uses_count) < Number(couponRow.max_uses);
+    const meetsMinimum =
+      couponRow?.min_order_amount == null || total >= Number(couponRow.min_order_amount);
     let firstOrderEligible = true;
     if (couponRow?.first_order_only && userId) {
-      const { data: previousOrders, error: ordersError } = await supabaseLoose.from("orders").select("id").eq("user_id", userId).limit(1);
-      if (ordersError) throw new Error(`تعذر التحقق من أهلية الكوبون في Supabase: ${ordersError.message}`);
+      const { data: previousOrders, error: ordersError } = await supabaseLoose
+        .from("orders")
+        .select("id")
+        .eq("user_id", userId)
+        .limit(1);
+      if (ordersError)
+        throw new Error(`تعذر التحقق من أهلية الكوبون في Supabase: ${ordersError.message}`);
       firstOrderEligible = !previousOrders?.length;
     } else if (couponRow?.first_order_only) {
       firstOrderEligible = false;
     }
-    if (couponRow && isLive && underUseLimit && meetsMinimum && firstOrderEligible) verifiedCoupon = couponRow;
+    if (couponRow && isLive && underUseLimit && meetsMinimum && firstOrderEligible)
+      verifiedCoupon = couponRow;
   }
 
   const couponLine = verifiedCoupon
     ? `كود خصم متاح حسب بيانات المتجر: *${verifiedCoupon.code}* (${verifiedCoupon.discount_type === "percentage" ? `خصم ${verifiedCoupon.discount_value}%` : `خصم ${verifiedCoupon.discount_value} ج.م`}).`
     : "";
-  const cartSummary = `سلتك تحتوي على (${items.slice(0, 2).map((item) => item.name).join("، ")}) بقيمة ${total.toFixed(2)} ج.م.`;
+  const cartSummary = `سلتك تحتوي على (${items
+    .slice(0, 2)
+    .map((item) => item.name)
+    .join("، ")}) بقيمة ${total.toFixed(2)} ج.م.`;
   const message = `أهلاً بك يا ${name} 👋 من سوبرماركت الوادي الأخضر 🌿
 
 ${cartSummary}
@@ -1085,7 +1237,9 @@ ${couponLine}
     messageText: message,
     whatsappUrl,
     suggestedDiscountCode: verifiedCoupon?.code || "",
-    strategy: verifiedCoupon ? "مسودة تتضمن كوبوناً تم التحقق من صلاحيته من Supabase" : "تذكير محايد بلا خصم أو موعد تسليم غير مؤكد",
+    strategy: verifiedCoupon
+      ? "مسودة تتضمن كوبوناً تم التحقق من صلاحيته من Supabase"
+      : "تذكير محايد بلا خصم أو موعد تسليم غير مؤكد",
   };
 }
 
@@ -1105,4 +1259,3 @@ export async function generateProductCopywriting(
   });
   return res as unknown as ProductCopywriterResult;
 }
-

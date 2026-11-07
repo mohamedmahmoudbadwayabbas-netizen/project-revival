@@ -96,7 +96,9 @@ export function LayoutConfigProvider({ children }: { children: React.ReactNode }
       if (e.key === STORAGE_KEY && e.newValue) {
         try {
           setConfig(JSON.parse(e.newValue));
-        } catch {}
+        } catch {
+          // Ignore malformed cross-tab data and keep the current layout.
+        }
       }
     };
     const handleCustom = (e: Event) => {

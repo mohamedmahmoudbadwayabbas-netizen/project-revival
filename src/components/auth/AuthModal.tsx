@@ -230,7 +230,10 @@ export function AuthModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[460px] p-0 overflow-hidden border-border/80 bg-card rounded-3xl" dir="rtl">
+      <DialogContent
+        className="sm:max-w-[460px] p-0 overflow-hidden border-border/80 bg-card rounded-3xl"
+        dir="rtl"
+      >
         {/* Modal Header */}
         <div className="bg-gradient-to-b from-emerald-500/10 to-transparent p-6 pb-4 border-b border-border/40 text-center relative">
           <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-emerald-600 text-white shadow-md shadow-emerald-600/20 mb-3">
@@ -240,8 +243,8 @@ export function AuthModal({
             {emailMode === "signup"
               ? "إنشاء حساب جديد في الوادي الأخضر"
               : emailMode === "forgot"
-              ? "استعادة كلمة المرور"
-              : "تسجيل الدخول إلى حسابك"}
+                ? "استعادة كلمة المرور"
+                : "تسجيل الدخول إلى حسابك"}
           </DialogTitle>
           <DialogDescription className="text-xs font-semibold text-muted-foreground mt-1">
             استمتع بتجربة تسوق سريعة، تتبع طلباتك، وعروض حصرية لأعضاء المتجر
@@ -362,7 +365,11 @@ export function AuthModal({
                           onClick={() => setShowPassword(!showPassword)}
                           className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                         >
-                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
                         </button>
                       </div>
                     </div>
@@ -456,7 +463,9 @@ export function AuthModal({
                   <form onSubmit={handleVerifyOtp} className="space-y-3.5">
                     <div className="bg-secondary/40 p-3 rounded-2xl flex items-center justify-between text-xs">
                       <div>
-                        <span className="text-muted-foreground block text-[10px]">الرمز مُرسل إلى:</span>
+                        <span className="text-muted-foreground block text-[10px]">
+                          الرمز مُرسل إلى:
+                        </span>
                         <span className="font-mono font-bold text-foreground">{phone}</span>
                       </div>
                       <button
@@ -500,7 +509,8 @@ export function AuthModal({
                     <div className="text-center pt-1">
                       {resendTimer > 0 ? (
                         <span className="text-xs font-semibold text-muted-foreground">
-                          إعادة الإرسال متاحة خلال: <strong className="text-foreground">{resendTimer}s</strong>
+                          إعادة الإرسال متاحة خلال:{" "}
+                          <strong className="text-foreground">{resendTimer}s</strong>
                         </span>
                       ) : (
                         <button
@@ -543,7 +553,11 @@ export function AuthModal({
                 disabled={isSubmitting}
                 className="w-full h-11 rounded-xl font-black text-sm bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20"
               >
-                {isSubmitting ? <RefreshCw className="h-4 w-4 animate-spin" /> : "إرسال رابط الاستعادة"}
+                {isSubmitting ? (
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                ) : (
+                  "إرسال رابط الاستعادة"
+                )}
               </Button>
 
               <button
@@ -563,7 +577,9 @@ export function AuthModal({
             <div className="pt-2">
               <div className="relative flex py-2 items-center">
                 <div className="flex-grow border-t border-border"></div>
-                <span className="flex-shrink mx-3 text-[11px] font-bold text-muted-foreground">أو من خلال</span>
+                <span className="flex-shrink mx-3 text-[11px] font-bold text-muted-foreground">
+                  أو من خلال
+                </span>
                 <div className="flex-grow border-t border-border"></div>
               </div>
 

@@ -22,13 +22,24 @@ async function admin() {
 
 /** يدعم عدة مفاتيح في نفس الحقل مفصولة بسطر جديد أو فاصلة أو مسافة. */
 export function splitKeys(raw: string | null | undefined): string[] {
-  return [...new Set(String(raw ?? "").split(/[\s,;]+/).map((s) => s.trim()).filter(Boolean))];
+  return [
+    ...new Set(
+      String(raw ?? "")
+        .split(/[\s,;]+/)
+        .map((s) => s.trim())
+        .filter(Boolean),
+    ),
+  ];
 }
 
 export async function loadAiSettings(): Promise<AiSettings | null> {
   try {
     const db = await admin();
-    const { data } = await db.from("ai_provider_settings").select("provider, api_key, base_url, model").eq("id", 1).maybeSingle();
+    const { data } = await db
+      .from("ai_provider_settings")
+      .select("provider, api_key, base_url, model")
+      .eq("id", 1)
+      .maybeSingle();
     return (data as AiSettings) ?? null;
   } catch (error) {
     console.error("[ai] could not load provider settings", String(error).slice(0, 200));
@@ -45,9 +56,22 @@ export async function saveAiSettings(next: AiSettings) {
 }
 
 /** يصنف أخطاء المزود: نفاذ الحصة/الرصيد أو مفتاح غير صالح. */
-export function classifyProviderError(status: number | null, message: string): "quota" | "auth" | null {
-  if (status === 429 || status === 402 || /RESOURCE_EXHAUSTED|quota|insufficient|credit|billing|rate.?limit/i.test(message)) return "quota";
-  if (status === 401 || status === 403 || /API key not valid|invalid.*key|PERMISSION_DENIED|unauthorized|authentication/i.test(message)) return "auth";
+export function classifyProviderError(
+  status: number | null,
+  message: string,
+): "quota" | "auth" | null {
+  if (
+    status === 429 ||
+    status === 402 ||
+    /RESOURCE_EXHAUSTED|quota|insufficient|credit|billing|rate.?limit/i.test(message)
+  )
+    return "quota";
+  if (
+    status === 401 ||
+    status === 403 ||
+    /API key not valid|invalid.*key|PERMISSION_DENIED|unauthorized|authentication/i.test(message)
+  )
+    return "auth";
   return null;
 }
 
@@ -90,16 +114,23 @@ function normalizeSchema(schema: unknown): unknown {
 }
 
 function partsText(parts: any[]): string {
-  return parts.filter((p) => typeof p?.text === "string" && !p?.thought).map((p) => p.text).join("\n");
+  return parts
+    .filter((p) => typeof p?.text === "string" && !p?.thought)
+    .map((p) => p.text)
+    .join("\n");
 }
 
 export function geminiToOpenAI(contents: unknown, config: Record<string, any> = {}) {
   const messages: any[] = [];
   const sys = config.systemInstruction;
-  const sysText = typeof sys === "string" ? sys : Array.isArray(sys?.parts) ? partsText(sys.parts) : "";
+  const sysText =
+    typeof sys === "string" ? sys : Array.isArray(sys?.parts) ? partsText(sys.parts) : "";
   if (sysText) messages.push({ role: "system", content: sysText });
 
-  const list = typeof contents === "string" ? [{ role: "user", parts: [{ text: contents }] }] : (contents as any[]);
+  const list =
+    typeof contents === "string"
+      ? [{ role: "user", parts: [{ text: contents }] }]
+      : (contents as any[]);
   const pending: Array<{ id: string; name: string }> = [];
   let counter = 0;
   for (const turn of list) {
@@ -113,9 +144,17 @@ export function geminiToOpenAI(contents: unknown, config: Record<string, any> = 
         msg.tool_calls = calls.map((p) => {
           const id = `call_${++counter}`;
           pending.push({ id, name: p.functionCall.name });
-          const call: any = { id, type: "function", function: { name: p.functionCall.name, arguments: JSON.stringify(p.functionCall.args ?? {}) } };
+          const call: any = {
+            id,
+            type: "function",
+            function: {
+              name: p.functionCall.name,
+              arguments: JSON.stringify(p.functionCall.args ?? {}),
+            },
+          };
           // بعض البوابات (مثل Gemini) تشترط إعادة توقيع التفكير مع استدعاء الأداة.
-          if (p.thoughtSignature) call.extra_content = { google: { thought_signature: p.thoughtSignature } };
+          if (p.thoughtSignature)
+            call.extra_content = { google: { thought_signature: p.thoughtSignature } };
           return call;
         });
       }
@@ -124,7 +163,11 @@ export function geminiToOpenAI(contents: unknown, config: Record<string, any> = 
       for (const p of responses) {
         const idx = pending.findIndex((c) => c.name === p.functionResponse.name);
         const id = idx >= 0 ? pending.splice(idx, 1)[0].id : `call_${++counter}`;
-        messages.push({ role: "tool", tool_call_id: id, content: JSON.stringify(p.functionResponse.response ?? {}) });
+        messages.push({
+          role: "tool",
+          tool_call_id: id,
+          content: JSON.stringify(p.functionResponse.response ?? {}),
+        });
       }
       if (text) messages.push({ role: "user", content: text });
     }
@@ -135,7 +178,11 @@ export function geminiToOpenAI(contents: unknown, config: Record<string, any> = 
     for (const d of t?.functionDeclarations ?? []) {
       tools.push({
         type: "function",
-        function: { name: d.name, description: d.description ?? "", parameters: normalizeSchema(d.parameters ?? { type: "object", properties: {} }) },
+        function: {
+          name: d.name,
+          description: d.description ?? "",
+          parameters: normalizeSchema(d.parameters ?? { type: "object", properties: {} }),
+        },
       });
     }
   }
@@ -148,7 +195,8 @@ export function geminiToOpenAI(contents: unknown, config: Record<string, any> = 
     if (mode === "NONE") body.tool_choice = "none";
     else if (mode === "ANY") {
       const names: string[] = fcc?.allowedFunctionNames ?? [];
-      body.tool_choice = names.length === 1 ? { type: "function", function: { name: names[0] } } : "required";
+      body.tool_choice =
+        names.length === 1 ? { type: "function", function: { name: names[0] } } : "required";
     } else body.tool_choice = "auto";
   }
   if (typeof config.temperature === "number") body.temperature = config.temperature;
@@ -160,9 +208,19 @@ export function openAIToGemini(json: any): AdapterResponse {
   const choice = json?.choices?.[0];
   const msg = choice?.message ?? {};
   const parts: Array<Record<string, unknown>> = [];
-  const text = typeof msg.content === "string" ? msg.content : Array.isArray(msg.content) ? msg.content.map((c: any) => c?.text ?? "").join("") : "";
+  const text =
+    typeof msg.content === "string"
+      ? msg.content
+      : Array.isArray(msg.content)
+        ? msg.content.map((c: any) => c?.text ?? "").join("")
+        : "";
   // ملخص التفكير الذي يكشفه المزود نفسه (DeepSeek/GLM/…)، يُعلَّم كـ thought مثل Gemini.
-  const reasoning = typeof msg.reasoning_content === "string" ? msg.reasoning_content : typeof msg.reasoning === "string" ? msg.reasoning : "";
+  const reasoning =
+    typeof msg.reasoning_content === "string"
+      ? msg.reasoning_content
+      : typeof msg.reasoning === "string"
+        ? msg.reasoning
+        : "";
   if (reasoning.trim()) parts.push({ text: reasoning.trim(), thought: true });
   // بعض النماذج (MiniMax…) تكتب تفكيرها داخل <think> في نص الرد نفسه.
   let visible = text;
@@ -186,11 +244,19 @@ export function openAIToGemini(json: any): AdapterResponse {
       args = {};
     }
     const sig = call?.extra_content?.google?.thought_signature;
-    parts.push({ functionCall: { name: call?.function?.name, args }, ...(sig ? { thoughtSignature: sig } : {}) });
+    parts.push({
+      functionCall: { name: call?.function?.name, args },
+      ...(sig ? { thoughtSignature: sig } : {}),
+    });
   }
   return {
     text: visible,
-    candidates: [{ content: { role: "model", parts }, finishReason: String(choice?.finish_reason ?? "STOP").toUpperCase() }],
+    candidates: [
+      {
+        content: { role: "model", parts },
+        finishReason: String(choice?.finish_reason ?? "STOP").toUpperCase(),
+      },
+    ],
   };
 }
 
@@ -208,7 +274,9 @@ export class ProviderError extends Error {
  */
 /** كل مفاتيح Groq: GROQ_API_KEY (يقبل عدة مفاتيح مفصولة) + GROQ_API_KEY_2 / _3 / ... */
 export function groqKeys(env: Record<string, string | undefined> = process.env): string[] {
-  const names = Object.keys(env).filter((k) => /^GROQ_API_KEY(_\d+)?$/.test(k)).sort();
+  const names = Object.keys(env)
+    .filter((k) => /^GROQ_API_KEY(_\d+)?$/.test(k))
+    .sort();
   return [...new Set(names.flatMap((k) => splitKeys(env[k])))];
 }
 
@@ -216,46 +284,81 @@ export function groqKeys(env: Record<string, string | undefined> = process.env):
 const keyCooldown = new Map<string, number>();
 export function orderKeys(keys: string[], now = Date.now()): string[] {
   const ready = keys.filter((k) => (keyCooldown.get(k) ?? 0) <= now);
-  const cooling = keys.filter((k) => (keyCooldown.get(k) ?? 0) > now).sort((a, b) => keyCooldown.get(a)! - keyCooldown.get(b)!);
+  const cooling = keys
+    .filter((k) => (keyCooldown.get(k) ?? 0) > now)
+    .sort((a, b) => keyCooldown.get(a)! - keyCooldown.get(b)!);
   return [...ready, ...cooling];
 }
 export function markKeyCooldown(key: string, ms = 60000) {
   keyCooldown.set(key, Date.now() + ms);
 }
 
-export async function callOpenAICompatible(settings: AiSettings, contents: unknown, config: Record<string, any>): Promise<AdapterResponse> {
+export async function callOpenAICompatible(
+  settings: AiSettings,
+  contents: unknown,
+  config: Record<string, any>,
+): Promise<AdapterResponse> {
   const groqKey = groqKeys().join(",") || undefined;
   // إعدادات Groq بلا مفتاح محفوظ (أو بلا إعدادات أصلًا): نستخدم مفتاح المشروع.
-  if (groqKey && (settings.provider === "groq" || /groq\.com/i.test(settings.base_url || "")) && !splitKeys(settings.api_key).length) {
-    settings = { ...settings, api_key: groqKey, base_url: settings.base_url || "https://api.groq.com/openai/v1", model: settings.model || "openai/gpt-oss-120b" };
+  if (
+    groqKey &&
+    (settings.provider === "groq" || /groq\.com/i.test(settings.base_url || "")) &&
+    !splitKeys(settings.api_key).length
+  ) {
+    settings = {
+      ...settings,
+      api_key: groqKey,
+      base_url: settings.base_url || "https://api.groq.com/openai/v1",
+      model: settings.model || "openai/gpt-oss-120b",
+    };
   }
   if (groqKey && !/groq\.com/i.test(settings.base_url || "") && settings.provider !== "groq") {
     let groqError: unknown;
     try {
       const res = await callProviderChain(
-        { provider: "groq", api_key: groqKey, base_url: "https://api.groq.com/openai/v1", model: "openai/gpt-oss-120b" },
+        {
+          provider: "groq",
+          api_key: groqKey,
+          base_url: "https://api.groq.com/openai/v1",
+          model: "openai/gpt-oss-120b",
+        },
         contents,
         { ...config, deadlineMs: 20000, hedgeMs: 0 },
       );
-      if (res.text.trim() || res.candidates[0]?.content.parts.some((p) => p.functionCall)) return res;
+      if (res.text.trim() || res.candidates[0]?.content.parts.some((p) => p.functionCall))
+        return res;
     } catch (error) {
       groqError = error;
-      console.warn("[ai] Groq failed, falling back:", String((error as Error)?.message ?? error).slice(0, 160));
+      console.warn(
+        "[ai] Groq failed, falling back:",
+        String((error as Error)?.message ?? error).slice(0, 160),
+      );
     }
     // لا يوجد مزود احتياطي مضبوط: نُظهر خطأ Groq الحقيقي بدل رسالة "المفتاح غير موجود".
     if (!splitKeys(settings.api_key).length) {
-      throw groqError instanceof ProviderError ? groqError : new ProviderError(String((groqError as Error)?.message ?? "لم يصل رد من Groq."), null);
+      throw groqError instanceof ProviderError
+        ? groqError
+        : new ProviderError(String((groqError as Error)?.message ?? "لم يصل رد من Groq."), null);
     }
   }
   return callProviderChain(settings, contents, config);
 }
 
-async function callProviderChain(settings: AiSettings, contents: unknown, config: Record<string, any>): Promise<AdapterResponse> {
-  const baseUrl = (settings.base_url || findPreset(settings.provider)?.baseUrl || "").replace(/\/+$/, "");
-  if (!baseUrl) throw new ProviderError("لم يتم تحديد رابط بوابة مزود الذكاء الاصطناعي في الإعدادات.", null);
+async function callProviderChain(
+  settings: AiSettings,
+  contents: unknown,
+  config: Record<string, any>,
+): Promise<AdapterResponse> {
+  const baseUrl = (settings.base_url || findPreset(settings.provider)?.baseUrl || "").replace(
+    /\/+$/,
+    "",
+  );
+  if (!baseUrl)
+    throw new ProviderError("لم يتم تحديد رابط بوابة مزود الذكاء الاصطناعي في الإعدادات.", null);
   const keys = splitKeys(settings.api_key);
   if (!keys.length) throw new ProviderError("لم يتم وضع مفتاح الذكاء الاصطناعي في الإعدادات.", 401);
-  if (!settings.model) throw new ProviderError("لم يتم تحديد اسم النموذج في إعدادات الذكاء الاصطناعي.", null);
+  if (!settings.model)
+    throw new ProviderError("لم يتم تحديد اسم النموذج في إعدادات الذكاء الاصطناعي.", null);
 
   const baseBody = geminiToOpenAI(contents, config);
   const startedAt = Date.now();
@@ -285,7 +388,14 @@ async function callProviderChain(settings: AiSettings, contents: unknown, config
       const remaining = deadlineMs - (Date.now() - startedAt);
       if (remaining < 5000) break;
       try {
-        const res = await callOneModel(baseUrl, keys, settings.provider, { model, ...baseBody }, Math.min(45000, remaining), stop.signal);
+        const res = await callOneModel(
+          baseUrl,
+          keys,
+          settings.provider,
+          { model, ...baseBody },
+          Math.min(45000, remaining),
+          stop.signal,
+        );
         lastGoodModel.set(baseUrl, model);
         return res;
       } catch (error) {
@@ -347,8 +457,16 @@ async function callProviderChain(settings: AiSettings, contents: unknown, config
 const lastGoodModel = new Map<string, string>();
 
 /** ترتيب المحاولة: آخر نموذج نجح، ثم النموذج المحدد في الإعدادات، ثم النماذج الاحتياطية. */
-export function modelQueue(configured: string, baseUrl: string, lastGood = lastGoodModel.get(baseUrl)): string[] {
-  return [...new Set([lastGood, configured, ...fallbackModelsFor(baseUrl)].filter((m): m is string => !!m))];
+export function modelQueue(
+  configured: string,
+  baseUrl: string,
+  lastGood = lastGoodModel.get(baseUrl),
+): string[] {
+  return [
+    ...new Set(
+      [lastGood, configured, ...fallbackModelsFor(baseUrl)].filter((m): m is string => !!m),
+    ),
+  ];
 }
 
 /** ازدحام النموذج نفسه (وليس نفاذ رصيد المفتاح): لا فائدة من تجربة مفتاح آخر على نفس النموذج. */
@@ -359,8 +477,14 @@ export function isModelConcurrency(status: number | null, raw: string): boolean 
 /** نماذج احتياطية معروفة لكل بوابة. */
 export function fallbackModelsFor(baseUrl: string): string[] {
   // MiniMax هو الأقل ازدحامًا على خطة Dahl المجانية، لذا يأتي أولًا.
-  if (/groq\.com/i.test(baseUrl)) return ["openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.8-27b"];
-  if (/dahl\.global/i.test(baseUrl)) return ["MiniMaxAI/MiniMax-M2.7", "zai-org/GLM-5.3-Flash", "deepseek-ai/DeepSeek-V4-Flash-0731"];
+  if (/groq\.com/i.test(baseUrl))
+    return ["openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.8-27b"];
+  if (/dahl\.global/i.test(baseUrl))
+    return [
+      "MiniMaxAI/MiniMax-M2.7",
+      "zai-org/GLM-5.3-Flash",
+      "deepseek-ai/DeepSeek-V4-Flash-0731",
+    ];
   return [];
 }
 
@@ -368,7 +492,10 @@ export function fallbackModelsFor(baseUrl: string): string[] {
 export function suggestedModels(message: string): string[] {
   const m = /available now:\s*([^"]+?)(?:\.\s|\.?"|\.$|$)/i.exec(message);
   if (!m) return [];
-  return m[1].split(/,\s*/).map((s) => s.trim().replace(/\.$/, "")).filter((s) => /^[\w.\-]+\/[\w.\-]+$/.test(s));
+  return m[1]
+    .split(/,\s*/)
+    .map((s) => s.trim().replace(/\.$/, ""))
+    .filter((s) => /^[\w.-]+\/[\w.-]+$/.test(s));
 }
 
 function isSwitchable(error: ProviderError) {
@@ -455,11 +582,18 @@ export async function generatePlainText(
 ): Promise<string> {
   const settings = await loadAiSettings();
   const provider = settings?.provider || "gemini";
-  const config: Record<string, any> = { maxOutputTokens: opts.maxTokens ?? 800, temperature: opts.temperature ?? 0.6 };
+  const config: Record<string, any> = {
+    maxOutputTokens: opts.maxTokens ?? 800,
+    temperature: opts.temperature ?? 0.6,
+  };
   if (opts.system) config.systemInstruction = opts.system;
   try {
     if ((provider !== "gemini" && settings) || process.env.GROQ_API_KEY) {
-      const res = await callOpenAICompatible(settings ?? { provider: "groq", api_key: null, base_url: null, model: null }, prompt, { ...config, deadlineMs: opts.deadlineMs });
+      const res = await callOpenAICompatible(
+        settings ?? { provider: "groq", api_key: null, base_url: null, model: null },
+        prompt,
+        { ...config, deadlineMs: opts.deadlineMs },
+      );
       if (!res.text.trim()) throw new ProviderError("لم يصل رد من المزود.", null);
       return res.text.trim();
     }
@@ -467,7 +601,11 @@ export async function generatePlainText(
     if (!key) throw new ProviderError("لم يتم وضع مفتاح الذكاء الاصطناعي في الإعدادات.", 401);
     const { GoogleGenAI } = await import("@google/genai");
     const ai = new GoogleGenAI({ apiKey: key });
-    const r = await ai.models.generateContent({ model: settings?.model || "gemini-2.5-flash", contents: prompt, config });
+    const r = await ai.models.generateContent({
+      model: settings?.model || "gemini-2.5-flash",
+      contents: prompt,
+      config,
+    });
     const text = r.text?.trim();
     if (!text) throw new ProviderError("لم يصل رد من المزود.", null);
     return text;

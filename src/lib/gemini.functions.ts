@@ -10,12 +10,7 @@ import {
 
 type GeminiPurpose = "chat" | "image" | "maps";
 export type GeminiJsonValue =
-  | string
-  | number
-  | boolean
-  | null
-  | GeminiJsonValue[]
-  | { [key: string]: GeminiJsonValue };
+  string | number | boolean | null | GeminiJsonValue[] | { [key: string]: GeminiJsonValue };
 export interface GeminiClientResponse {
   text: string;
   candidates: Array<{
@@ -140,7 +135,13 @@ export const generateGeminiContent = createServerFn({ method: "POST" })
 
     if (data.purpose === "image" && !isAdmin)
       throw new Error("Image generation is available to store admins only.");
-    if (data.purpose === "chat" && !isAdmin && !isModerator && role !== "customer" && role !== "user") {
+    if (
+      data.purpose === "chat" &&
+      !isAdmin &&
+      !isModerator &&
+      role !== "customer" &&
+      role !== "user"
+    ) {
       throw new Error("The customer assistant is available to customer accounts only.");
     }
     if (
@@ -206,8 +207,12 @@ export const generateGeminiContent = createServerFn({ method: "POST" })
         const status = error instanceof ProviderError ? error.status : null;
         const kind = classifyProviderError(status, String((error as Error)?.message ?? error));
         if (kind) await recordAiAlert(kind, provider);
-        if (kind === "quota") throw new Error("429 RESOURCE_EXHAUSTED: نفدت حصة مفتاح الذكاء الاصطناعي. تم تنبيه مسؤول المتجر.");
-        if (kind === "auth") throw new Error("401: مفتاح الذكاء الاصطناعي غير صالح. تم تنبيه مسؤول المتجر.");
+        if (kind === "quota")
+          throw new Error(
+            "429 RESOURCE_EXHAUSTED: نفدت حصة مفتاح الذكاء الاصطناعي. تم تنبيه مسؤول المتجر.",
+          );
+        if (kind === "auth")
+          throw new Error("401: مفتاح الذكاء الاصطناعي غير صالح. تم تنبيه مسؤول المتجر.");
         throw error;
       }
     }
@@ -215,14 +220,18 @@ export const generateGeminiContent = createServerFn({ method: "POST" })
     const { splitKeys } = await import("@/lib/ai-provider.server");
     const savedKeys = provider === "gemini" ? splitKeys(settings?.api_key) : [];
     const keys = savedKeys.length ? savedKeys : splitKeys(process.env["GEMINI_API_KEY"]);
-    if (!keys.length) throw new Error("لم يتم وضع مفتاح الذكاء الاصطناعي بعد. يمكن للمسؤول إضافته من الإعدادات ← الذكاء الاصطناعي.");
+    if (!keys.length)
+      throw new Error(
+        "لم يتم وضع مفتاح الذكاء الاصطناعي بعد. يمكن للمسؤول إضافته من الإعدادات ← الذكاء الاصطناعي.",
+      );
     const config = { ...data.config };
     if (data.purpose === "chat" || data.purpose === "maps") {
       const requestedMax = Number(config.maxOutputTokens);
       const maxOutputTokens = data.purpose === "chat" ? 4096 : 512;
-      config.maxOutputTokens = Number.isFinite(requestedMax) && requestedMax > 0
-        ? Math.min(requestedMax, maxOutputTokens)
-        : maxOutputTokens;
+      config.maxOutputTokens =
+        Number.isFinite(requestedMax) && requestedMax > 0
+          ? Math.min(requestedMax, maxOutputTokens)
+          : maxOutputTokens;
     }
     const savedModel = provider === "gemini" ? settings?.model?.trim() : "";
     const chatModelOverride = savedModel || process.env["GEMINI_CHAT_MODEL"]?.trim();
@@ -232,18 +241,23 @@ export const generateGeminiContent = createServerFn({ method: "POST" })
     const chain =
       data.purpose === "image"
         ? [model, model]
-        : [...new Set([
-            model,
-            "gemini-3.8-flash",
-            "gemini-3.7-flash",
-            "gemini-3.5-flash",
-            "gemini-3.5-flash-lite",
-            "gemini-3.1-flash-lite",
-            "gemini-flash-lite-latest",
-          ])];
+        : [
+            ...new Set([
+              model,
+              "gemini-3.8-flash",
+              "gemini-3.7-flash",
+              "gemini-3.5-flash",
+              "gemini-3.5-flash-lite",
+              "gemini-3.1-flash-lite",
+              "gemini-flash-lite-latest",
+            ]),
+          ];
     // تدوير المفاتيح: إذا نفدت حصة مفتاح أو كان غير صالح ننتقل للمفتاح التالي تلقائيًا.
     keyLoop: for (let k = 0; k < keys.length; k++) {
-      const ai = new GoogleGenAI({ apiKey: keys[k], httpOptions: { timeout: 45000, retryOptions: { attempts: 1 } } });
+      const ai = new GoogleGenAI({
+        apiKey: keys[k],
+        httpOptions: { timeout: 45000, retryOptions: { attempts: 1 } },
+      });
       for (let attempt = 0; attempt < chain.length; attempt++) {
         try {
           response = await ai.models.generateContent({
@@ -262,12 +276,20 @@ export const generateGeminiContent = createServerFn({ method: "POST" })
           if (kind === "quota" && /per.?day|PerDay|daily/i.test(msg)) continue;
           // نموذج غير متاح لهذا المفتاح → جرّب البديل التالي.
           if (/\b404\b|NOT_FOUND|no longer available|not found/i.test(msg)) continue;
-          if (!/503|UNAVAILABLE|429|RESOURCE_EXHAUSTED|high demand|timed? ?out|aborted|deadline/i.test(msg)) throw error;
+          if (
+            !/503|UNAVAILABLE|429|RESOURCE_EXHAUSTED|high demand|timed? ?out|aborted|deadline/i.test(
+              msg,
+            )
+          )
+            throw error;
           await new Promise((r) => setTimeout(r, 400));
         }
       }
     }
-    if (!response && classifyProviderError(null, String((lastError as Error)?.message ?? lastError)) === "auth") {
+    if (
+      !response &&
+      classifyProviderError(null, String((lastError as Error)?.message ?? lastError)) === "auth"
+    ) {
       await recordAiAlert("auth", "gemini");
       throw lastError;
     }
@@ -275,17 +297,21 @@ export const generateGeminiContent = createServerFn({ method: "POST" })
       const msg = String((lastError as Error)?.message ?? lastError);
       if (classifyProviderError(null, msg) === "quota") {
         await recordAiAlert("quota", "gemini");
-        throw new Error("429 RESOURCE_EXHAUSTED: نفدت حصة مفتاح الذكاء الاصطناعي. تم تنبيه مسؤول المتجر.", { cause: lastError });
+        throw new Error(
+          "429 RESOURCE_EXHAUSTED: نفدت حصة مفتاح الذكاء الاصطناعي. تم تنبيه مسؤول المتجر.",
+          { cause: lastError },
+        );
       }
-      throw new Error(
-        "خدمة الذكاء الاصطناعي مزدحمة حاليًا، يرجى المحاولة بعد لحظات.",
-        { cause: lastError },
-      );
+      throw new Error("خدمة الذكاء الاصطناعي مزدحمة حاليًا، يرجى المحاولة بعد لحظات.", {
+        cause: lastError,
+      });
     }
 
-    const serializable = JSON.parse(JSON.stringify({
-      text: response.text || "",
-      candidates: response.candidates ?? [],
-    })) as GeminiClientResponse;
+    const serializable = JSON.parse(
+      JSON.stringify({
+        text: response.text || "",
+        candidates: response.candidates ?? [],
+      }),
+    ) as GeminiClientResponse;
     return serializable;
   });

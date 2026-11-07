@@ -147,13 +147,11 @@ export function DriverPortalPage() {
           price: item.price,
           unit_label: item.unit_label,
         })),
-        delivery_step: (
-          o.status === "shipped"
-            ? "on_the_way"
-            : o.status === "delivered"
-              ? "delivered"
-              : "assigned"
-        ) as OrderDeliveryStep,
+        delivery_step: (o.status === "shipped"
+          ? "on_the_way"
+          : o.status === "delivered"
+            ? "delivered"
+            : "assigned") as OrderDeliveryStep,
       }));
 
       setOrders(parsedOrders);
@@ -280,7 +278,9 @@ export function DriverPortalPage() {
             })
             .eq("id", activeOrderId);
         }
-      } catch (_) {}
+      } catch (_) {
+        // The map may already be disposed during component unmount.
+      }
     }, 8000);
   };
 

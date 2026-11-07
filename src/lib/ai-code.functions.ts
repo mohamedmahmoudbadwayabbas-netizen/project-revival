@@ -27,7 +27,8 @@ const SYSTEM_PROMPT = `أنت مهندس واجهات أول (Staff Frontend Eng
 
 export const generateFileModification = createServerFn({ method: "POST" })
   .validator((data: AiCodeModificationPayload) => {
-    if (!data?.filePath || !data?.prompt?.trim()) throw new Error("filePath and prompt are required");
+    if (!data?.filePath || !data?.prompt?.trim())
+      throw new Error("filePath and prompt are required");
     return {
       filePath: String(data.filePath),
       prompt: String(data.prompt).slice(0, 4000),

@@ -137,7 +137,10 @@ export function BranchSelector({
       >
         <DropdownMenuLabel className="text-xs font-bold text-muted-foreground px-2 py-1.5 flex items-center justify-between">
           <span>اختيار الفرع للتحكم والمتابعة:</span>
-          <Badge variant="outline" className="text-[10px] font-mono border-emerald-500/30 text-emerald-600">
+          <Badge
+            variant="outline"
+            className="text-[10px] font-mono border-emerald-500/30 text-emerald-600"
+          >
             {branches.length} فروع متصلة
           </Badge>
         </DropdownMenuLabel>
@@ -170,9 +173,7 @@ export function BranchSelector({
                 مجمع
               </Badge>
             </div>
-            <p className="text-[10px] text-muted-foreground truncate">
-              {unifiedBranch.address}
-            </p>
+            <p className="text-[10px] text-muted-foreground truncate">{unifiedBranch.address}</p>
             <div className="flex items-center gap-2 pt-0.5 text-[10px]">
               <span className="text-emerald-600 font-medium">● {branches.length} فروع نشطة</span>
               <span className="text-muted-foreground">• {allStats.activeOrders} طلب جاري</span>
@@ -202,9 +203,7 @@ export function BranchSelector({
               <div
                 className={cn(
                   "grid h-7 w-7 shrink-0 place-items-center rounded-lg mt-0.5",
-                  isSelected
-                    ? "bg-emerald-500 text-white"
-                    : "bg-secondary text-muted-foreground",
+                  isSelected ? "bg-emerald-500 text-white" : "bg-secondary text-muted-foreground",
                 )}
               >
                 <MapPin className="h-4 w-4" />
@@ -222,7 +221,9 @@ export function BranchSelector({
                 <p className="text-[10px] text-muted-foreground truncate">{branch.address}</p>
                 <div className="flex items-center gap-2 pt-0.5 text-[10px]">
                   <span className="text-emerald-600 font-medium">● متاح للتوصيل</span>
-                  <span className="text-muted-foreground">• {branch.stats.activeOrders} طلب جاري</span>
+                  <span className="text-muted-foreground">
+                    • {branch.stats.activeOrders} طلب جاري
+                  </span>
                 </div>
               </div>
 

@@ -4,7 +4,12 @@ import { generateGeminiContent } from "@/lib/gemini.functions";
 import { normalizeProduct } from "@/lib/store-data-hooks";
 import { toolSearchProducts } from "@/services/aiTools/coreCatalogTools";
 import { AI_TOOL_SUITE } from "@/services/aiTools/toolDefinitions";
-import { extractProductPicks, recoverAnswerFromThinking, splitThinking, stripLeakedPlanning } from "./chat-parse";
+import {
+  extractProductPicks,
+  recoverAnswerFromThinking,
+  splitThinking,
+  stripLeakedPlanning,
+} from "./chat-parse";
 
 export interface NawatToolRun {
   query: string;
@@ -107,7 +112,10 @@ export async function runNawatTurn(
     if (thoughts.length) onThought?.(thoughts.join("\n\n"));
     const calls = parts.filter((p) => p?.functionCall?.name);
     if (!calls.length) {
-      finalText = parts.filter((p) => typeof p?.text === "string" && !p.thought).map((p) => p.text).join("");
+      finalText = parts
+        .filter((p) => typeof p?.text === "string" && !p.thought)
+        .map((p) => p.text)
+        .join("");
       if (!finalText && typeof res?.text === "string") finalText = res.text;
       break;
     }
@@ -117,9 +125,10 @@ export async function runNawatTurn(
       const args = (call.functionCall.args ?? {}) as { query?: string; limit?: number };
       const query = String(args.query ?? "").slice(0, 60);
       onActivity(`بيدوّر في المتجر على «${query || "كل المنتجات"}»`);
-      const out = call.functionCall.name === "searchProducts"
-        ? await toolSearchProducts(args)
-        : { tool: call.functionCall.name, ok: false, messageAr: "أداة غير متاحة", data: null };
+      const out =
+        call.functionCall.name === "searchProducts"
+          ? await toolSearchProducts(args)
+          : { tool: call.functionCall.name, ok: false, messageAr: "أداة غير متاحة", data: null };
       const rows: any[] = (out.data as { results?: any[] } | null)?.results ?? [];
       for (const row of rows) {
         const product = normalizeProduct(row);
@@ -152,13 +161,21 @@ export async function runNawatTurn(
   const products: NawatPick[] = [];
   for (const pick of picks) {
     const product = catalog.get(pick.id);
-    if (product && Number(product.stock_quantity) > 0) products.push({ product, quantity: pick.quantity, reason: pick.reason });
+    if (product && Number(product.stock_quantity) > 0)
+      products.push({ product, quantity: pick.quantity, reason: pick.reason });
   }
 
   return {
-    content: text || (products.length ? "دي اقتراحاتي من المتجر:" : "معلش، مقدرتش أكوّن رد. جرّب تكتب تاني."),
+    content:
+      text ||
+      (products.length ? "دي اقتراحاتي من المتجر:" : "معلش، مقدرتش أكوّن رد. جرّب تكتب تاني."),
     // التفكير الحقيقي كما كشفه النموذج نفسه (إن وُجد)، يُعرض ويُحفظ مع الرد.
-    thinking: thoughts.map((t) => t.trim()).filter(Boolean).join("\n\n").slice(0, 6000) || undefined,
+    thinking:
+      thoughts
+        .map((t) => t.trim())
+        .filter(Boolean)
+        .join("\n\n")
+        .slice(0, 6000) || undefined,
     tools: tools.length ? tools : undefined,
     products: products.length ? products : undefined,
   };

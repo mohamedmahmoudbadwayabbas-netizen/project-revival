@@ -3,11 +3,7 @@
    Routes the enabled tool suite and provides local NLP fallback routing
    ========================================================================= */
 
-import type {
-  AiToolName,
-  ToolExecutionContext,
-  ToolExecutionResult,
-} from "./types";
+import type { AiToolName, ToolExecutionContext, ToolExecutionResult } from "./types";
 import {
   toolGenerateProductImage,
   toolUploadBannerImage,
@@ -30,12 +26,7 @@ import {
   sendPushNotification,
   manageDeliveryZones,
 } from "./operationalTools";
-import {
-  getDirectoryTree,
-  getFileContentTool,
-  searchCodebase,
-  getAppErrors,
-} from "./devopsTools";
+import { getDirectoryTree, getFileContentTool, searchCodebase, getAppErrors } from "./devopsTools";
 import { AI_TOOL_SUITE } from "./toolDefinitions";
 import { executeAIAction } from "./aiActionGateway";
 
@@ -61,7 +52,8 @@ async function _executeAiToolInner(
         success: false,
         updatedFields: [],
         error: "Target project-ref mismatch. Expected gpoqacclpjadzbhevgal.",
-        messageAr: "فشل التحقق: تم إيقاف العملية لأن بيئة Supabase لا تتطابق مع المشروع المطلوب (gpoqacclpjadzbhevgal).",
+        messageAr:
+          "فشل التحقق: تم إيقاف العملية لأن بيئة Supabase لا تتطابق مع المشروع المطلوب (gpoqacclpjadzbhevgal).",
       };
     }
   }
@@ -181,11 +173,7 @@ async function _executeAiToolInner(
         );
       }
 
-      if (
-        tool === "manageProduct" ||
-        tool === "manageCategories" ||
-        tool === "bulkPriceUpdate"
-      ) {
+      if (tool === "manageProduct" || tool === "manageCategories" || tool === "bulkPriceUpdate") {
         window.dispatchEvent(
           new CustomEvent("smartstore:catalog_updated", {
             detail: { tool, data: result.data },
@@ -234,19 +222,28 @@ export async function executeAiTool(
   ctx?: any,
 ): Promise<ToolExecutionResult> {
   try {
-    const gatewayResult = await executeAIAction(tool, args, ctx, () => _executeAiToolInner(tool, args, ctx));
+    const gatewayResult = await executeAIAction(tool, args, ctx, () =>
+      _executeAiToolInner(tool, args, ctx),
+    );
     const result: ToolExecutionResult = {
       tool,
       ok: gatewayResult.success,
       success: gatewayResult.success,
-      messageAr: gatewayResult.error || (gatewayResult.status === "approval_required" ? "هذا الإجراء يتطلب موافقة." : "تم تنفيذ الإجراء والتحقق منه."),
+      messageAr:
+        gatewayResult.error ||
+        (gatewayResult.status === "approval_required"
+          ? "هذا الإجراء يتطلب موافقة."
+          : "تم تنفيذ الإجراء والتحقق منه."),
       error: gatewayResult.error,
       data: gatewayResult.data,
       verified: gatewayResult.verification?.verified,
       verificationDetails: gatewayResult.verification?.details,
       gatewayStatus: gatewayResult.status,
     };
-    const source = typeof window !== "undefined" && window.location.hostname.includes("lovable") ? "lovable" : "ai-studio";
+    const source =
+      typeof window !== "undefined" && window.location.hostname.includes("lovable")
+        ? "lovable"
+        : "ai-studio";
     result.source = source;
 
     // Check if result is explicitly missing success
@@ -255,12 +252,27 @@ export async function executeAiTool(
       result.ok = false;
     }
 
-    console.info(`[STRICT_VERIFICATION_LOG] ENV: ${source} | Tool: ${tool} | Args:`, args, `| Raw Response:`, result);
+    console.info(
+      `[STRICT_VERIFICATION_LOG] ENV: ${source} | Tool: ${tool} | Args:`,
+      args,
+      `| Raw Response:`,
+      result,
+    );
 
     return result;
   } catch (error: any) {
-    const source = typeof window !== "undefined" && window.location.hostname.includes("lovable") ? "lovable" : "ai-studio";
-    const errRes = { tool, ok: false, success: false, error: error.message, messageAr: `خطأ تنفيذي: ${error.message}`, source };
+    const source =
+      typeof window !== "undefined" && window.location.hostname.includes("lovable")
+        ? "lovable"
+        : "ai-studio";
+    const errRes = {
+      tool,
+      ok: false,
+      success: false,
+      error: error.message,
+      messageAr: `خطأ تنفيذي: ${error.message}`,
+      source,
+    };
     console.error(`[STRICT_VERIFICATION_LOG_ERROR] ENV: ${source} | Tool: ${tool} | Error:`, error);
     return errRes as ToolExecutionResult;
   }

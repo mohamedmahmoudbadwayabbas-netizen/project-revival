@@ -47,7 +47,9 @@ export async function modifyProjectFileWithGemini(
 
   const current = await readProjectFile(path);
   if (!current.ok || !current.data?.content) {
-    throw new Error(current.error || current.messageAr || "تعذر قراءة الملف الحقيقي من Project Engine.");
+    throw new Error(
+      current.error || current.messageAr || "تعذر قراءة الملف الحقيقي من Project Engine.",
+    );
   }
 
   const response = await generateFileModification({

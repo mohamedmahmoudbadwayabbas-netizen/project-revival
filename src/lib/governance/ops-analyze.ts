@@ -1,9 +1,18 @@
 /** Pure Operations + Delivery agent analysis (Blueprint Phase 3). Suggestions only — no side effects. */
 import type { ProposalDraft } from "./analyze";
 
-export type OpsProduct = { id: string; name: string; name_ar: string | null; stock_quantity: number; low_stock_threshold: number; is_active: boolean };
+export type OpsProduct = {
+  id: string;
+  name: string;
+  name_ar: string | null;
+  stock_quantity: number;
+  low_stock_threshold: number;
+  is_active: boolean;
+};
 export type OpsOrder = { id: string; status: string; created_at: string; updated_at: string };
-export type OpsDraft = Omit<ProposalDraft, "agent_type"> & { agent_type: "operations" | "delivery" };
+export type OpsDraft = Omit<ProposalDraft, "agent_type"> & {
+  agent_type: "operations" | "delivery";
+};
 
 export const STALE_PENDING_HOURS = 24;
 export const STALE_SHIPPED_HOURS = 6;
@@ -12,7 +21,11 @@ export const EXECUTABLE_OPS = ["deactivate_product"] as const;
 
 const hoursSince = (iso: string, now: number) => (now - new Date(iso).getTime()) / 36e5;
 
-export function analyzeOperations(products: OpsProduct[], orders: OpsOrder[], now = Date.now()): OpsDraft[] {
+export function analyzeOperations(
+  products: OpsProduct[],
+  orders: OpsOrder[],
+  now = Date.now(),
+): OpsDraft[] {
   const out: OpsDraft[] = [];
   for (const p of products) {
     if (!p.is_active) continue;
@@ -33,13 +46,20 @@ export function analyzeOperations(products: OpsProduct[], orders: OpsOrder[], no
         title: `مخزون منخفض: «${label}» (${p.stock_quantity} متبقي)`,
         root_cause: `الكمية أقل من حد التنبيه (${p.low_stock_threshold}). يُنصح بطلب كمية جديدة من المورد.`,
         risk_tier: "low",
-        raw_operation: { op: "restock_alert", product_id: p.id, product_name: label, stock: p.stock_quantity },
+        raw_operation: {
+          op: "restock_alert",
+          product_id: p.id,
+          product_name: label,
+          stock: p.stock_quantity,
+        },
         source_interaction_ids: [],
         dedupe_key: `low:${p.id}`,
       });
     }
   }
-  const stalePending = orders.filter((o) => o.status === "pending" && hoursSince(o.created_at, now) >= STALE_PENDING_HOURS);
+  const stalePending = orders.filter(
+    (o) => o.status === "pending" && hoursSince(o.created_at, now) >= STALE_PENDING_HOURS,
+  );
   if (stalePending.length) {
     out.push({
       agent_type: "operations",
@@ -48,10 +68,15 @@ export function analyzeOperations(products: OpsProduct[], orders: OpsOrder[], no
       risk_tier: "medium",
       raw_operation: { op: "review_stale_orders", order_ids: stalePending.map((o) => o.id) },
       source_interaction_ids: [],
-      dedupe_key: `stale:${stalePending.map((o) => o.id).sort().join(",")}`,
+      dedupe_key: `stale:${stalePending
+        .map((o) => o.id)
+        .sort()
+        .join(",")}`,
     });
   }
-  const lateShipped = orders.filter((o) => o.status === "shipped" && hoursSince(o.updated_at, now) >= STALE_SHIPPED_HOURS);
+  const lateShipped = orders.filter(
+    (o) => o.status === "shipped" && hoursSince(o.updated_at, now) >= STALE_SHIPPED_HOURS,
+  );
   if (lateShipped.length) {
     out.push({
       agent_type: "delivery",
@@ -60,7 +85,10 @@ export function analyzeOperations(products: OpsProduct[], orders: OpsOrder[], no
       risk_tier: "medium",
       raw_operation: { op: "follow_up_delivery", order_ids: lateShipped.map((o) => o.id) },
       source_interaction_ids: [],
-      dedupe_key: `late:${lateShipped.map((o) => o.id).sort().join(",")}`,
+      dedupe_key: `late:${lateShipped
+        .map((o) => o.id)
+        .sort()
+        .join(",")}`,
     });
   }
   return out;

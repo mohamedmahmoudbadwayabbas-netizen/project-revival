@@ -173,7 +173,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signUp = async (emailInput: string, password: string, fullName?: string, phone?: string) => {
+  const signUp = async (
+    emailInput: string,
+    password: string,
+    fullName?: string,
+    phone?: string,
+  ) => {
     setLoading(true);
     try {
       const email = emailInput.trim().toLowerCase();
@@ -246,24 +251,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const value = useMemo<AuthCtx>(() => ({
-    user: currentUser,
-    session: currentSession,
-    role,
-    isAdmin,
-    isStaff,
-    isCustomer,
-    isRootAdmin,
-    loading,
-    signIn,
-    signUp,
-    signInWithPhone,
-    signUpWithPhone,
-    signInWithGoogle,
-    signOut,
-    claimAdmin: async () => false,
-    refreshRole,
-  }), [currentUser, currentSession, role, isAdmin, isStaff, isCustomer, isRootAdmin, loading]);
+  const value = useMemo<AuthCtx>(
+    () => ({
+      user: currentUser,
+      session: currentSession,
+      role,
+      isAdmin,
+      isStaff,
+      isCustomer,
+      isRootAdmin,
+      loading,
+      signIn,
+      signUp,
+      signInWithPhone,
+      signUpWithPhone,
+      signInWithGoogle,
+      signOut,
+      claimAdmin: async () => false,
+      refreshRole,
+    }),
+    [currentUser, currentSession, role, isAdmin, isStaff, isCustomer, isRootAdmin, loading],
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

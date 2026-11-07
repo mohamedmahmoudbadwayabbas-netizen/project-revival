@@ -19,7 +19,6 @@ export function HeroCarousel() {
   // Hero banners are no longer a standalone table in the live schema.
   // The storefront therefore uses the theme/store-settings fallback below.
 
-
   const fallbackImages = theme.hero_grid_images.length > 0 ? theme.hero_grid_images : [""];
   const slides: Banner[] =
     banners.length > 0
@@ -28,7 +27,9 @@ export function HeroCarousel() {
           id: `fb-${i}`,
           image_url: url || null,
           title: theme.hero_title || "الوادي الأخضر — سوبرماركت عائلتك 🛒",
-          subtitle: theme.hero_subtitle || "أجود السلع التموينية والبقالة واللحوم والألبان بأفضل الأسعار وتوصيل فوري ⚡",
+          subtitle:
+            theme.hero_subtitle ||
+            "أجود السلع التموينية والبقالة واللحوم والألبان بأفضل الأسعار وتوصيل فوري ⚡",
           cta_text: theme.hero_cta_text || "تسوّق الآن 🛒",
           link_url: "#all-products",
         }));

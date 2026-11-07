@@ -116,7 +116,9 @@ export function SmartProductCopywriterModal({
         originSource: result.originSource,
         nutritionalInfo: result.nutritionalInfo,
       });
-      toast.success("تم إدراج كافة بيانات الذكاء الاصطناعي (الوصف، نصيحة الشيف، الخصائص، التخزين، المنشأ، القيمة الغذائية) بنجاح! ✨");
+      toast.success(
+        "تم إدراج كافة بيانات الذكاء الاصطناعي (الوصف، نصيحة الشيف، الخصائص، التخزين، المنشأ، القيمة الغذائية) بنجاح! ✨",
+      );
     }
     onOpenChange(false);
   };
@@ -137,7 +139,8 @@ export function SmartProductCopywriterModal({
                 كاتب تفاصيل المنتجات والذكاء الاصطناعي الشامل
               </DialogTitle>
               <p className="text-xs text-muted-foreground font-medium mt-0.5">
-                توليد نصيحة الشيف، الوصف التسويقي، الخصائص، طريقة التخزين، المصدر، والقيمة الغذائية بنقرة واحدة
+                توليد نصيحة الشيف، الوصف التسويقي، الخصائص، طريقة التخزين، المصدر، والقيمة الغذائية
+                بنقرة واحدة
               </p>
             </div>
           </div>
@@ -248,7 +251,9 @@ export function SmartProductCopywriterModal({
                     <Thermometer className="h-3.5 w-3.5 text-blue-600" />
                     <span>4. طريقة الحفظ والتخزين:</span>
                   </span>
-                  <p className="text-xs font-medium leading-relaxed">{result.storageInstructions}</p>
+                  <p className="text-xs font-medium leading-relaxed">
+                    {result.storageInstructions}
+                  </p>
                 </div>
               )}
 
@@ -273,11 +278,15 @@ export function SmartProductCopywriterModal({
                   <div className="grid grid-cols-4 gap-2 text-center text-xs">
                     <div className="rounded-xl border bg-amber-500/10 border-amber-500/20 p-2">
                       <div className="text-[10px] text-muted-foreground font-bold">السعرات</div>
-                      <div className="font-black text-amber-600">{result.nutritionalInfo.calories}</div>
+                      <div className="font-black text-amber-600">
+                        {result.nutritionalInfo.calories}
+                      </div>
                     </div>
                     <div className="rounded-xl border bg-emerald-500/10 border-emerald-500/20 p-2">
                       <div className="text-[10px] text-muted-foreground font-bold">البروتين</div>
-                      <div className="font-black text-emerald-600">{result.nutritionalInfo.protein}</div>
+                      <div className="font-black text-emerald-600">
+                        {result.nutritionalInfo.protein}
+                      </div>
                     </div>
                     <div className="rounded-xl border bg-blue-500/10 border-blue-500/20 p-2">
                       <div className="text-[10px] text-muted-foreground font-bold">كاربوهيدرات</div>
@@ -285,7 +294,9 @@ export function SmartProductCopywriterModal({
                     </div>
                     <div className="rounded-xl border bg-purple-500/10 border-purple-500/20 p-2">
                       <div className="text-[10px] text-muted-foreground font-bold">الألياف</div>
-                      <div className="font-black text-purple-600">{result.nutritionalInfo.fiber}</div>
+                      <div className="font-black text-purple-600">
+                        {result.nutritionalInfo.fiber}
+                      </div>
                     </div>
                   </div>
                 </div>

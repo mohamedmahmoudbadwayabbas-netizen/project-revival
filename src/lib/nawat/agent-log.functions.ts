@@ -5,7 +5,9 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 const interactionSchema = z.object({
   threadId: z.string().max(100).optional(),
   inputSummary: z.string().max(500),
-  tools: z.array(z.object({ query: z.string().max(80), ok: z.boolean(), count: z.number().int().min(0) })).max(20),
+  tools: z
+    .array(z.object({ query: z.string().max(80), ok: z.boolean(), count: z.number().int().min(0) }))
+    .max(20),
   outcome: z.enum(["success", "no_results", "error"]),
 });
 
@@ -51,7 +53,10 @@ export const submitNawatFeedback = createServerFn({ method: "POST" })
       user_id: context.userId,
       signal_type: data.reasons?.length || data.comment ? "detailed_rating" : "explicit_rating",
       rating: data.rating,
-      comment: [data.reasons?.length ? `[${data.reasons.join("، ")}]` : "", data.comment ?? ""].filter(Boolean).join(" ") || null,
+      comment:
+        [data.reasons?.length ? `[${data.reasons.join("، ")}]` : "", data.comment ?? ""]
+          .filter(Boolean)
+          .join(" ") || null,
     } as never);
     if (error) throw new Error("تعذر حفظ التقييم");
     return { ok: true };

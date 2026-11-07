@@ -15,7 +15,11 @@ const enumStr = (description: string, values: string[]) => ({
 });
 
 const DISABLED_PROJECT_MUTATIONS = new Set([
-  "writeNewFile", "updateFileAST", "deleteFile", "gitCommitAndPush", "gitRollbackCommit",
+  "writeNewFile",
+  "updateFileAST",
+  "deleteFile",
+  "gitCommitAndPush",
+  "gitRollbackCommit",
 ]);
 
 export const AI_TOOL_GROUP_LABELS: Record<AiToolGroup, { labelAr: string; icon: string }> = {
@@ -39,7 +43,8 @@ const ALL_AI_TOOL_SUITE: AiToolDefinition[] = [
     mutatesState: true,
     declaration: {
       name: "generateProductImage",
-      description: "Generate a professional studio photo for a product and attach it to Supabase products table.",
+      description:
+        "Generate a professional studio photo for a product and attach it to Supabase products table.",
       parameters: {
         type: "object",
         properties: {
@@ -84,7 +89,11 @@ const ALL_AI_TOOL_SUITE: AiToolDefinition[] = [
       parameters: {
         type: "object",
         properties: {
-          action: enumStr("The mutation type to perform on the product.", ["create", "update", "delete"]),
+          action: enumStr("The mutation type to perform on the product.", [
+            "create",
+            "update",
+            "delete",
+          ]),
           data: {
             type: "object",
             description:
@@ -107,7 +116,11 @@ const ALL_AI_TOOL_SUITE: AiToolDefinition[] = [
       parameters: {
         type: "object",
         properties: {
-          action: enumStr("The mutation type to perform on the category.", ["create", "update", "delete"]),
+          action: enumStr("The mutation type to perform on the category.", [
+            "create",
+            "update",
+            "delete",
+          ]),
           data: {
             type: "object",
             description: "Category fields: id (uuid), name, name_ar, slug, image_url",
@@ -125,7 +138,8 @@ const ALL_AI_TOOL_SUITE: AiToolDefinition[] = [
     mutatesState: true,
     declaration: {
       name: "bulkPriceUpdate",
-      description: "Increase or decrease all product prices in a category by a percentage in Supabase products table.",
+      description:
+        "Increase or decrease all product prices in a category by a percentage in Supabase products table.",
       parameters: {
         type: "object",
         properties: {
@@ -140,16 +154,19 @@ const ALL_AI_TOOL_SUITE: AiToolDefinition[] = [
     name: "searchProducts",
     group: "catalog",
     labelAr: "بحث في المنتجات",
-    descriptionAr: "البحث عن منتج أو أكثر بالاسم أو القسم في جدول products والتحقق من توفره وسعره ومخزونه الحالي",
+    descriptionAr:
+      "البحث عن منتج أو أكثر بالاسم أو القسم في جدول products والتحقق من توفره وسعره ومخزونه الحالي",
     mutatesState: false,
     declaration: {
       name: "searchProducts",
       description:
-        "Read-only search against the Supabase products table by name and/or category. Use this BEFORE any manageProduct create call to check whether a matching product already exists (avoid duplicate inserts), and to answer any availability/price/stock question. This tool never modifies data. To list the whole catalog or count products, pass query \"*\" (the result includes `total`).",
+        'Read-only search against the Supabase products table by name and/or category. Use this BEFORE any manageProduct create call to check whether a matching product already exists (avoid duplicate inserts), and to answer any availability/price/stock question. This tool never modifies data. To list the whole catalog or count products, pass query "*" (the result includes `total`).',
       parameters: {
         type: "object",
         properties: {
-          query: str("Arabic or English search term matched against the product name, e.g. جبنة بيضاء"),
+          query: str(
+            "Arabic or English search term matched against the product name, e.g. جبنة بيضاء",
+          ),
           categoryId: str("Optional category uuid to scope the search to a single category"),
           limit: num("Maximum number of results to return (default: 8, max: 20)"),
         },
@@ -161,7 +178,8 @@ const ALL_AI_TOOL_SUITE: AiToolDefinition[] = [
     name: "getCategories",
     group: "catalog",
     labelAr: "عرض الأقسام",
-    descriptionAr: "استرجاع قائمة أقسام المتجر الحالية من جدول categories للتحقق من وجود قسم قبل إنشائه",
+    descriptionAr:
+      "استرجاع قائمة أقسام المتجر الحالية من جدول categories للتحقق من وجود قسم قبل إنشائه",
     mutatesState: false,
     declaration: {
       name: "getCategories",
@@ -170,7 +188,9 @@ const ALL_AI_TOOL_SUITE: AiToolDefinition[] = [
       parameters: {
         type: "object",
         properties: {
-          nameQuery: str("Optional Arabic/English partial category name to filter by, e.g. الأعشاب"),
+          nameQuery: str(
+            "Optional Arabic/English partial category name to filter by, e.g. الأعشاب",
+          ),
         },
         required: [],
       },
@@ -214,7 +234,9 @@ const ALL_AI_TOOL_SUITE: AiToolDefinition[] = [
           primary: str("Primary color hex, e.g. #2F5D4B"),
           accent: str("Accent color hex, e.g. #B6502E"),
           mode: str("light | dark"),
-          palette: str("Optional palette key: emerald | dark_green | amber_warm | royal_blue | clean_slate"),
+          palette: str(
+            "Optional palette key: emerald | dark_green | amber_warm | royal_blue | clean_slate",
+          ),
         },
         required: ["primary"],
       },
@@ -230,7 +252,8 @@ const ALL_AI_TOOL_SUITE: AiToolDefinition[] = [
     mutatesState: true,
     declaration: {
       name: "createDiscountBundle",
-      description: "Create a discount coupon in Supabase coupons and surface it in storefront flash sale timer.",
+      description:
+        "Create a discount coupon in Supabase coupons and surface it in storefront flash sale timer.",
       parameters: {
         type: "object",
         properties: {
@@ -249,11 +272,13 @@ const ALL_AI_TOOL_SUITE: AiToolDefinition[] = [
     name: "sendAbandonedCartRecovery",
     group: "marketing",
     labelAr: "استرداد سلة متروكة",
-    descriptionAr: "التحقق من سلة متروكة ومنتجاتها وبيانات العميل في Supabase ثم إعداد مسودة واتساب محايدة، دون اختراع كوبون أو موعد تسليم",
+    descriptionAr:
+      "التحقق من سلة متروكة ومنتجاتها وبيانات العميل في Supabase ثم إعداد مسودة واتساب محايدة، دون اختراع كوبون أو موعد تسليم",
     mutatesState: false,
     declaration: {
       name: "sendAbandonedCartRecovery",
-      description: "Read and verify the abandoned cart, customer, and active products from Supabase before opening a neutral WhatsApp draft. Do not invent discounts or delivery promises.",
+      description:
+        "Read and verify the abandoned cart, customer, and active products from Supabase before opening a neutral WhatsApp draft. Do not invent discounts or delivery promises.",
       parameters: {
         type: "object",
         properties: {
@@ -276,7 +301,8 @@ const ALL_AI_TOOL_SUITE: AiToolDefinition[] = [
     mutatesState: false,
     declaration: {
       name: "rollbackLastAction",
-      description: "Restore the store and database rows to the snapshot captured before the last executed tool.",
+      description:
+        "Restore the store and database rows to the snapshot captured before the last executed tool.",
       parameters: { type: "object", properties: {}, required: [] },
     },
   },
@@ -290,11 +316,14 @@ const ALL_AI_TOOL_SUITE: AiToolDefinition[] = [
     mutatesState: true,
     declaration: {
       name: "executeCustomCSS",
-      description: "Injects and applies dynamic CSS stylesheet rules to document head for instant visual styling overrides.",
+      description:
+        "Injects and applies dynamic CSS stylesheet rules to document head for instant visual styling overrides.",
       parameters: {
         type: "object",
         properties: {
-          cssRules: str("Valid CSS stylesheet rules or class styling overrides, e.g. ':root { --primary-glow: #10b981; }'"),
+          cssRules: str(
+            "Valid CSS stylesheet rules or class styling overrides, e.g. ':root { --primary-glow: #10b981; }'",
+          ),
         },
         required: ["cssRules"],
       },
@@ -308,11 +337,14 @@ const ALL_AI_TOOL_SUITE: AiToolDefinition[] = [
     mutatesState: true,
     declaration: {
       name: "updateRawJsonMetadata",
-      description: "Writes or updates dynamic custom settings directly into Supabase store_settings table.",
+      description:
+        "Writes or updates dynamic custom settings directly into Supabase store_settings table.",
       parameters: {
         type: "object",
         properties: {
-          key: str("Existing store_settings key name only (allowed: site_name, hero_title, hero_subtitle, whatsapp_number, announcement_text)"),
+          key: str(
+            "Existing store_settings key name only (allowed: site_name, hero_title, hero_subtitle, whatsapp_number, announcement_text)",
+          ),
           value: {
             type: "object",
             description: "Arbitrary JSON payload or primitive value to persist in store_settings",
@@ -328,11 +360,13 @@ const ALL_AI_TOOL_SUITE: AiToolDefinition[] = [
     name: "manageUsersAndRoles",
     group: "operations",
     labelAr: "إدارة المستخدمين والصلاحيات",
-    descriptionAr: "تعديل أدوار وصلاحيات المستخدمين وتحديث بياناتهم في Supabase (user_roles و profiles)",
+    descriptionAr:
+      "تعديل أدوار وصلاحيات المستخدمين وتحديث بياناتهم في Supabase (user_roles و profiles)",
     mutatesState: true,
     declaration: {
       name: "manageUsersAndRoles",
-      description: "Updates user roles, permissions, or profile details in Supabase user_roles and profiles tables.",
+      description:
+        "Updates user roles, permissions, or profile details in Supabase user_roles and profiles tables.",
       parameters: {
         type: "object",
         properties: {
@@ -349,15 +383,19 @@ const ALL_AI_TOOL_SUITE: AiToolDefinition[] = [
     name: "exportReportsAndAnalytics",
     group: "operations",
     labelAr: "تصدير التقارير والتحليلات",
-    descriptionAr: "استعلام الطلبات والمنتجات وحساب المبيعات وإرجاع تقرير تحليلي قابل للتحميل أو العرض",
+    descriptionAr:
+      "استعلام الطلبات والمنتجات وحساب المبيعات وإرجاع تقرير تحليلي قابل للتحميل أو العرض",
     mutatesState: false,
     declaration: {
       name: "exportReportsAndAnalytics",
-      description: "Queries orders and products to calculate total revenue, top selling items, and returns downloadable structured analytics data.",
+      description:
+        "Queries orders and products to calculate total revenue, top selling items, and returns downloadable structured analytics data.",
       parameters: {
         type: "object",
         properties: {
-          timeframe: str("Timeframe for report: today | last_7_days | last_30_days | this_month | all_time"),
+          timeframe: str(
+            "Timeframe for report: today | last_7_days | last_30_days | this_month | all_time",
+          ),
           format: str("Format: json | csv | summary_card"),
           includeTopProducts: bool("Whether to include granular top products breakdown"),
         },
@@ -373,13 +411,16 @@ const ALL_AI_TOOL_SUITE: AiToolDefinition[] = [
     mutatesState: true,
     declaration: {
       name: "sendPushNotification",
-      description: "Triggers and broadcasts a real-time web push notification / announcement alert to store users.",
+      description:
+        "Triggers and broadcasts a real-time web push notification / announcement alert to store users.",
       parameters: {
         type: "object",
         properties: {
           title: str("Notification title in Arabic, e.g. عروض الساعات الذهبية ⚡"),
           message: str("Notification body message in Arabic"),
-          targetAudience: str("Target audience: all | active_users | cart_abandoners | vip_customers"),
+          targetAudience: str(
+            "Target audience: all | active_users | cart_abandoners | vip_customers",
+          ),
           actionUrl: str("Optional link URL to redirect user when clicked"),
         },
         required: ["title", "message", "targetAudience"],
@@ -390,11 +431,13 @@ const ALL_AI_TOOL_SUITE: AiToolDefinition[] = [
     name: "manageDeliveryZones",
     group: "operations",
     labelAr: "إدارة مناطق التوصيل والأسعار",
-    descriptionAr: "إضافة أو تعديل رسوم وشروط الشحن لمناطق التوصيل في Supabase (جدول delivery_zones)",
+    descriptionAr:
+      "إضافة أو تعديل رسوم وشروط الشحن لمناطق التوصيل في Supabase (جدول delivery_zones)",
     mutatesState: true,
     declaration: {
       name: "manageDeliveryZones",
-      description: "Creates, updates, or adjusts shipping fees, minimum order amounts, and delivery SLA for zones in Supabase delivery_zones table.",
+      description:
+        "Creates, updates, or adjusts shipping fees, minimum order amounts, and delivery SLA for zones in Supabase delivery_zones table.",
       parameters: {
         type: "object",
         properties: {
@@ -415,11 +458,13 @@ const ALL_AI_TOOL_SUITE: AiToolDefinition[] = [
     name: "getDirectoryTree",
     group: "devops",
     labelAr: "فحص شجرة مجلدات وملفات المشروع",
-    descriptionAr: "قراءة شجرة المشروع الحقيقية عبر Project Engine server-side؛ لا تعتمد على LocalStorage أو registry وهمي",
+    descriptionAr:
+      "قراءة شجرة المشروع الحقيقية عبر Project Engine server-side؛ لا تعتمد على LocalStorage أو registry وهمي",
     mutatesState: false,
     declaration: {
       name: "getDirectoryTree",
-      description: "Reads the real project directory structure through the server-side Project Engine. Never treats a client registry as the filesystem.",
+      description:
+        "Reads the real project directory structure through the server-side Project Engine. Never treats a client registry as the filesystem.",
       parameters: {
         type: "object",
         properties: {
@@ -434,15 +479,19 @@ const ALL_AI_TOOL_SUITE: AiToolDefinition[] = [
     name: "getFileContent",
     group: "devops",
     labelAr: "قراءة محتوى ملف برمجي",
-    descriptionAr: "قراءة المحتوى الحقيقي لملف عبر Project Engine؛ إذا لم يوجد مزود حقيقي ترجع NOT_CONFIGURED ولا تختلق محتوى",
+    descriptionAr:
+      "قراءة المحتوى الحقيقي لملف عبر Project Engine؛ إذا لم يوجد مزود حقيقي ترجع NOT_CONFIGURED ولا تختلق محتوى",
     mutatesState: false,
     declaration: {
       name: "getFileContent",
-      description: "Reads real source content through the server-side Project Engine. It never fabricates source when the provider is unavailable.",
+      description:
+        "Reads real source content through the server-side Project Engine. It never fabricates source when the provider is unavailable.",
       parameters: {
         type: "object",
         properties: {
-          filePath: str("Target file path (e.g. /src/routes/cart.tsx, /src/components/storefront/Header.tsx)"),
+          filePath: str(
+            "Target file path (e.g. /src/routes/cart.tsx, /src/components/storefront/Header.tsx)",
+          ),
         },
         required: ["filePath"],
       },
@@ -456,12 +505,15 @@ const ALL_AI_TOOL_SUITE: AiToolDefinition[] = [
     mutatesState: false,
     declaration: {
       name: "searchCodebase",
-      description: "Searches the real project codebase through the server-side Project Engine; no LocalStorage registry fallback.",
+      description:
+        "Searches the real project codebase through the server-side Project Engine; no LocalStorage registry fallback.",
       parameters: {
         type: "object",
         properties: {
           query: str("Search term, function name, component name, or code pattern"),
-          category: str("Optional category filter: routes | components | services | lib | types | styles | all"),
+          category: str(
+            "Optional category filter: routes | components | services | lib | types | styles | all",
+          ),
         },
         required: ["query"],
       },
@@ -475,7 +527,8 @@ const ALL_AI_TOOL_SUITE: AiToolDefinition[] = [
     mutatesState: false,
     declaration: {
       name: "getAppErrors",
-      description: "Retrieves real runtime diagnostics through the configured Project Engine provider; never fabricates health or error logs.",
+      description:
+        "Retrieves real runtime diagnostics through the configured Project Engine provider; never fabricates health or error logs.",
       parameters: {
         type: "object",
         properties: {
@@ -493,7 +546,8 @@ const ALL_AI_TOOL_SUITE: AiToolDefinition[] = [
     mutatesState: true,
     declaration: {
       name: "writeNewFile",
-      description: "Creates a real project change set. Applying it requires explicit admin approval and a configured server-side provider.",
+      description:
+        "Creates a real project change set. Applying it requires explicit admin approval and a configured server-side provider.",
       parameters: {
         type: "object",
         properties: {
@@ -513,14 +567,16 @@ const ALL_AI_TOOL_SUITE: AiToolDefinition[] = [
     mutatesState: true,
     declaration: {
       name: "updateFileAST",
-      description: "Prepares a real project file change set. No client-side filesystem or fake success is allowed.",
+      description:
+        "Prepares a real project file change set. No client-side filesystem or fake success is allowed.",
       parameters: {
         type: "object",
         properties: {
           filePath: str("Target file path, e.g. /src/routes/index.tsx"),
           changes: {
             type: "object",
-            description: "Modifications object with searchPattern & replacement, or targetNode & newCode",
+            description:
+              "Modifications object with searchPattern & replacement, or targetNode & newCode",
           },
         },
         required: ["filePath", "changes"],
@@ -535,7 +591,8 @@ const ALL_AI_TOOL_SUITE: AiToolDefinition[] = [
     mutatesState: true,
     declaration: {
       name: "deleteFile",
-      description: "Prepares a real destructive file deletion. Final application requires explicit admin approval through Project Engine.",
+      description:
+        "Prepares a real destructive file deletion. Final application requires explicit admin approval through Project Engine.",
       parameters: {
         type: "object",
         properties: {
@@ -549,15 +606,19 @@ const ALL_AI_TOOL_SUITE: AiToolDefinition[] = [
     name: "gitCommitAndPush",
     group: "devops",
     labelAr: "حفظ ومزامنة التعديلات (Git Commit & Push)",
-    descriptionAr: "Git integration target فقط؛ لا يتم إنشاء commit أو push دون مزود Git حقيقي وموافقة مدير",
+    descriptionAr:
+      "Git integration target فقط؛ لا يتم إنشاء commit أو push دون مزود Git حقيقي وموافقة مدير",
     mutatesState: true,
     declaration: {
       name: "gitCommitAndPush",
-      description: "Uses a configured real Git provider only. Never invents commit hashes or claims a push without provider confirmation.",
+      description:
+        "Uses a configured real Git provider only. Never invents commit hashes or claims a push without provider confirmation.",
       parameters: {
         type: "object",
         properties: {
-          commitMessage: str("Conventional commit message in English or Arabic, e.g. 'feat: update checkout delivery zones'"),
+          commitMessage: str(
+            "Conventional commit message in English or Arabic, e.g. 'feat: update checkout delivery zones'",
+          ),
         },
         required: ["commitMessage"],
       },
@@ -571,7 +632,8 @@ const ALL_AI_TOOL_SUITE: AiToolDefinition[] = [
     mutatesState: true,
     declaration: {
       name: "gitRollbackCommit",
-      description: "Reverts through a configured real Git provider only; never simulates a rollback.",
+      description:
+        "Reverts through a configured real Git provider only; never simulates a rollback.",
       parameters: {
         type: "object",
         properties: {
@@ -583,7 +645,9 @@ const ALL_AI_TOOL_SUITE: AiToolDefinition[] = [
   },
 ];
 
-export const AI_TOOL_SUITE = ALL_AI_TOOL_SUITE.filter((tool) => !DISABLED_PROJECT_MUTATIONS.has(tool.name));
+export const AI_TOOL_SUITE = ALL_AI_TOOL_SUITE.filter(
+  (tool) => !DISABLED_PROJECT_MUTATIONS.has(tool.name),
+);
 
 export const GEMINI_TOOL_DECLARATIONS = AI_TOOL_SUITE.map((t) => t.declaration);
 

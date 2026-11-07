@@ -20,7 +20,14 @@ export async function validateCouponCode(
   _isFirstOrder = false,
 ): Promise<CouponValidationResult> {
   const cleanCode = code.trim().toUpperCase();
-  if (!cleanCode) return { isValid: false, discountAmount: 0, discountType: "percent", discountValue: 0, message: "يرجى إدخال كود الخصم أولاً" };
+  if (!cleanCode)
+    return {
+      isValid: false,
+      discountAmount: 0,
+      discountType: "percent",
+      discountValue: 0,
+      message: "يرجى إدخال كود الخصم أولاً",
+    };
 
   try {
     const { data, error } = await supabase.rpc("validate_coupon", {
@@ -35,17 +42,47 @@ export async function validateCouponCode(
         MIN_ORDER: "الحد الأدنى لتفعيل هذا الكوبون غير مستوفى",
       };
       const key = Object.keys(messages).find((k) => error.message?.includes(k));
-      return { isValid: false, discountAmount: 0, discountType: "percent", discountValue: 0, message: key ? messages[key] : `تعذر التحقق من الكوبون: ${error.message}` };
+      return {
+        isValid: false,
+        discountAmount: 0,
+        discountType: "percent",
+        discountValue: 0,
+        message: key ? messages[key] : `تعذر التحقق من الكوبون: ${error.message}`,
+      };
     }
 
     const coupon = data?.[0];
-    if (!coupon) return { isValid: false, discountAmount: 0, discountType: "percent", discountValue: 0, message: "كود الخصم غير متاح" };
+    if (!coupon)
+      return {
+        isValid: false,
+        discountAmount: 0,
+        discountType: "percent",
+        discountValue: 0,
+        message: "كود الخصم غير متاح",
+      };
 
-    const discountType: "percent" | "fixed" = coupon.discount_type === "percentage" ? "percent" : "fixed";
+    const discountType: "percent" | "fixed" =
+      coupon.discount_type === "percentage" ? "percent" : "fixed";
     const discountValue = Number(coupon.discount_value || 0);
-    const discountAmount = discountType === "percent" ? Math.min(Number(cartTotal), Number((cartTotal * discountValue / 100).toFixed(2))) : Math.min(discountValue, Number(cartTotal));
-    return { isValid: true, discountAmount, discountType, discountValue, message: `تم تفعيل خصم بقيمة ${discountAmount.toFixed(2)} ج.م بنجاح 🎉`, code: coupon.code };
+    const discountAmount =
+      discountType === "percent"
+        ? Math.min(Number(cartTotal), Number(((cartTotal * discountValue) / 100).toFixed(2)))
+        : Math.min(discountValue, Number(cartTotal));
+    return {
+      isValid: true,
+      discountAmount,
+      discountType,
+      discountValue,
+      message: `تم تفعيل خصم بقيمة ${discountAmount.toFixed(2)} ج.م بنجاح 🎉`,
+      code: coupon.code,
+    };
   } catch (err: any) {
-    return { isValid: false, discountAmount: 0, discountType: "percent", discountValue: 0, message: `حدث خلل أثناء التحقق: ${err.message}` };
+    return {
+      isValid: false,
+      discountAmount: 0,
+      discountType: "percent",
+      discountValue: 0,
+      message: `حدث خلل أثناء التحقق: ${err.message}`,
+    };
   }
 }

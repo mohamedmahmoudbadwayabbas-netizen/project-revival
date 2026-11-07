@@ -20,7 +20,10 @@ export function useFavorites() {
     enabled: enabled && Boolean(userId),
     staleTime: 60_000,
     queryFn: async (): Promise<string[]> => {
-      const { data, error } = await supabase.from("wishlists").select("product_id").eq("user_id", userId as string);
+      const { data, error } = await supabase
+        .from("wishlists")
+        .select("product_id")
+        .eq("user_id", userId as string);
       if (error) throw error;
       return (data ?? []).map((r: any) => r.product_id as string).filter(Boolean);
     },
@@ -39,10 +42,22 @@ export function useFavorites() {
       const wasFav = ids.has(productId);
       const previous = qc.getQueryData<string[]>(key) ?? [];
       // تحديث فوري (optimistic) ثم تراجع عند الفشل
-      qc.setQueryData<string[]>(key, wasFav ? previous.filter((id) => id !== productId) : [...previous, productId]);
+      qc.setQueryData<string[]>(
+        key,
+        wasFav ? previous.filter((id) => id !== productId) : [...previous, productId],
+      );
       const { error } = wasFav
-        ? await supabase.from("wishlists").delete().eq("user_id", userId).eq("product_id", productId)
-        : await supabase.from("wishlists").upsert({ user_id: userId, product_id: productId }, { onConflict: "user_id,product_id" });
+        ? await supabase
+            .from("wishlists")
+            .delete()
+            .eq("user_id", userId)
+            .eq("product_id", productId)
+        : await supabase
+            .from("wishlists")
+            .upsert(
+              { user_id: userId, product_id: productId },
+              { onConflict: "user_id,product_id" },
+            );
       if (error) {
         qc.setQueryData<string[]>(key, previous);
         toast.error("تعذر تحديث المفضلة، حاول مرة أخرى");
@@ -54,7 +69,13 @@ export function useFavorites() {
     [userId, ids, qc],
   );
 
-  return { enabled, isFavorite: (productId: string) => ids.has(productId), toggle, ids, signedIn: Boolean(userId) };
+  return {
+    enabled,
+    isFavorite: (productId: string) => ids.has(productId),
+    toggle,
+    ids,
+    signedIn: Boolean(userId),
+  };
 }
 
 export function useFavoriteProducts() {

@@ -10,7 +10,10 @@ export const Route = createFileRoute("/assistant")({
   head: () => ({
     meta: [
       { title: "نواة — مساعد التسوّق من الوادي الأخضر" },
-      { name: "description", content: "دردش مع نواة واحصل على اقتراحات مشتريات حقيقية من سوبرماركت الوادي الأخضر." },
+      {
+        name: "description",
+        content: "دردش مع نواة واحصل على اقتراحات مشتريات حقيقية من سوبرماركت الوادي الأخضر.",
+      },
       { property: "og:title", content: "نواة — مساعد التسوّق من الوادي الأخضر" },
       { property: "og:description", content: "محادثات محفوظة واقتراحات من منتجات متوفرة فعلًا." },
       { property: "og:type", content: "website" },
@@ -26,11 +29,15 @@ function AssistantLayout() {
   return (
     <div className="nw-page" dir="rtl">
       <NawatTopBar />
-      {loading ? null : isAuthenticated ? <Outlet /> : (
+      {loading ? null : isAuthenticated ? (
+        <Outlet />
+      ) : (
         <main className="mx-auto flex max-w-md flex-col items-center gap-4 px-4 py-16 text-center">
           <NawatMark size={64} />
           <h1 className="text-2xl font-bold text-foreground">سجّل دخولك عشان تكلم نواة</h1>
-          <p className="text-muted-foreground">محادثاتك بتتحفظ في حسابك وتقدر ترجعلها من أي جهاز.</p>
+          <p className="text-muted-foreground">
+            محادثاتك بتتحفظ في حسابك وتقدر ترجعلها من أي جهاز.
+          </p>
           <Button onClick={() => setAuthOpen(true)}>تسجيل الدخول</Button>
         </main>
       )}

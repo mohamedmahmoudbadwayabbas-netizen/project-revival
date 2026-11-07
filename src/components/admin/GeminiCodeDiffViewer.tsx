@@ -13,7 +13,10 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { applyApprovedChanges, requestChangeApproval } from "@/services/aiTools/projectEngineService";
+import {
+  applyApprovedChanges,
+  requestChangeApproval,
+} from "@/services/aiTools/projectEngineService";
 
 interface GeminiCodeDiffViewerProps {
   filePath: string;
@@ -40,7 +43,16 @@ export function GeminiCodeDiffViewer({
   const [viewMode, setViewMode] = useState<"modified" | "split" | "original">("modified");
   const [copied, setCopied] = useState(false);
   const [isApplied, setIsApplied] = useState(false);
-  const [engineState, setEngineState] = useState<"Draft" | "Validating" | "Approval Required" | "Applying" | "Applied" | "Validation Failed" | "Apply Failed" | "Not Configured">("Draft");
+  const [engineState, setEngineState] = useState<
+    | "Draft"
+    | "Validating"
+    | "Approval Required"
+    | "Applying"
+    | "Applied"
+    | "Validation Failed"
+    | "Apply Failed"
+    | "Not Configured"
+  >("Draft");
 
   const handleCopy = () => {
     navigator.clipboard.writeText(modifiedCode);
@@ -177,7 +189,9 @@ export function GeminiCodeDiffViewer({
             <Download className="h-3.5 w-3.5" />
           </Button>
 
-          <span className="text-[10px] bg-secondary text-muted-foreground font-bold px-2.5 py-1.5 rounded-xl border border-border/70">{engineState}</span>
+          <span className="text-[10px] bg-secondary text-muted-foreground font-bold px-2.5 py-1.5 rounded-xl border border-border/70">
+            {engineState}
+          </span>
           <Button
             size="sm"
             onClick={handleApply}

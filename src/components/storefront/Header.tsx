@@ -83,7 +83,9 @@ export function Header() {
                 {settings.store_address && (
                   <div className="flex items-start gap-2 rounded-2xl border border-border/60 bg-secondary/50 p-2.5 text-xs">
                     <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-                    <span className="font-bold leading-5 text-foreground">{settings.store_address}</span>
+                    <span className="font-bold leading-5 text-foreground">
+                      {settings.store_address}
+                    </span>
                   </div>
                 )}
               </div>
@@ -129,7 +131,9 @@ export function Header() {
                   </div>
                   {totalCount > 0 && (
                     <Badge className="bg-primary text-primary-foreground text-[10px] px-1.5 py-0.5">
-                      <bdi dir="ltr" className="tabular-nums">{totalCount}</bdi>
+                      <bdi dir="ltr" className="tabular-nums">
+                        {totalCount}
+                      </bdi>
                     </Badge>
                   )}
                 </Link>
@@ -287,7 +291,9 @@ export function Header() {
           )}
 
           <ColorModeToggle className="rounded-2xl bg-secondary/60 hover:bg-secondary" />
-          <div className="hidden md:block"><UserMenu /></div>
+          <div className="hidden md:block">
+            <UserMenu />
+          </div>
 
           <Link
             id="cart-icon-target"
@@ -298,7 +304,9 @@ export function Header() {
             <ShoppingBag className="h-5 w-5" />
             {totalCount > 0 && (
               <Badge className="absolute -top-1 -end-1 h-5 min-w-5 justify-center rounded-full bg-primary px-1 text-[10px] font-black text-primary-foreground shadow-sm border-2 border-background">
-                <bdi dir="ltr" className="tabular-nums">{totalCount}</bdi>
+                <bdi dir="ltr" className="tabular-nums">
+                  {totalCount}
+                </bdi>
               </Badge>
             )}
           </Link>

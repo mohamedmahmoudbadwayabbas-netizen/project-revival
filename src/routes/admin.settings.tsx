@@ -87,7 +87,6 @@ type Settings = {
   hero_style?: "gradient" | "image" | "split";
 };
 
-
 const DEFAULT_SETTINGS: Settings = {
   whatsapp_number: "+201234567890",
   hero_title: "الوادي الأخضر — سوبرماركت عائلتك 🛒",
@@ -150,32 +149,45 @@ function SettingsPage() {
   const [historyKey, setHistoryKey] = useState(0);
   const [showMap, setShowMap] = useState(false);
 
-
   // Load authoritative store settings from Supabase.
   useEffect(() => {
     let mounted = true;
-    void supabase.from("store_settings").select("*").limit(1).maybeSingle().then(({ data, error }) => {
-      if (!mounted) return;
-      const initial = error ? DEFAULT_SETTINGS : (normalizeStoreIdentity({ ...DEFAULT_SETTINGS, ...(data ?? {}) }) as Settings);
-      if (error) toast.error(`تعذر تحميل إعدادات المتجر: ${error.message}`);
-      setS(initial);
-      setSaved(initial);
-      setLoading(false);
-    });
-    return () => { mounted = false; };
+    void supabase
+      .from("store_settings")
+      .select("*")
+      .limit(1)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (!mounted) return;
+        const initial = error
+          ? DEFAULT_SETTINGS
+          : (normalizeStoreIdentity({ ...DEFAULT_SETTINGS, ...(data ?? {}) }) as Settings);
+        if (error) toast.error(`تعذر تحميل إعدادات المتجر: ${error.message}`);
+        setS(initial);
+        setSaved(initial);
+        setLoading(false);
+      });
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const dirty = !!s && !!saved && JSON.stringify(s) !== JSON.stringify(saved);
 
   // Explicit Save is the only persistence point; the previous version goes to the history log first.
   const handleSaveAll = async () => {
-    if (!s || !dirty) { toast.info("لا توجد تعديلات جديدة للحفظ"); return; }
+    if (!s || !dirty) {
+      toast.info("لا توجد تعديلات جديدة للحفظ");
+      return;
+    }
     setSaving(true);
     setProgress(40);
     const { data: auth } = await supabase.auth.getUser();
     if (saved) {
       await supabase.from("store_settings_history").insert({
-        snapshot: saved, note: "النسخة قبل الحفظ", actor_email: auth.user?.email ?? null,
+        snapshot: saved,
+        note: "النسخة قبل الحفظ",
+        actor_email: auth.user?.email ?? null,
       });
     }
     const payload = {
@@ -204,9 +216,14 @@ function SettingsPage() {
       meta_pixel_id: s.meta_pixel_id,
       updated_at: new Date().toISOString(),
     };
-    const { data: row, error: dbError } = await supabase.from("store_settings").upsert(payload).select("*").maybeSingle();
+    const { data: row, error: dbError } = await supabase
+      .from("store_settings")
+      .upsert(payload)
+      .select("*")
+      .maybeSingle();
     if (dbError) {
-      setSaving(false); setProgress(null);
+      setSaving(false);
+      setProgress(null);
       toast.error(`تعذر الحفظ: ${dbError.message}`);
       return;
     }
@@ -217,7 +234,10 @@ function SettingsPage() {
     window.dispatchEvent(new CustomEvent("store_settings_updated", { detail: next }));
     setProgress(100);
     toast.success("تم حفظ التعديلات وظهرت في المتجر");
-    setTimeout(() => { setProgress(null); setSaving(false); }, 300);
+    setTimeout(() => {
+      setProgress(null);
+      setSaving(false);
+    }, 300);
   };
 
   const updateSetting = <K extends keyof Settings>(k: K, v: Settings[K]) => {
@@ -329,8 +349,14 @@ function SettingsPage() {
             <span className="hidden sm:inline">تصدير</span>
           </Button>
 
-          <Button type="button" variant="outline" size="sm" onClick={handleDiscard} disabled={!dirty}
-            className="rounded-xl font-bold text-xs gap-1.5 h-9">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleDiscard}
+            disabled={!dirty}
+            className="rounded-xl font-bold text-xs gap-1.5 h-9"
+          >
             <RotateCcw className="h-3.5 w-3.5" />
             <span>إلغاء التعديلات</span>
           </Button>

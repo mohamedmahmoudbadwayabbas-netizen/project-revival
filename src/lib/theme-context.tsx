@@ -72,7 +72,9 @@ function applyTokens(t: ThemeSettings) {
   const primary = hexToHsl(t.primary_hex);
   const accent = hexToHsl(t.accent_hex);
   // Brand colors are fixed in src/styles.css; only non-color tokens apply here.
-  void set; void primary; void accent;
+  void set;
+  void primary;
+  void accent;
   if (t.card_radius_px) root.style.setProperty("--radius", `${t.card_radius_px}px`);
   if (t.marble_bg_url) {
     document.body.style.backgroundImage = `url(${t.marble_bg_url})`;
@@ -90,7 +92,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     let mounted = true;
 
     const load = async () => {
-      const { data } = await supabase.from("store_settings_public").select("*").limit(1).maybeSingle();
+      const { data } = await supabase
+        .from("store_settings_public")
+        .select("*")
+        .limit(1)
+        .maybeSingle();
       if (!mounted) return;
       if (!data) {
         applyTokens(DEFAULTS);

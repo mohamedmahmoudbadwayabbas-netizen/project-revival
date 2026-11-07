@@ -2,7 +2,13 @@ import { Store } from "lucide-react";
 import { BRAND_NAME_AR } from "@/lib/brand";
 
 /** Swappable store logo — replace this one component when the final logo is ready. */
-export function StoreLogo({ name = BRAND_NAME_AR, inverted = false }: { name?: string; inverted?: boolean }) {
+export function StoreLogo({
+  name = BRAND_NAME_AR,
+  inverted = false,
+}: {
+  name?: string;
+  inverted?: boolean;
+}) {
   return (
     <span className="inline-flex min-w-0 items-center gap-2.5">
       <span

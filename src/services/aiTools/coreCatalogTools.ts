@@ -5,12 +5,7 @@
 
 import { supabase } from "@/lib/supabase-loose";
 import { isSupabaseConfigured } from "./envValidation";
-import type {
-  ToolExecutionContext,
-  ToolExecutionResult,
-  RollbackPoint,
-  AiToolName,
-} from "./types";
+import type { ToolExecutionContext, ToolExecutionResult, RollbackPoint, AiToolName } from "./types";
 import type { StoreLayoutConfig, ThemeColorPalette } from "@/types/layout-config";
 import { generateAdminImage } from "@/services/geminiImageService";
 import { normalizeArabic } from "@/lib/fuzzy-search";
@@ -33,10 +28,7 @@ export function getRollbackStack(): RollbackPoint[] {
 export function saveRollbackStack(stack: RollbackPoint[]): void {
   if (typeof localStorage === "undefined") return;
   try {
-    localStorage.setItem(
-      ROLLBACK_STACK_KEY,
-      JSON.stringify(stack.slice(-MAX_ROLLBACK_DEPTH)),
-    );
+    localStorage.setItem(ROLLBACK_STACK_KEY, JSON.stringify(stack.slice(-MAX_ROLLBACK_DEPTH)));
   } catch {
     /* ignore storage quota */
   }
@@ -61,10 +53,7 @@ export function createRollbackPoint(
   return id;
 }
 
-export function attachDbUndo(
-  pointId: string,
-  dbUndo: NonNullable<RollbackPoint["db"]>,
-): void {
+export function attachDbUndo(pointId: string, dbUndo: NonNullable<RollbackPoint["db"]>): void {
   const stack = getRollbackStack();
   const target = stack.find((p) => p.id === pointId);
   if (target) {
@@ -78,9 +67,7 @@ export function getLastRollbackPoint(): RollbackPoint | null {
   return stack.length > 0 ? stack[stack.length - 1] : null;
 }
 
-export async function rollbackLastAction(
-  ctx?: ToolExecutionContext,
-): Promise<ToolExecutionResult> {
+export async function rollbackLastAction(ctx?: ToolExecutionContext): Promise<ToolExecutionResult> {
   const stack = getRollbackStack();
   const last = stack.pop();
 
@@ -107,7 +94,10 @@ export async function rollbackLastAction(
         const { error } = await supabase.from(table as any).upsert(rows as any);
         if (error) throw error;
       } else if (kind === "delete-row" && id) {
-        const { error } = await supabase.from(table as any).delete().eq("id", id);
+        const { error } = await supabase
+          .from(table as any)
+          .delete()
+          .eq("id", id);
         if (error) throw error;
       }
     } catch (err) {
@@ -138,7 +128,11 @@ export async function toolGenerateProductImage(
   let name = (args.productName || "").trim();
   if (args.productId) {
     if (!isSupabaseConfigured()) {
-      return { tool: "generateProductImage", ok: false, messageAr: "لم أتحقق من المنتج لأن Supabase غير متصل؛ لم أبدأ التوليد." };
+      return {
+        tool: "generateProductImage",
+        ok: false,
+        messageAr: "لم أتحقق من المنتج لأن Supabase غير متصل؛ لم أبدأ التوليد.",
+      };
     }
     const { data: product, error } = await supabase
       .from("products")
@@ -146,16 +140,34 @@ export async function toolGenerateProductImage(
       .eq("id", args.productId)
       .eq("is_active", true)
       .maybeSingle();
-    if (error) return { tool: "generateProductImage", ok: false, messageAr: `تعذر التحقق من المنتج في Supabase: ${error.message}` };
-    if (!product) return { tool: "generateProductImage", ok: false, messageAr: "المنتج غير موجود أو غير نشط في Supabase؛ لم أبدأ التوليد." };
+    if (error)
+      return {
+        tool: "generateProductImage",
+        ok: false,
+        messageAr: `تعذر التحقق من المنتج في Supabase: ${error.message}`,
+      };
+    if (!product)
+      return {
+        tool: "generateProductImage",
+        ok: false,
+        messageAr: "المنتج غير موجود أو غير نشط في Supabase؛ لم أبدأ التوليد.",
+      };
     name = product.name_ar || product.name;
   }
   if (!name) {
-    return { tool: "generateProductImage", ok: false, messageAr: "اسم المنتج مطلوب لتوليد الصورة." };
+    return {
+      tool: "generateProductImage",
+      ok: false,
+      messageAr: "اسم المنتج مطلوب لتوليد الصورة.",
+    };
   }
 
   const prompt = `Professional commercial supermarket studio photography of ${name}, fresh Egyptian gourmet grocery, clean studio lighting, 8k resolution, appetizing presentation on neutral background`;
-  const pointId = createRollbackPoint("generateProductImage", `توليد صورة منتج: ${name}`, ctx?.layout || null);
+  const pointId = createRollbackPoint(
+    "generateProductImage",
+    `توليد صورة منتج: ${name}`,
+    ctx?.layout || null,
+  );
 
   const res = await generateAdminImage({
     prompt,
@@ -225,7 +237,11 @@ export async function toolUploadBannerImage(
   }
 
   const prompt = `Modern vibrant Egyptian supermarket promotional banner for "${headline}", fresh grocery products, luxury appetizing background, 16:9 widescreen layout`;
-  const pointId = createRollbackPoint("uploadBannerImage", `توليد بانر: ${headline}`, ctx?.layout || null);
+  const pointId = createRollbackPoint(
+    "uploadBannerImage",
+    `توليد بانر: ${headline}`,
+    ctx?.layout || null,
+  );
 
   const res = await generateAdminImage({
     prompt,
@@ -311,7 +327,11 @@ export async function toolManageProduct(
 ): Promise<ToolExecutionResult> {
   const action = (args.action || "create").toLowerCase();
   const data = args.data || {};
-  const pointId = createRollbackPoint("manageProduct", `إدارة منتج (${action})`, ctx?.layout || null);
+  const pointId = createRollbackPoint(
+    "manageProduct",
+    `إدارة منتج (${action})`,
+    ctx?.layout || null,
+  );
 
   try {
     if (!isSupabaseConfigured()) {
@@ -322,16 +342,22 @@ export async function toolManageProduct(
       const name = String(data.name_ar || data.name || "").trim();
       const price = Number(data.price ?? data.price_per_unit);
       if (!name) throw new Error("اسم المنتج مطلوب.");
-      if (!Number.isFinite(price) || price <= 0) throw new Error("سعر المنتج يجب أن يكون أكبر من صفر.");
+      if (!Number.isFinite(price) || price <= 0)
+        throw new Error("سعر المنتج يجب أن يكون أكبر من صفر.");
       const { data: existingProducts, error: lookupError } = await supabase
         .from("products")
         .select("id,name,name_ar")
         .eq("is_active", true)
         .limit(500);
       if (lookupError) throw lookupError;
-      const normalizeName = (value: unknown) => String(value || "").trim().toLocaleLowerCase("ar");
-      const duplicate = (existingProducts || []).find((product: any) =>
-        normalizeName(product.name) === normalizeName(name) || normalizeName(product.name_ar) === normalizeName(name),
+      const normalizeName = (value: unknown) =>
+        String(value || "")
+          .trim()
+          .toLocaleLowerCase("ar");
+      const duplicate = (existingProducts || []).find(
+        (product: any) =>
+          normalizeName(product.name) === normalizeName(name) ||
+          normalizeName(product.name_ar) === normalizeName(name),
       );
       if (duplicate) {
         return {
@@ -386,14 +412,26 @@ export async function toolManageProduct(
 
     const id = String(data.id || "");
     if (!id) {
-      return { tool: "manageProduct", ok: false, messageAr: "معرّف المنتج (id) مطلوب للتعديل أو الحذف." };
+      return {
+        tool: "manageProduct",
+        ok: false,
+        messageAr: "معرّف المنتج (id) مطلوب للتعديل أو الحذف.",
+      };
     }
 
-    const { data: prev, error: readError } = await supabase.from("products").select("*").eq("id", id).maybeSingle();
+    const { data: prev, error: readError } = await supabase
+      .from("products")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
     if (readError) throw readError;
     if (!prev) throw new Error("لم أعثر على المنتج بهذا المعرّف في Supabase؛ لم أعدل شيئاً.");
 
-    attachDbUndo(pointId, { table: "products", kind: "restore-rows", rows: [prev as Record<string, unknown>] });
+    attachDbUndo(pointId, {
+      table: "products",
+      kind: "restore-rows",
+      rows: [prev as Record<string, unknown>],
+    });
 
     if (action === "delete") {
       const { error } = await supabase.from("products").delete().eq("id", id);
@@ -412,14 +450,32 @@ export async function toolManageProduct(
 
     const patchInput = data as Record<string, unknown>;
     const patch: Record<string, unknown> = {};
-    const copy = (from: string, to = from) => { if (patchInput[from] !== undefined) patch[to] = patchInput[from]; };
-    copy("name"); copy("name_ar"); copy("description"); copy("description_ar"); copy("image_url"); copy("images");
-    copy("category_id"); copy("rating"); copy("reviews_count"); copy("is_featured"); copy("is_active");
-    if (patchInput.price !== undefined || patchInput.price_per_unit !== undefined) patch.price = Number(patchInput.price ?? patchInput.price_per_unit);
-    if (patchInput.original_price !== undefined || patchInput.old_price !== undefined) patch.original_price = patchInput.original_price ?? patchInput.old_price;
-    if (patchInput.stock !== undefined || patchInput.stock_quantity !== undefined) patch.stock = Number(patchInput.stock ?? patchInput.stock_quantity);
-    if (Object.keys(patch).length === 0) throw new Error("لا توجد حقول صالحة للتحديث في مخطط المنتجات الحالي.");
-    const { error } = await supabase.from("products").update(patch as never).eq("id", id);
+    const copy = (from: string, to = from) => {
+      if (patchInput[from] !== undefined) patch[to] = patchInput[from];
+    };
+    copy("name");
+    copy("name_ar");
+    copy("description");
+    copy("description_ar");
+    copy("image_url");
+    copy("images");
+    copy("category_id");
+    copy("rating");
+    copy("reviews_count");
+    copy("is_featured");
+    copy("is_active");
+    if (patchInput.price !== undefined || patchInput.price_per_unit !== undefined)
+      patch.price = Number(patchInput.price ?? patchInput.price_per_unit);
+    if (patchInput.original_price !== undefined || patchInput.old_price !== undefined)
+      patch.original_price = patchInput.original_price ?? patchInput.old_price;
+    if (patchInput.stock !== undefined || patchInput.stock_quantity !== undefined)
+      patch.stock = Number(patchInput.stock ?? patchInput.stock_quantity);
+    if (Object.keys(patch).length === 0)
+      throw new Error("لا توجد حقول صالحة للتحديث في مخطط المنتجات الحالي.");
+    const { error } = await supabase
+      .from("products")
+      .update(patch as never)
+      .eq("id", id);
 
     if (error) throw error;
 
@@ -449,7 +505,11 @@ export async function toolManageCategories(
 ): Promise<ToolExecutionResult> {
   const action = (args.action || "create").toLowerCase();
   const data = args.data || {};
-  const pointId = createRollbackPoint("manageCategories", `إدارة قسم (${action})`, ctx?.layout || null);
+  const pointId = createRollbackPoint(
+    "manageCategories",
+    `إدارة قسم (${action})`,
+    ctx?.layout || null,
+  );
 
   try {
     if (!isSupabaseConfigured()) {
@@ -458,15 +518,22 @@ export async function toolManageCategories(
 
     if (action === "create") {
       const name = String(data.name || "قسم جديد");
-      const slug = String(data.slug || `cat-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`);
+      const slug = String(
+        data.slug || `cat-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      );
       const { data: existingCategories, error: lookupError } = await supabase
         .from("categories")
         .select("id,name,name_ar")
         .limit(500);
       if (lookupError) throw lookupError;
-      const normalizeName = (value: unknown) => String(value || "").trim().toLocaleLowerCase("ar");
-      const duplicate = (existingCategories || []).find((category: any) =>
-        normalizeName(category.name) === normalizeName(name) || normalizeName(category.name_ar) === normalizeName(name),
+      const normalizeName = (value: unknown) =>
+        String(value || "")
+          .trim()
+          .toLocaleLowerCase("ar");
+      const duplicate = (existingCategories || []).find(
+        (category: any) =>
+          normalizeName(category.name) === normalizeName(name) ||
+          normalizeName(category.name_ar) === normalizeName(name),
       );
       if (duplicate) {
         return {
@@ -505,7 +572,14 @@ export async function toolManageCategories(
         ok: true,
         rollbackPointId: pointId,
         messageAr: `تمت إضافة القسم «${name}» لقاعدة البيانات بنجاح.`,
-        data: { id: inserted.id, name, name_ar: payload.name_ar, slug, image_url: payload.image_url, categoryPreflight: true },
+        data: {
+          id: inserted.id,
+          name,
+          name_ar: payload.name_ar,
+          slug,
+          image_url: payload.image_url,
+          categoryPreflight: true,
+        },
       };
     }
 
@@ -514,11 +588,19 @@ export async function toolManageCategories(
       return { tool: "manageCategories", ok: false, messageAr: "معرّف القسم (id) مطلوب." };
     }
 
-    const { data: prev, error: readError } = await supabase.from("categories").select("*").eq("id", id).maybeSingle();
+    const { data: prev, error: readError } = await supabase
+      .from("categories")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
     if (readError) throw readError;
     if (!prev) throw new Error("لم أعثر على القسم بهذا المعرّف في Supabase؛ لم أعدل شيئاً.");
 
-    attachDbUndo(pointId, { table: "categories", kind: "restore-rows", rows: [prev as Record<string, unknown>] });
+    attachDbUndo(pointId, {
+      table: "categories",
+      kind: "restore-rows",
+      rows: [prev as Record<string, unknown>],
+    });
 
     if (action === "delete") {
       const { error } = await supabase.from("categories").delete().eq("id", id);
@@ -537,9 +619,13 @@ export async function toolManageCategories(
 
     const patchInput = data as Record<string, unknown>;
     const patch: Record<string, unknown> = {};
-    for (const key of ["name", "name_ar", "slug", "image_url"]) if (patchInput[key] !== undefined) patch[key] = patchInput[key];
+    for (const key of ["name", "name_ar", "slug", "image_url"])
+      if (patchInput[key] !== undefined) patch[key] = patchInput[key];
     if (Object.keys(patch).length === 0) throw new Error("لا توجد حقول صالحة للتحديث.");
-    const { error } = await supabase.from("categories").update(patch as never).eq("id", id);
+    const { error } = await supabase
+      .from("categories")
+      .update(patch as never)
+      .eq("id", id);
 
     if (error) throw error;
 
@@ -569,7 +655,11 @@ export async function toolBulkPriceUpdate(
 ): Promise<ToolExecutionResult> {
   const pct = Number(args.percentage ?? 0);
   if (!pct) {
-    return { tool: "bulkPriceUpdate", ok: false, messageAr: "حدد نسبة التغيير المطلوبة للأسعار (مثلاً: -15 لخصم 15%)." };
+    return {
+      tool: "bulkPriceUpdate",
+      ok: false,
+      messageAr: "حدد نسبة التغيير المطلوبة للأسعار (مثلاً: -15 لخصم 15%).",
+    };
   }
 
   const categoryId = args.categoryId || "all";
@@ -615,7 +705,8 @@ export async function toolBulkPriceUpdate(
           ),
         );
         const failedUpdate = updates.find((result) => result.error || !result.data?.length);
-        if (failedUpdate) throw failedUpdate.error || new Error("لم يتم تأكيد تحديث جميع الأسعار من Supabase.");
+        if (failedUpdate)
+          throw failedUpdate.error || new Error("لم يتم تأكيد تحديث جميع الأسعار من Supabase.");
       }
     }
 
@@ -645,10 +736,18 @@ export async function toolUpdateLayoutConfig(
 ): Promise<ToolExecutionResult> {
   const json = args.layoutJson;
   if (!json || typeof json !== "object") {
-    return { tool: "updateLayoutConfig", ok: false, messageAr: "بيانات التخطيط layoutJson مطلوبة." };
+    return {
+      tool: "updateLayoutConfig",
+      ok: false,
+      messageAr: "بيانات التخطيط layoutJson مطلوبة.",
+    };
   }
 
-  const pointId = createRollbackPoint("updateLayoutConfig", "تعديل تخطيط الواجهة", ctx?.layout || null);
+  const pointId = createRollbackPoint(
+    "updateLayoutConfig",
+    "تعديل تخطيط الواجهة",
+    ctx?.layout || null,
+  );
 
   if (ctx) {
     const merged: StoreLayoutConfig = {
@@ -688,9 +787,15 @@ export function hexToHslString(hex: string): string | null {
     const d = max - min;
     s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
     switch (max) {
-      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-      case g: h = (b - r) / d + 2; break;
-      case b: h = (r - g) / d + 4; break;
+      case r:
+        h = (g - b) / d + (g < b ? 6 : 0);
+        break;
+      case g:
+        h = (b - r) / d + 2;
+        break;
+      case b:
+        h = (r - g) / d + 4;
+        break;
     }
     h /= 6;
   }
@@ -705,7 +810,11 @@ export async function toolUpdateThemeColors(
   const primary = args.primary || "#2F5D4B";
   const accent = args.accent || "#B6502E";
   const mode = args.mode === "dark" ? "dark" : args.mode === "light" ? "light" : undefined;
-  const pointId = createRollbackPoint("updateThemeColors", `تحديث الألوان: ${primary}`, ctx?.layout || null);
+  const pointId = createRollbackPoint(
+    "updateThemeColors",
+    `تحديث الألوان: ${primary}`,
+    ctx?.layout || null,
+  );
 
   // Apply to document DOM
   if (typeof document !== "undefined") {
@@ -738,7 +847,11 @@ export async function toolUpdateThemeColors(
   // Sync theme values to the live store_settings table
   if (isSupabaseConfigured()) {
     try {
-      const { data: storeRow, error: selectError } = await supabase.from("store_settings").select("id").limit(1).maybeSingle();
+      const { data: storeRow, error: selectError } = await supabase
+        .from("store_settings")
+        .select("id")
+        .limit(1)
+        .maybeSingle();
       if (selectError) throw selectError;
       if (!storeRow?.id) throw new Error("لم يتم العثور على سجل إعدادات المتجر لتحديث الألوان.");
       const { error } = await supabase
@@ -786,7 +899,11 @@ export async function toolCreateDiscountBundle(
   const type = args.discountType === "fixed" ? "fixed" : "percentage";
   const hours = Number(args.hours ?? 6);
   const expiresAt = new Date(Date.now() + hours * 3600 * 1000).toISOString();
-  const pointId = createRollbackPoint("createDiscountBundle", `إنشاء كوبون: ${code}`, ctx?.layout || null);
+  const pointId = createRollbackPoint(
+    "createDiscountBundle",
+    `إنشاء كوبون: ${code}`,
+    ctx?.layout || null,
+  );
 
   if (isSupabaseConfigured()) {
     try {
@@ -852,29 +969,52 @@ export async function toolCreateDiscountBundle(
 
 /* ───────────────────────── 9. sendAbandonedCartRecovery ───────────────────────── */
 
-export async function toolSendAbandonedCartRecovery(
-  args: { cartId?: string; customerName?: string; phone?: string; totalPrice?: number },
-): Promise<ToolExecutionResult> {
+export async function toolSendAbandonedCartRecovery(args: {
+  cartId?: string;
+  customerName?: string;
+  phone?: string;
+  totalPrice?: number;
+}): Promise<ToolExecutionResult> {
   try {
-    if (!isSupabaseConfigured()) throw new Error("Supabase غير متصل؛ لم أستخدم بيانات محلية أو تجريبية.");
+    if (!isSupabaseConfigured())
+      throw new Error("Supabase غير متصل؛ لم أستخدم بيانات محلية أو تجريبية.");
     if (!args.cartId) throw new Error("معرّف السلة مطلوب للتحقق منها في Supabase.");
 
     const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const cartId = args.cartId;
     const userId = cartId.startsWith("cart-") ? cartId.slice("cart-".length) : "";
-    let cartQuery = supabase.from("cart_items").select("id,user_id,product_id,quantity,created_at").lt("created_at", cutoff);
+    let cartQuery = supabase
+      .from("cart_items")
+      .select("id,user_id,product_id,quantity,created_at")
+      .lt("created_at", cutoff);
     cartQuery = userId ? cartQuery.eq("user_id", userId) : cartQuery.eq("id", cartId);
     const { data: cartRows, error: cartError } = await cartQuery;
     if (cartError) throw cartError;
     if (!cartRows?.length) throw new Error("لم أجد سلة متروكة مطابقة في Supabase.");
 
     const verifiedUserId = cartRows[0].user_id;
-    if (!verifiedUserId || cartRows.some((row) => row.user_id !== verifiedUserId)) throw new Error("تعذر التحقق من مالك السلة.");
-    const lastActivity = Math.max(...cartRows.map((row) => new Date(row.created_at ?? 0).getTime()));
-    const [{ data: profile, error: profileError }, { data: products, error: productsError }, { data: orders, error: ordersError }] = await Promise.all([
+    if (!verifiedUserId || cartRows.some((row) => row.user_id !== verifiedUserId))
+      throw new Error("تعذر التحقق من مالك السلة.");
+    const lastActivity = Math.max(
+      ...cartRows.map((row) => new Date(row.created_at ?? 0).getTime()),
+    );
+    const [
+      { data: profile, error: profileError },
+      { data: products, error: productsError },
+      { data: orders, error: ordersError },
+    ] = await Promise.all([
       supabase.from("profiles").select("id,full_name,phone").eq("id", verifiedUserId).maybeSingle(),
-      supabase.from("products").select("id,name,name_ar,price,is_active").in("id", cartRows.map((row) => row.product_id).filter(Boolean)).eq("is_active", true),
-      supabase.from("orders").select("id,created_at").eq("user_id", verifiedUserId).gte("created_at", new Date(lastActivity).toISOString()).limit(1),
+      supabase
+        .from("products")
+        .select("id,name,name_ar,price,is_active")
+        .in("id", cartRows.map((row) => row.product_id).filter(Boolean))
+        .eq("is_active", true),
+      supabase
+        .from("orders")
+        .select("id,created_at")
+        .eq("user_id", verifiedUserId)
+        .gte("created_at", new Date(lastActivity).toISOString())
+        .limit(1),
     ]);
     if (profileError) throw profileError;
     if (productsError) throw productsError;
@@ -883,10 +1023,14 @@ export async function toolSendAbandonedCartRecovery(
     if (!profile?.phone) throw new Error("لا يوجد رقم هاتف موثق للعميل في Supabase.");
 
     const productMap = new Map((products ?? []).map((product) => [product.id, product]));
-    if (cartRows.some((row) => !row.product_id || !productMap.has(row.product_id))) throw new Error("بعض منتجات السلة لم تُتحقق في Supabase.");
+    if (cartRows.some((row) => !row.product_id || !productMap.has(row.product_id)))
+      throw new Error("بعض منتجات السلة لم تُتحقق في Supabase.");
     const items = cartRows.map((row) => {
       const product = productMap.get(row.product_id!)!;
-      return { name: product.name_ar || product.name, lineTotal: Number(product.price || 0) * Number(row.quantity || 0) };
+      return {
+        name: product.name_ar || product.name,
+        lineTotal: Number(product.price || 0) * Number(row.quantity || 0),
+      };
     });
     const total = items.reduce((sum, item) => sum + item.lineTotal, 0);
     const name = profile.full_name || "عميل المتجر";
@@ -904,7 +1048,11 @@ export async function toolSendAbandonedCartRecovery(
       data: { whatsappUrl, messageText: message, total },
     };
   } catch (error) {
-    return { tool: "sendAbandonedCartRecovery", ok: false, messageAr: `لم أفتح الرسالة لأن بيانات السلة لم تُتحقق في Supabase: ${(error as Error).message}` };
+    return {
+      tool: "sendAbandonedCartRecovery",
+      ok: false,
+      messageAr: `لم أفتح الرسالة لأن بيانات السلة لم تُتحقق في Supabase: ${(error as Error).message}`,
+    };
   }
 }
 
@@ -923,8 +1071,11 @@ export async function toolSearchProducts(
   const query = (args.query || "").trim();
   // أسئلة عامة مثل «كم عدد المنتجات» أو «اعرض المنتجات» تعني عرض الكتالوج كله
   // وليس البحث عن منتج اسمه «منتجات».
-  const GENERIC = /^(\*|all|any|products?|catalog|items?|كل|الكل|جميع|منتج|منتجات|المنتجات|كل المنتجات|جميع المنتجات|السلع|الكتالوج|متوفر|المتوفر|المتاح|عدد المنتجات)$/i;
-  const listAll = !query || GENERIC.test(query) ||
+  const GENERIC =
+    /^(\*|all|any|products?|catalog|items?|كل|الكل|جميع|منتج|منتجات|المنتجات|كل المنتجات|جميع المنتجات|السلع|الكتالوج|متوفر|المتوفر|المتاح|عدد المنتجات)$/i;
+  const listAll =
+    !query ||
+    GENERIC.test(query) ||
     query.split(/[\s،,]+/).every((w) => GENERIC.test(w) || w.length <= 1);
 
   const limit = Math.max(1, Math.min(20, Number(args.limit ?? 8) || 8));
@@ -940,7 +1091,9 @@ export async function toolSearchProducts(
   try {
     let dbQuery = supabase
       .from("products")
-      .select("id, name, name_ar, price, original_price, stock, image_url, category_id, is_featured, is_active")
+      .select(
+        "id, name, name_ar, price, original_price, stock, image_url, category_id, is_featured, is_active",
+      )
       .eq("is_active", true)
       .limit(500);
 
@@ -957,14 +1110,22 @@ export async function toolSearchProducts(
     // التطبيع العربي (ة/ه، أ/إ/آ/ا، ى/ي، التشكيل) يجعل «جبنه» تطابق «جبنة»؛ بدونه كان
     // البحث يخسر نتائج صحيحة بسبب اختلاف كتابة الحرف فقط.
     const fold = (text: string) => normalizeArabic(text.normalize("NFKC"));
-    const terms = fold(query).split(/[\s،,]+/).filter((term) => term.length > 1);
+    const terms = fold(query)
+      .split(/[\s،,]+/)
+      .filter((term) => term.length > 1);
     const total = (data || []).length;
-    const rows = (listAll ? data || [] : (data || []).filter((row: any) => {
-      const searchable = fold(`${row.name || ""} ${row.name_ar || ""}`);
-      return terms.some((term) => searchable.includes(term));
-    })).slice(0, listAll ? Math.max(limit, 20) : limit);
+    const rows = (
+      listAll
+        ? data || []
+        : (data || []).filter((row: any) => {
+            const searchable = fold(`${row.name || ""} ${row.name_ar || ""}`);
+            return terms.some((term) => searchable.includes(term));
+          })
+    ).slice(0, listAll ? Math.max(limit, 20) : limit);
     if (listAll) {
-      const summary = rows.map((r: any) => `«${r.name_ar || r.name}» — ${r.price} ج.م (المخزون: ${r.stock ?? "؟"})`).join("، ");
+      const summary = rows
+        .map((r: any) => `«${r.name_ar || r.name}» — ${r.price} ج.م (المخزون: ${r.stock ?? "؟"})`)
+        .join("، ");
       return {
         tool: "searchProducts",
         ok: true,
@@ -1009,9 +1170,9 @@ export async function toolSearchProducts(
    exists (and fetch its id) before calling manageCategories to create one,
    avoiding duplicate/near-duplicate categories. */
 
-export async function toolGetCategories(
-  args: { nameQuery?: string },
-): Promise<ToolExecutionResult> {
+export async function toolGetCategories(args: {
+  nameQuery?: string;
+}): Promise<ToolExecutionResult> {
   if (!isSupabaseConfigured()) {
     return {
       tool: "getCategories",
@@ -1032,10 +1193,16 @@ export async function toolGetCategories(
     const { data, error } = await dbQuery;
     if (error) throw error;
 
-    const terms = nameQuery.normalize("NFKC").toLocaleLowerCase("ar").split(/[\s،,]+/).filter((term) => term.length > 1);
+    const terms = nameQuery
+      .normalize("NFKC")
+      .toLocaleLowerCase("ar")
+      .split(/[\s،,]+/)
+      .filter((term) => term.length > 1);
     const rows = (data || []).filter((row: any) => {
       if (terms.length === 0) return true;
-      const searchable = `${row.name || ""} ${row.name_ar || ""}`.normalize("NFKC").toLocaleLowerCase("ar");
+      const searchable = `${row.name || ""} ${row.name_ar || ""}`
+        .normalize("NFKC")
+        .toLocaleLowerCase("ar");
       return terms.some((term) => searchable.includes(term));
     });
 

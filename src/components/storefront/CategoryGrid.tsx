@@ -1,4 +1,23 @@
-import { Grid2X2, Layers, Drumstick, Beef, Leaf, Wheat, Milk, SprayCan, Croissant, Apple, Baby, Sparkles, Coffee, Candy, Fish, Snowflake, CupSoda, type LucideIcon } from "lucide-react";
+import {
+  Grid2X2,
+  Layers,
+  Drumstick,
+  Beef,
+  Leaf,
+  Wheat,
+  Milk,
+  SprayCan,
+  Croissant,
+  Apple,
+  Baby,
+  Sparkles,
+  Coffee,
+  Candy,
+  Fish,
+  Snowflake,
+  CupSoda,
+  type LucideIcon,
+} from "lucide-react";
 import { formatNumberAr } from "@/lib/format-ar";
 
 const ICON_RULES: [RegExp, LucideIcon][] = [
@@ -19,9 +38,19 @@ const ICON_RULES: [RegExp, LucideIcon][] = [
   [/مشروب|عصير|drink/i, CupSoda],
 ];
 const FALLBACK_ICONS: LucideIcon[] = [Layers, Wheat, Leaf, Apple, Coffee, Candy];
-const TILE_TONES = ["tile-green", "tile-red", "tile-blue", "tile-orange", "tile-lime", "tile-teal", "tile-purple"];
+const TILE_TONES = [
+  "tile-green",
+  "tile-red",
+  "tile-blue",
+  "tile-orange",
+  "tile-lime",
+  "tile-teal",
+  "tile-purple",
+];
 function categoryIcon(name: string, index: number): LucideIcon {
-  return ICON_RULES.find(([re]) => re.test(name))?.[1] ?? FALLBACK_ICONS[index % FALLBACK_ICONS.length];
+  return (
+    ICON_RULES.find(([re]) => re.test(name))?.[1] ?? FALLBACK_ICONS[index % FALLBACK_ICONS.length]
+  );
 }
 import { cn } from "@/lib/utils";
 import { SkeletonBox } from "@/components/storefront/Skeletons";
@@ -56,7 +85,10 @@ export function CategoryGrid({
       <div className="mb-6 flex items-end justify-between gap-4">
         <div>
           <span className="text-sm font-bold text-primary">تسوّق حسب القسم</span>
-          <h2 id="category-grid-title" className="mt-1 text-2xl font-bold text-primary-dark sm:text-3xl">
+          <h2
+            id="category-grid-title"
+            className="mt-1 text-2xl font-bold text-primary-dark sm:text-3xl"
+          >
             أقسام المتجر
           </h2>
         </div>
@@ -82,7 +114,9 @@ export function CategoryGrid({
           <Grid2X2 className="h-6 w-6 text-muted-foreground" aria-hidden="true" />
           <div>
             <h3 className="text-base">الأقسام قيد التجهيز</h3>
-            <p className="text-xs text-muted-foreground">ستظهر الأقسام هنا بعد إضافتها إلى المتجر.</p>
+            <p className="text-xs text-muted-foreground">
+              ستظهر الأقسام هنا بعد إضافتها إلى المتجر.
+            </p>
           </div>
         </div>
       ) : (
@@ -105,10 +139,17 @@ export function CategoryGrid({
                 <span
                   className={cn(
                     "grid h-24 w-24 place-items-center overflow-hidden rounded-2xl border-2 bg-card p-1 shadow-card transition-all duration-300 group-hover:-translate-y-1 sm:h-28 sm:w-28",
-                    isActive ? "border-primary" : "border-transparent group-hover:border-primary/30",
+                    isActive
+                      ? "border-primary"
+                      : "border-transparent group-hover:border-primary/30",
                   )}
                 >
-                  <span className={cn("grid h-full w-full place-items-center overflow-hidden rounded-xl", TILE_TONES[index % TILE_TONES.length])}>
+                  <span
+                    className={cn(
+                      "grid h-full w-full place-items-center overflow-hidden rounded-xl",
+                      TILE_TONES[index % TILE_TONES.length],
+                    )}
+                  >
                     {category.image_url ? (
                       <img
                         src={category.image_url}
@@ -118,12 +159,20 @@ export function CategoryGrid({
                         className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                       />
                     ) : (
-                      <Icon className="h-9 w-9 transition-transform duration-300 group-hover:scale-110" aria-hidden="true" />
+                      <Icon
+                        className="h-9 w-9 transition-transform duration-300 group-hover:scale-110"
+                        aria-hidden="true"
+                      />
                     )}
                   </span>
                 </span>
                 <span className="text-center">
-                  <strong className={cn("block text-xs font-bold sm:text-sm", isActive ? "text-primary" : "text-foreground")}>
+                  <strong
+                    className={cn(
+                      "block text-xs font-bold sm:text-sm",
+                      isActive ? "text-primary" : "text-foreground",
+                    )}
+                  >
                     {name}
                   </strong>
                   <small className="text-[11px] text-muted-foreground">

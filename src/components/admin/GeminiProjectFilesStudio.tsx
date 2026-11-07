@@ -27,7 +27,11 @@ import {
   ProjectFileMeta,
   searchProjectFiles,
 } from "@/services/projectFilesService";
-import { applyApprovedChanges, readProjectFile, requestChangeApproval } from "@/services/aiTools/projectEngineService";
+import {
+  applyApprovedChanges,
+  readProjectFile,
+  requestChangeApproval,
+} from "@/services/aiTools/projectEngineService";
 import { modifyProjectFileWithGemini, CodeModificationResult } from "@/services/geminiCodeService";
 import { DEFAULT_GEMINI_MODEL } from "@/lib/gemini-config";
 import { GeminiCodeDiffViewer } from "./GeminiCodeDiffViewer";
@@ -99,7 +103,10 @@ export function GeminiProjectFilesStudio() {
   const handleSaveDirectEdit = async () => {
     setEngineStatus("Validating");
     try {
-      const changeSet = { kind: "file_update", files: [{ filePath: selectedFile.path, content: fileContent }] };
+      const changeSet = {
+        kind: "file_update",
+        files: [{ filePath: selectedFile.path, content: fileContent }],
+      };
       const approval = await requestChangeApproval(changeSet);
       if (approval.status === "NOT_CONFIGURED") {
         setEngineStatus("Not Configured");
@@ -140,14 +147,16 @@ export function GeminiProjectFilesStudio() {
               محرر ومعدل كود المشروع الذكي مع Gemini 💻
             </h2>
             <p className="text-xs text-muted-foreground font-medium">
-              اختر ملفًا من فهرس الواجهة، ثم يقرأ Project Engine المحتوى الحقيقي قبل إنشاء مسودة تعديل.
-              لا يتم تطبيق أي تغيير إلا بموافقة صريحة وتأكيد من مزود المشروع.
+              اختر ملفًا من فهرس الواجهة، ثم يقرأ Project Engine المحتوى الحقيقي قبل إنشاء مسودة
+              تعديل. لا يتم تطبيق أي تغيير إلا بموافقة صريحة وتأكيد من مزود المشروع.
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-[10px] bg-secondary text-muted-foreground font-bold px-3 py-1.5 rounded-xl border border-border/70">{engineStatus}</span>
+          <span className="text-[10px] bg-secondary text-muted-foreground font-bold px-3 py-1.5 rounded-xl border border-border/70">
+            {engineStatus}
+          </span>
           <span className="text-xs bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 font-black px-3 py-1.5 rounded-xl border border-emerald-500/30 flex items-center gap-1.5">
             <Sparkles className="h-3.5 w-3.5" />
             <span>Real Project Engine Boundary</span>

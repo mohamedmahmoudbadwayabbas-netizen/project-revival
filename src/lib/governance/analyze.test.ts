@@ -1,7 +1,11 @@
 import { describe, it, expect } from "vitest";
 import { analyzeSignals } from "./analyze";
 
-const miss = (id: string, q: string) => ({ id, outcome: "no_results", tools_called: [{ query: q, ok: true, count: 0 }] });
+const miss = (id: string, q: string) => ({
+  id,
+  outcome: "no_results",
+  tools_called: [{ query: q, ok: true, count: 0 }],
+});
 
 describe("analyzeSignals", () => {
   it("proposes when the same empty search repeats 2+ times", () => {

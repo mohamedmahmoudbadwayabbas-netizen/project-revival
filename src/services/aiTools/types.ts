@@ -3,7 +3,13 @@
    Unified AI Tool Suite Types, Execution Contexts & Payload Interfaces
    ========================================================================= */
 
-import type { StoreLayoutConfig, ThemeColorPalette, LayoutSectionKey, MiniAdItem, HeroSlideConfig } from "@/types/layout-config";
+import type {
+  StoreLayoutConfig,
+  ThemeColorPalette,
+  LayoutSectionKey,
+  MiniAdItem,
+  HeroSlideConfig,
+} from "@/types/layout-config";
 
 export type AiToolName =
   | "generateProductImage"
@@ -35,14 +41,7 @@ export type AiToolName =
   | "gitRollbackCommit";
 
 export type AiToolGroup =
-  | "media"
-  | "catalog"
-  | "ui"
-  | "marketing"
-  | "safety"
-  | "universal"
-  | "operations"
-  | "devops";
+  "media" | "catalog" | "ui" | "marketing" | "safety" | "universal" | "operations" | "devops";
 
 export interface AiToolDefinition {
   name: AiToolName;
@@ -211,10 +210,7 @@ export interface GroundingSource {
 export type GeminiModelChoice = "gemini-3.8-flash";
 
 export type GeminiRoleChoice =
-  | "store_architect"
-  | "market_researcher"
-  | "growth_strategist"
-  | "copywriter";
+  "store_architect" | "market_researcher" | "growth_strategist" | "copywriter";
 
 export interface ChatMessage {
   id: string;

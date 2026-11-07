@@ -21,13 +21,25 @@ export function getArabicDbErrorMessage(error: any): string {
   const message = (typeof error === "string" ? error : error.message || "").toLowerCase();
   const code = (error.code || "").toUpperCase();
 
-  if (code === "42501" || message.includes("permission denied") || message.includes("row-level security")) {
+  if (
+    code === "42501" ||
+    message.includes("permission denied") ||
+    message.includes("row-level security")
+  ) {
     return "ليس لديك الصلاحيات الكافية لتنفيذ هذا الإجراء (RLS).";
   }
-  if (code === "23505" || message.includes("duplicate key") || message.includes("unique constraint")) {
+  if (
+    code === "23505" ||
+    message.includes("duplicate key") ||
+    message.includes("unique constraint")
+  ) {
     return "هذا السجل مسجل بالفعل في النظام.";
   }
-  if (code === "23503" || message.includes("foreign key") || message.includes("violates foreign key")) {
+  if (
+    code === "23503" ||
+    message.includes("foreign key") ||
+    message.includes("violates foreign key")
+  ) {
     return "تعذر إتمام العملية بسبب ارتباط هذا السجل بعناصر أخرى.";
   }
   if (code === "42P01" || message.includes("does not exist") || message.includes("relation")) {
@@ -46,7 +58,7 @@ export function getArabicDbErrorMessage(error: any): string {
 export async function safeDbQuery<T>(
   queryPromise: Promise<{ data: T | null; error: any }>,
   fallbackData: T | null = null,
-  options?: { silent?: boolean; errorMessage?: string }
+  options?: { silent?: boolean; errorMessage?: string },
 ): Promise<SafeQueryResult<T>> {
   try {
     const res = await queryPromise;
@@ -92,7 +104,7 @@ export async function safeDbMutation<T>(
     successMessage?: string;
     errorMessage?: string;
     showToast?: boolean;
-  }
+  },
 ): Promise<SafeQueryResult<T>> {
   const showToast = options?.showToast ?? true;
 

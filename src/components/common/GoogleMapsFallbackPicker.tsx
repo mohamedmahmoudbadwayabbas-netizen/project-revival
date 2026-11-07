@@ -4,22 +4,11 @@
    ========================================================================= */
 
 import { useState } from "react";
-import {
-  MapPin,
-  Navigation,
-  Check,
-  Building2,
-  Compass,
-  Search,
-  Sparkles,
-} from "lucide-react";
+import { MapPin, Navigation, Check, Building2, Compass, Search, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import {
-  POPULAR_EGYPT_DISTRICTS,
-  type QuickLocationPreset,
-} from "@/lib/mapsConfig";
+import { POPULAR_EGYPT_DISTRICTS, type QuickLocationPreset } from "@/lib/mapsConfig";
 
 interface GoogleMapsFallbackPickerProps {
   currentLat?: number;
@@ -171,7 +160,9 @@ export function GoogleMapsFallbackPicker({
                 >
                   <div className="flex items-center justify-between w-full">
                     <span className="text-xs font-black truncate">{preset.district}</span>
-                    {isSelected && <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />}
+                    {isSelected && (
+                      <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    )}
                   </div>
                   <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 mt-1">
                     {preset.estimatedDeliveryTime}

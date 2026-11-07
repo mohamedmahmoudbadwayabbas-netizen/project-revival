@@ -103,17 +103,24 @@ function applyTheme(s: StoreSettings) {
     const hex = v.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
     if (hex) {
       let h = hex[1];
-      if (h.length === 3) h = h.split("").map((c) => c + c).join("");
+      if (h.length === 3)
+        h = h
+          .split("")
+          .map((c) => c + c)
+          .join("");
       const r = parseInt(h.slice(0, 2), 16) / 255;
       const g = parseInt(h.slice(2, 4), 16) / 255;
       const b = parseInt(h.slice(4, 6), 16) / 255;
-      const max = Math.max(r, g, b), min = Math.min(r, g, b);
+      const max = Math.max(r, g, b),
+        min = Math.min(r, g, b);
       const l = (max + min) / 2;
-      let hue = 0, sat = 0;
+      let hue = 0,
+        sat = 0;
       if (max !== min) {
         const d = max - min;
         sat = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-        hue = max === r ? (g - b) / d + (g < b ? 6 : 0) : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+        hue =
+          max === r ? (g - b) / d + (g < b ? 6 : 0) : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
         hue *= 60;
       }
       return `${Math.round(hue)} ${Math.round(sat * 100)}% ${Math.round(l * 100)}%`;
@@ -161,9 +168,13 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         .maybeSingle();
       if (!mounted) return;
       if (error) console.warn("[Settings] Supabase error:", error.message);
-      const merged = normalizeStoreIdentity({ ...DEFAULTS, ...((data as any) ?? {}) }) as StoreSettings;
+      const merged = normalizeStoreIdentity({
+        ...DEFAULTS,
+        ...((data as any) ?? {}),
+      }) as StoreSettings;
       for (const key of Object.keys(merged) as (keyof StoreSettings)[]) {
-        if (merged[key] === null && DEFAULTS[key] !== null && DEFAULTS[key] !== undefined) (merged as any)[key] = DEFAULTS[key];
+        if (merged[key] === null && DEFAULTS[key] !== null && DEFAULTS[key] !== undefined)
+          (merged as any)[key] = DEFAULTS[key];
       }
       setSettings(merged);
       applyTheme(merged);

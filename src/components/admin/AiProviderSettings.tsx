@@ -59,7 +59,9 @@ export function AiProviderSettings() {
         <Bot className="h-5 w-5 text-primary" />
         <div>
           <h3 className="font-bold text-foreground">الذكاء الاصطناعي (نواة ومساعد الوادي)</h3>
-          <p className="text-xs text-muted-foreground">اختر الشركة، والصق مفتاحك، واكتب اسم أي نموذج تريده.</p>
+          <p className="text-xs text-muted-foreground">
+            اختر الشركة، والصق مفتاحك، واكتب اسم أي نموذج تريده.
+          </p>
         </div>
       </div>
 
@@ -80,11 +82,18 @@ export function AiProviderSettings() {
               }}
             >
               {AI_PROVIDER_PRESETS.map((p) => (
-                <option key={p.id} value={p.id}>{p.label}</option>
+                <option key={p.id} value={p.id}>
+                  {p.label}
+                </option>
               ))}
             </select>
             {preset?.keyUrl && (
-              <a href={preset.keyUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
+              <a
+                href={preset.keyUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+              >
                 احصل على مفتاح من هنا <ExternalLink className="h-3 w-3" />
               </a>
             )}
@@ -97,32 +106,61 @@ export function AiProviderSettings() {
                 type={showKey ? "text" : "password"}
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
-                placeholder={hasKey ? "•••••••• (محفوظ — اتركه فارغًا للإبقاء عليه)" : "الصق المفتاح هنا"}
+                placeholder={
+                  hasKey ? "•••••••• (محفوظ — اتركه فارغًا للإبقاء عليه)" : "الصق المفتاح هنا"
+                }
                 dir="ltr"
                 autoComplete="off"
               />
-              <button type="button" onClick={() => setShowKey((v) => !v)} className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" aria-label="إظهار المفتاح">
+              <button
+                type="button"
+                onClick={() => setShowKey((v) => !v)}
+                className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground"
+                aria-label="إظهار المفتاح"
+              >
                 {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
-            <span className="block text-xs text-muted-foreground">يمكنك لصق عدة مفاتيح مفصولة بفاصلة أو مسافة — عند نفاد حصة مفتاح ينتقل المتجر للتالي تلقائيًا.</span>
+            <span className="block text-xs text-muted-foreground">
+              يمكنك لصق عدة مفاتيح مفصولة بفاصلة أو مسافة — عند نفاد حصة مفتاح ينتقل المتجر للتالي
+              تلقائيًا.
+            </span>
           </label>
 
           <label className="space-y-1.5">
             <span className="text-sm font-medium">٣. اسم النموذج (اختياري)</span>
-            <Input value={model} onChange={(e) => setModel(e.target.value)} placeholder={`مثال: ${preset?.modelHint ?? ""}`} dir="ltr" />
+            <Input
+              value={model}
+              onChange={(e) => setModel(e.target.value)}
+              placeholder={`مثال: ${preset?.modelHint ?? ""}`}
+              dir="ltr"
+            />
           </label>
 
           <label className="space-y-1.5">
-            <span className="text-sm font-medium">رابط البوابة {needsUrl ? "(مطلوب)" : "(اختياري — للمتقدمين)"}</span>
-            <Input value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder={preset?.baseUrl || "https://.../v1"} dir="ltr" disabled={provider === "gemini"} />
+            <span className="text-sm font-medium">
+              رابط البوابة {needsUrl ? "(مطلوب)" : "(اختياري — للمتقدمين)"}
+            </span>
+            <Input
+              value={baseUrl}
+              onChange={(e) => setBaseUrl(e.target.value)}
+              placeholder={preset?.baseUrl || "https://.../v1"}
+              dir="ltr"
+              disabled={provider === "gemini"}
+            />
           </label>
         </div>
       )}
 
       {result && (
-        <div className={`flex items-start gap-2 rounded-xl p-3 text-sm ${result.ok ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"}`}>
-          {result.ok ? <CheckCircle2 className="h-4 w-4 mt-0.5" /> : <XCircle className="h-4 w-4 mt-0.5" />}
+        <div
+          className={`flex items-start gap-2 rounded-xl p-3 text-sm ${result.ok ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"}`}
+        >
+          {result.ok ? (
+            <CheckCircle2 className="h-4 w-4 mt-0.5" />
+          ) : (
+            <XCircle className="h-4 w-4 mt-0.5" />
+          )}
           <span>{result.message}</span>
         </div>
       )}

@@ -3,14 +3,20 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { ShieldCheck, Loader2, Check, X, Sparkles } from "lucide-react";
-import { generateProposals, generateOpsProposals, reviewProposal } from "@/lib/governance/proposals.functions";
+import {
+  generateProposals,
+  generateOpsProposals,
+  reviewProposal,
+} from "@/lib/governance/proposals.functions";
 import { toast } from "sonner";
 import { PageHead } from "@/components/admin/PageHead";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/admin/governance")({
-  head: () => ({ meta: [{ title: "حوكمة الوكلاء — لوحة التحكم" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({
+    meta: [{ title: "حوكمة الوكلاء — لوحة التحكم" }, { name: "robots", content: "noindex" }],
+  }),
   component: GovernancePage,
 });
 
@@ -19,7 +25,11 @@ function GovernancePage() {
   const proposals = useQuery({
     queryKey: ["ai-proposals"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("ai_proposals").select("*").order("created_at", { ascending: false }).limit(100);
+      const { data, error } = await supabase
+        .from("ai_proposals")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(100);
       if (error) throw error;
       return data;
     },
@@ -43,7 +53,9 @@ function GovernancePage() {
     setBusy(true);
     try {
       const r = await runGenerate();
-      toast.success(r.created ? `تم إنشاء ${r.created} مقترح جديد` : "لا توجد أنماط جديدة كافية بعد");
+      toast.success(
+        r.created ? `تم إنشاء ${r.created} مقترح جديد` : "لا توجد أنماط جديدة كافية بعد",
+      );
       qc.invalidateQueries({ queryKey: ["ai-proposals"] });
     } catch {
       toast.error("تعذر التحليل");
@@ -58,7 +70,9 @@ function GovernancePage() {
     setBusy(true);
     try {
       const r = await runOps();
-      toast.success(r.created ? `وكيل العمليات أنشأ ${r.created} مقترح` : "لا توجد مشاكل تشغيلية جديدة");
+      toast.success(
+        r.created ? `وكيل العمليات أنشأ ${r.created} مقترح` : "لا توجد مشاكل تشغيلية جديدة",
+      );
       qc.invalidateQueries({ queryKey: ["ai-proposals"] });
     } catch {
       toast.error("تعذر فحص العمليات");
@@ -69,7 +83,15 @@ function GovernancePage() {
   async function review(id: string, status: "approved" | "rejected") {
     try {
       const r = await runReview({ data: { id, decision: status } });
-      toast.success(r.status === "executed" ? "تمت الموافقة والتنفيذ" : r.status === "failed" ? "تمت الموافقة لكن فشل التنفيذ" : status === "approved" ? "تمت الموافقة" : "تم الرفض");
+      toast.success(
+        r.status === "executed"
+          ? "تمت الموافقة والتنفيذ"
+          : r.status === "failed"
+            ? "تمت الموافقة لكن فشل التنفيذ"
+            : status === "approved"
+              ? "تمت الموافقة"
+              : "تم الرفض",
+      );
     } catch {
       toast.error("تعذر الحفظ");
     }
@@ -78,23 +100,35 @@ function GovernancePage() {
 
   return (
     <div className="space-y-6">
-      <PageHead icon={ShieldCheck} eyebrow="الذكاء الاصطناعي" title="حوكمة الوكلاء" desc="مقترحات التحسين لا تُطبق إلا بعد موافقتك على العملية الفعلية." />
+      <PageHead
+        icon={ShieldCheck}
+        eyebrow="الذكاء الاصطناعي"
+        title="حوكمة الوكلاء"
+        desc="مقترحات التحسين لا تُطبق إلا بعد موافقتك على العملية الفعلية."
+      />
       <div className="flex flex-wrap justify-end gap-2">
         <Button size="sm" variant="outline" disabled={busy} onClick={analyzeOps}>
-          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />} فحص المخزون والتوصيل
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}{" "}
+          فحص المخزون والتوصيل
         </Button>
         <Button size="sm" disabled={busy} onClick={analyze}>
-          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />} تحليل الإشارات وتوليد مقترحات
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}{" "}
+          تحليل الإشارات وتوليد مقترحات
         </Button>
       </div>
       <div className="grid gap-4 sm:grid-cols-3">
         <Stat label="تفاعلات مسجلة" value={stats.data?.interactions ?? "—"} />
         <Stat label="تقييمات" value={stats.data?.ratings ?? "—"} />
-        <Stat label="متوسط التقييم" value={stats.data?.avg != null ? stats.data.avg.toFixed(1) : "—"} />
+        <Stat
+          label="متوسط التقييم"
+          value={stats.data?.avg != null ? stats.data.avg.toFixed(1) : "—"}
+        />
       </div>
       <div className="lux-card p-2">
         {proposals.isLoading ? (
-          <div className="grid place-items-center p-16"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+          <div className="grid place-items-center p-16">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          </div>
         ) : !proposals.data?.length ? (
           <div className="p-16 text-center text-muted-foreground">لا توجد مقترحات بعد</div>
         ) : (
@@ -104,15 +138,25 @@ function GovernancePage() {
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-semibold">{p.title}</span>
                   <span className="rounded-md bg-muted px-2 py-0.5 text-xs">{p.agent_type}</span>
-                  <span className="rounded-md bg-muted px-2 py-0.5 text-xs">خطورة: {p.risk_tier}</span>
+                  <span className="rounded-md bg-muted px-2 py-0.5 text-xs">
+                    خطورة: {p.risk_tier}
+                  </span>
                   <span className="rounded-md bg-accent px-2 py-0.5 text-xs">{p.status}</span>
                 </div>
-                {p.root_cause && <p className="text-sm text-muted-foreground">السبب: {p.root_cause}</p>}
-                <pre dir="ltr" className="max-h-60 overflow-auto rounded-xl bg-muted p-3 text-xs">{JSON.stringify(p.raw_operation, null, 2)}</pre>
+                {p.root_cause && (
+                  <p className="text-sm text-muted-foreground">السبب: {p.root_cause}</p>
+                )}
+                <pre dir="ltr" className="max-h-60 overflow-auto rounded-xl bg-muted p-3 text-xs">
+                  {JSON.stringify(p.raw_operation, null, 2)}
+                </pre>
                 {p.status === "pending" && (
                   <div className="flex gap-2">
-                    <Button size="sm" onClick={() => review(p.id, "approved")}><Check className="h-4 w-4" /> موافقة</Button>
-                    <Button size="sm" variant="outline" onClick={() => review(p.id, "rejected")}><X className="h-4 w-4" /> رفض</Button>
+                    <Button size="sm" onClick={() => review(p.id, "approved")}>
+                      <Check className="h-4 w-4" /> موافقة
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => review(p.id, "rejected")}>
+                      <X className="h-4 w-4" /> رفض
+                    </Button>
                   </div>
                 )}
               </li>

@@ -10,7 +10,9 @@ export const getGoogleMapsBrowserKey = (): string => {
       import.meta.env.VITE_GOOGLE_MAPS_API_KEY ||
       ""
     );
-  } catch {}
+  } catch {
+    // Vite env access can fail outside the browser runtime.
+  }
   return "";
 };
 
@@ -21,7 +23,9 @@ export const getGoogleMapsTrackingId = (): string => {
       import.meta.env.VITE_GOOGLE_MAPS_CHANNEL ||
       ""
     );
-  } catch {}
+  } catch {
+    // Vite env access can fail outside the browser runtime.
+  }
   return "";
 };
 

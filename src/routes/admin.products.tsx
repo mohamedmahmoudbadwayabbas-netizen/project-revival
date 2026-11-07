@@ -54,10 +54,7 @@ import {
   extractProductDetails,
   formatProductDescriptionWithMetadata,
 } from "@/lib/product-metadata";
-import {
-  generateProductCopywriting,
-  ProductNutritionalInfo,
-} from "@/services/gemini36Service";
+import { generateProductCopywriting, ProductNutritionalInfo } from "@/services/gemini36Service";
 import { SmartProductCopywriterModal } from "@/components/admin/SmartProductCopywriterModal";
 import { AdminAiImageGeneratorModal } from "@/components/admin/AdminAiImageGeneratorModal";
 
@@ -186,23 +183,30 @@ function ProductsPage({ onGenerateCookingTip }: ProductsPageProps = {}) {
   const load = async () => {
     setLoading(true);
     const [{ data: p, error: pError }, { data: c, error: cError }] = await Promise.all([
-      supabase.from("products").select("id,name,name_ar,description,description_ar,price,original_price,image_url,images,category_id,stock,rating,reviews_count,is_featured,is_active,created_at").order("created_at", { ascending: false }),
+      supabase
+        .from("products")
+        .select(
+          "id,name,name_ar,description,description_ar,price,original_price,image_url,images,category_id,stock,rating,reviews_count,is_featured,is_active,created_at",
+        )
+        .order("created_at", { ascending: false }),
       supabase.from("categories").select("id,name,name_ar").order("created_at"),
     ]);
     if (pError) toast.error(`تعذر تحميل المنتجات: ${pError.message}`);
     if (cError) toast.error(`تعذر تحميل الأقسام: ${cError.message}`);
-    setProducts((p ?? []).map((row: any) => ({
-      ...row,
-      price_per_unit: Number(row.price ?? 0),
-      old_price: row.original_price == null ? null : Number(row.original_price),
-      stock_quantity: Number(row.stock ?? 0),
-      low_stock_threshold: 5,
-      unit_label: "قطعة",
-      is_by_weight: false,
-      is_popular: Boolean(row.is_featured),
-      is_on_sale: Number(row.original_price ?? 0) > Number(row.price ?? 0),
-      is_top_seller: false,
-    })) as Product[]);
+    setProducts(
+      (p ?? []).map((row: any) => ({
+        ...row,
+        price_per_unit: Number(row.price ?? 0),
+        old_price: row.original_price == null ? null : Number(row.original_price),
+        stock_quantity: Number(row.stock ?? 0),
+        low_stock_threshold: 5,
+        unit_label: "قطعة",
+        is_by_weight: false,
+        is_popular: Boolean(row.is_featured),
+        is_on_sale: Number(row.original_price ?? 0) > Number(row.price ?? 0),
+        is_top_seller: false,
+      })) as Product[],
+    );
     setCats(
       (c ?? []).map((cat: any) => ({
         id: cat.id,
@@ -350,7 +354,6 @@ function ProductsPage({ onGenerateCookingTip }: ProductsPageProps = {}) {
     }
   };
 
-
   // توليد كافة بيانات وتفاصيل المنتج بالذكاء الاصطناعي
   const handleGenerateAllAI = async () => {
     if (!editing?.name?.trim()) {
@@ -368,9 +371,10 @@ function ProductsPage({ onGenerateCookingTip }: ProductsPageProps = {}) {
         isByWeight: !!editing.is_by_weight,
       });
 
-      const suggestedCat = !catObj && res.suggestedCategory
-        ? cats.find((c) => c.name === res.suggestedCategory)
-        : undefined;
+      const suggestedCat =
+        !catObj && res.suggestedCategory
+          ? cats.find((c) => c.name === res.suggestedCategory)
+          : undefined;
       setCleanDesc(res.seoDescription);
       setEditing((prev) =>
         prev
@@ -396,7 +400,9 @@ function ProductsPage({ onGenerateCookingTip }: ProductsPageProps = {}) {
         setNutritionFats(res.nutritionalInfo.fats || "0.4 جم");
       }
       setTagsList(res.tags);
-      toast.success("تم توليد وتعبئة كافة تفاصيل المنتج (الوصف، نصيحة الشيف، الخصائص، التخزين، المنشأ، القيمة الغذائية) بنجاح ✨");
+      toast.success(
+        "تم توليد وتعبئة كافة تفاصيل المنتج (الوصف، نصيحة الشيف، الخصائص، التخزين، المنشأ، القيمة الغذائية) بنجاح ✨",
+      );
     } catch (e) {
       toast.error((e as Error)?.message || "تعذر توليد البيانات بالذكاء الاصطناعي");
     } finally {
@@ -495,7 +501,8 @@ function ProductsPage({ onGenerateCookingTip }: ProductsPageProps = {}) {
       stock: Number(editing.stock_quantity ?? 0),
       is_by_weight: !!editing.is_by_weight,
       unit_label: editing.unit_label?.trim() || "قطعة",
-      cooking_tip: ((editing as any).cooking_tip ?? (editing as any).cookingTip ?? "").trim() || null,
+      cooking_tip:
+        ((editing as any).cooking_tip ?? (editing as any).cookingTip ?? "").trim() || null,
       // التقييم وعدد المراجعات تحسبهم قاعدة البيانات؛ إرسال null كان يُفشل إضافة منتج جديد.
     };
 
@@ -941,7 +948,7 @@ function ProductsPage({ onGenerateCookingTip }: ProductsPageProps = {}) {
 
                     {/* حالة الأكثر مبيعاً (قراءة تلقائية بدون زر يدوي) */}
                     <td className="p-3.5 text-center">
-                      {Boolean(p.is_top_seller || p.isTopSeller || p.is_featured) ? (
+                      {p.is_top_seller || p.isTopSeller || p.is_featured ? (
                         <span
                           className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-extrabold text-[10px] px-2 py-0.5 border border-amber-500/20 shadow-2xs"
                           title="شارة الأكثر مبيعاً (تلقائية)"
@@ -955,7 +962,9 @@ function ProductsPage({ onGenerateCookingTip }: ProductsPageProps = {}) {
 
                     {/* مفتاح العرض الخاص (Sale Toggle) */}
                     <td className="p-3.5 text-center">
-                      <span className="text-[10px] font-bold text-muted-foreground">{p.is_on_sale ? "عرض" : "سعر عادي"}</span>
+                      <span className="text-[10px] font-bold text-muted-foreground">
+                        {p.is_on_sale ? "عرض" : "سعر عادي"}
+                      </span>
                     </td>
 
                     {/* الإجراءات */}
@@ -1124,11 +1133,15 @@ function ProductsPage({ onGenerateCookingTip }: ProductsPageProps = {}) {
               <div className="sm:col-span-2 space-y-2 rounded-2xl border border-border/80 bg-secondary/20 p-3">
                 <div className="text-xs font-black text-foreground flex items-center justify-between">
                   <span>القيمة والحقائق الغذائية (لكل 100 جرام)</span>
-                  <span className="text-[10px] text-muted-foreground font-semibold">تُعرض للعميل في صفحة المنتج</span>
+                  <span className="text-[10px] text-muted-foreground font-semibold">
+                    تُعرض للعميل في صفحة المنتج
+                  </span>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                   <div>
-                    <label className="text-[10px] font-bold text-muted-foreground block mb-0.5">سعرات</label>
+                    <label className="text-[10px] font-bold text-muted-foreground block mb-0.5">
+                      سعرات
+                    </label>
                     <Input
                       value={nutritionCalories}
                       onChange={(e) => setNutritionCalories(e.target.value)}
@@ -1137,7 +1150,9 @@ function ProductsPage({ onGenerateCookingTip }: ProductsPageProps = {}) {
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold text-muted-foreground block mb-0.5">بروتين</label>
+                    <label className="text-[10px] font-bold text-muted-foreground block mb-0.5">
+                      بروتين
+                    </label>
                     <Input
                       value={nutritionProtein}
                       onChange={(e) => setNutritionProtein(e.target.value)}
@@ -1146,7 +1161,9 @@ function ProductsPage({ onGenerateCookingTip }: ProductsPageProps = {}) {
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold text-muted-foreground block mb-0.5">كربوهيدرات</label>
+                    <label className="text-[10px] font-bold text-muted-foreground block mb-0.5">
+                      كربوهيدرات
+                    </label>
                     <Input
                       value={nutritionCarbs}
                       onChange={(e) => setNutritionCarbs(e.target.value)}
@@ -1155,7 +1172,9 @@ function ProductsPage({ onGenerateCookingTip }: ProductsPageProps = {}) {
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold text-muted-foreground block mb-0.5">ألياف</label>
+                    <label className="text-[10px] font-bold text-muted-foreground block mb-0.5">
+                      ألياف
+                    </label>
                     <Input
                       value={nutritionFiber}
                       onChange={(e) => setNutritionFiber(e.target.value)}
@@ -1164,7 +1183,9 @@ function ProductsPage({ onGenerateCookingTip }: ProductsPageProps = {}) {
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold text-muted-foreground block mb-0.5">دهون</label>
+                    <label className="text-[10px] font-bold text-muted-foreground block mb-0.5">
+                      دهون
+                    </label>
                     <Input
                       value={nutritionFats}
                       onChange={(e) => setNutritionFats(e.target.value)}

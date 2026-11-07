@@ -12,9 +12,7 @@ export const DEFAULT_GEMINI_MAPS_MODEL = "gemini-3.8-flash" as const;
 export const DEFAULT_GEMINI_IMAGE_MODEL = "gemini-3.1-flash-image" as const;
 export const DEFAULT_GEMINI_IMAGE_LITE_MODEL = "gemini-3.1-flash-lite-image" as const;
 
-export const GEMINI_PRODUCTION_FALLBACK_MODELS = [
-  DEFAULT_GEMINI_MODEL,
-] as const;
+export const GEMINI_PRODUCTION_FALLBACK_MODELS = [DEFAULT_GEMINI_MODEL] as const;
 
 export const ALLOWED_CHAT_MODELS = new Set<string>([DEFAULT_GEMINI_MODEL]);
 

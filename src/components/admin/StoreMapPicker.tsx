@@ -108,7 +108,9 @@ export function StoreMapPicker({ lat, lng, onChange, address }: Props) {
         if (engineRef.current === "leaflet" && mapInstanceRef.current) {
           try {
             mapInstanceRef.current.remove();
-          } catch (_) {}
+          } catch (_) {
+            // The map may already be disposed during a rapid reinitialization.
+          }
         }
         if (containerRef.current) {
           containerRef.current.innerHTML = "";
@@ -267,7 +269,9 @@ export function StoreMapPicker({ lat, lng, onChange, address }: Props) {
       if (engineRef.current === "leaflet" && mapInstanceRef.current) {
         try {
           mapInstanceRef.current.remove();
-        } catch (_) {}
+        } catch (_) {
+          // The map may already be disposed during component unmount.
+        }
       }
     };
   }, []);

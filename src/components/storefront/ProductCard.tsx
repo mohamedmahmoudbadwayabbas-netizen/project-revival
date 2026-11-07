@@ -116,10 +116,16 @@ export function ProductCard({
               alt={`${product.name} — ${product.unit_label ?? "قطعة"}`}
               loading="lazy"
               decoding="async"
-              className={cn("h-full w-full object-contain p-2", outOfStock && "opacity-50 grayscale")}
+              className={cn(
+                "h-full w-full object-contain p-2",
+                outOfStock && "opacity-50 grayscale",
+              )}
             />
           ) : (
-            <div className="grid h-full w-full place-items-center bg-muted text-muted-foreground" aria-hidden="true">
+            <div
+              className="grid h-full w-full place-items-center bg-muted text-muted-foreground"
+              aria-hidden="true"
+            >
               <ImageIcon className="h-8 w-8 opacity-50" />
             </div>
           )}
@@ -127,7 +133,10 @@ export function ProductCard({
 
         {/* شارة زاوية أعلى اليسار */}
         {discount > 0 ? (
-          <span dir="ltr" className="absolute left-2 top-2 z-10 rounded-md bg-destructive px-1.5 py-0.5 text-xs font-bold tabular-nums text-destructive-foreground">
+          <span
+            dir="ltr"
+            className="absolute left-2 top-2 z-10 rounded-md bg-destructive px-1.5 py-0.5 text-xs font-bold tabular-nums text-destructive-foreground"
+          >
             -{formatNumberAr(discount)}%
           </span>
         ) : isTopSellerActive ? (
@@ -136,13 +145,20 @@ export function ProductCard({
           </span>
         ) : null}
 
-        <FavoriteButton productId={product.id} productName={product.name_ar || product.name} className="absolute right-0 top-0 z-10" />
+        <FavoriteButton
+          productId={product.id}
+          productName={product.name_ar || product.name}
+          className="absolute right-0 top-0 z-10"
+        />
 
         {/* نظرة سريعة: على الشاشات الكبيرة فقط */}
         {onOpen && (
           <button
             type="button"
-            onClick={(e) => { e.stopPropagation(); onOpen(product); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpen(product);
+            }}
             aria-label={`نظرة سريعة على ${product.name}`}
             className="absolute right-1.5 top-11 z-10 hidden h-9 w-9 place-items-center rounded-full bg-card/95 text-muted-foreground opacity-0 shadow-card transition-opacity hover:text-primary group-hover:opacity-100 md:grid"
           >
@@ -153,7 +169,9 @@ export function ProductCard({
         {/* زر (+) يتحول لعداد في نفس الموضع فوق الصورة */}
         <div dir="ltr" className="absolute bottom-2 right-2 z-10">
           {outOfStock ? (
-            <span className="rounded-full bg-muted px-2.5 py-1.5 text-xs font-bold text-muted-foreground">نفدت الكمية</span>
+            <span className="rounded-full bg-muted px-2.5 py-1.5 text-xs font-bold text-muted-foreground">
+              نفدت الكمية
+            </span>
           ) : qty > 0 ? (
             <div className="flex h-11 items-center gap-0.5 rounded-full bg-primary/10 p-0.5 shadow-card ring-1 ring-primary/20 backdrop-blur-sm">
               <button
@@ -165,7 +183,9 @@ export function ProductCard({
                 <Minus className="h-4 w-4" aria-hidden="true" />
               </button>
               <span className="min-w-8 text-center text-sm font-bold tabular-nums text-primary-dark">
-                {product.is_by_weight ? toArabicDigits(formatWeightLabel(qty)) : formatNumberAr(qty)}
+                {product.is_by_weight
+                  ? toArabicDigits(formatWeightLabel(qty))
+                  : formatNumberAr(qty)}
               </span>
               <button
                 type="button"
@@ -205,7 +225,9 @@ export function ProductCard({
         <p className="text-xs text-muted-foreground">{toArabicDigits(unitText)}</p>
 
         <div className="mt-auto flex flex-wrap items-baseline gap-x-2 pt-1">
-          <span className="text-base font-extrabold text-slate-900 md:text-lg dark:text-foreground">{formatPriceAr(displayedPrice)}</span>
+          <span className="text-base font-extrabold text-slate-900 md:text-lg dark:text-foreground">
+            {formatPriceAr(displayedPrice)}
+          </span>
           {hasDiscount && (
             <span className="text-xs text-muted-foreground line-through">
               {formatPriceAr(product.old_price! * (product.is_by_weight ? selectedWeight : 1))}
@@ -227,7 +249,9 @@ export function ProductCard({
                   onClick={(e) => handleQuickWeightSelect(e, w.value)}
                   className={cn(
                     "rounded-md border py-1.5 text-center text-xs font-semibold transition-colors active:scale-95",
-                    isSelected ? "border-primary bg-primary text-primary-foreground" : "border-border bg-muted text-muted-foreground hover:text-primary",
+                    isSelected
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-muted text-muted-foreground hover:text-primary",
                   )}
                 >
                   {toArabicDigits(w.label)}

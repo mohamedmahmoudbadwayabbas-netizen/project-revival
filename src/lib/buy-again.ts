@@ -10,10 +10,16 @@ export type BuyAgainEntry = { product: Product; quantity: number; timesBought: n
 export async function fetchAvailableProducts(ids: string[]): Promise<Product[]> {
   const unique = [...new Set(ids.filter(Boolean))];
   if (unique.length === 0) return [];
-  const { data, error } = await supabase.from("products").select(LIVE_PRODUCT_COLUMNS).eq("is_active", true).in("id", unique);
+  const { data, error } = await supabase
+    .from("products")
+    .select(LIVE_PRODUCT_COLUMNS)
+    .eq("is_active", true)
+    .in("id", unique);
   if (error) throw error;
   const map = new Map((data ?? []).map((p: any) => [p.id as string, mapDbProduct(p)]));
-  return unique.map((id) => map.get(id)).filter((p): p is Product => Boolean(p) && ((p!.stock_quantity ?? 0) > 0 || p!.is_by_weight));
+  return unique
+    .map((id) => map.get(id))
+    .filter((p): p is Product => Boolean(p) && ((p!.stock_quantity ?? 0) > 0 || p!.is_by_weight));
 }
 
 async function fetchBuyAgain(userId: string): Promise<BuyAgainEntry[]> {
@@ -26,13 +32,22 @@ async function fetchBuyAgain(userId: string): Promise<BuyAgainEntry[]> {
   if (error) throw error;
   const rows: PurchaseRow[] = (data ?? []).map((r: any) => {
     const order = Array.isArray(r.orders) ? r.orders[0] : r.orders;
-    return { productId: r.product_id ?? null, quantity: Number(r.quantity ?? 0), orderedAt: order?.created_at ?? r.created_at, status: order?.status ?? null };
+    return {
+      productId: r.product_id ?? null,
+      quantity: Number(r.quantity ?? 0),
+      orderedAt: order?.created_at ?? r.created_at,
+      status: order?.status ?? null,
+    };
   });
   const ranked = rankPurchases(rows, 12);
   const products = await fetchAvailableProducts(ranked.map((r) => r.productId));
   const byId = new Map(products.map((p) => [p.id, p]));
   return ranked
-    .map((r) => ({ product: byId.get(r.productId)!, quantity: r.lastQuantity, timesBought: r.timesBought }))
+    .map((r) => ({
+      product: byId.get(r.productId)!,
+      quantity: r.lastQuantity,
+      timesBought: r.timesBought,
+    }))
     .filter((e) => Boolean(e.product));
 }
 
@@ -52,7 +67,10 @@ type AddItemFn = (product: Product, quantity?: number, meta?: any) => void;
  * إعادة طلب سابق: نجلب المنتجات الحقيقية الحالية (بدل بناء منتج مزيف من بيانات الطلب القديمة)
  * فتكون الأسعار والمخزون محدثين، والمنتج غير المتاح يُتخطى ويُبلَّغ عنه.
  */
-export async function reorderFromLines(lines: OrderLine[], addItem: AddItemFn): Promise<{ added: number; skipped: number }> {
+export async function reorderFromLines(
+  lines: OrderLine[],
+  addItem: AddItemFn,
+): Promise<{ added: number; skipped: number }> {
   const wanted = lines.filter((l) => l.id && Number(l.quantity ?? 1) > 0);
   const products = await fetchAvailableProducts(wanted.map((l) => l.id as string));
   const byId = new Map(products.map((p) => [p.id, p]));

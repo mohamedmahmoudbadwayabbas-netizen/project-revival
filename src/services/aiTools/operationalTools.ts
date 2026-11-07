@@ -20,7 +20,11 @@ export async function executeCustomCSS(
     return { tool: "executeCustomCSS", ok: false, messageAr: "قواعد الـ CSS فارغة." };
   }
 
-  const pointId = createRollbackPoint("executeCustomCSS", "تطبيق قواعد CSS مخصصة", ctx?.layout || null);
+  const pointId = createRollbackPoint(
+    "executeCustomCSS",
+    "تطبيق قواعد CSS مخصصة",
+    ctx?.layout || null,
+  );
 
   if (typeof document !== "undefined") {
     let styleTag = document.getElementById("smartstore-custom-css") as HTMLStyleElement | null;
@@ -54,10 +58,20 @@ export async function updateRawJsonMetadata(
 ): Promise<ToolExecutionResult> {
   const k = (key || "").trim();
   if (!k) {
-    return { tool: "updateRawJsonMetadata", ok: false, messageAr: "اسم مفتاح الإعداد (key) مطلوب." };
+    return {
+      tool: "updateRawJsonMetadata",
+      ok: false,
+      messageAr: "اسم مفتاح الإعداد (key) مطلوب.",
+    };
   }
 
-  const ALLOWED_KEYS = ["site_name", "hero_title", "hero_subtitle", "whatsapp_number", "announcement_text"];
+  const ALLOWED_KEYS = [
+    "site_name",
+    "hero_title",
+    "hero_subtitle",
+    "whatsapp_number",
+    "announcement_text",
+  ];
   const jsonVal = value !== undefined ? value : {};
 
   if (typeof jsonVal !== "string" || !ALLOWED_KEYS.includes(k)) {
@@ -68,19 +82,30 @@ export async function updateRawJsonMetadata(
     };
   }
 
-  const pointId = createRollbackPoint("updateRawJsonMetadata", `تحديث إعداد: ${k}`, ctx?.layout || null);
+  const pointId = createRollbackPoint(
+    "updateRawJsonMetadata",
+    `تحديث إعداد: ${k}`,
+    ctx?.layout || null,
+  );
 
   try {
     if (!isSupabaseConfigured()) {
       throw new Error("الاتصال بقاعدة البيانات (Supabase) غير مهيأ حاليًا.");
     }
 
-    const { data: existing } = await supabase.from("store_settings").select("id").limit(1).maybeSingle();
+    const { data: existing } = await supabase
+      .from("store_settings")
+      .select("id")
+      .limit(1)
+      .maybeSingle();
     if (!existing?.id) {
       throw new Error("لم يتم العثور على صف إعدادات المتجر (store_settings) لتحديثه.");
     }
 
-    const { error } = await supabase.from("store_settings").update({ [k]: jsonVal } as never).eq("id", existing.id);
+    const { error } = await supabase
+      .from("store_settings")
+      .update({ [k]: jsonVal } as never)
+      .eq("id", existing.id);
     if (error) throw error;
 
     ctx?.refresh?.();
@@ -108,19 +133,32 @@ export async function manageUsersAndRoles(
   ctx?: ToolExecutionContext,
 ): Promise<ToolExecutionResult> {
   const targetId = (args.userId || "").trim();
-  const targetRole = (args.role || "customer").toLowerCase() as "admin" | "moderator" | "driver" | "customer";
+  const targetRole = (args.role || "customer").toLowerCase() as
+    "admin" | "moderator" | "driver" | "customer";
 
   if (!targetId) {
-    return { tool: "manageUsersAndRoles", ok: false, messageAr: "معرّف المستخدم (userId) مطلوب لتحديث الصلاحيات." };
+    return {
+      tool: "manageUsersAndRoles",
+      ok: false,
+      messageAr: "معرّف المستخدم (userId) مطلوب لتحديث الصلاحيات.",
+    };
   }
 
   // Supabase is authoritative for account roles/profile data.
   // Do not fall back to LocalStorage for identity or RBAC state.
   if (!isSupabaseConfigured()) {
-    return { tool: "manageUsersAndRoles", ok: false, messageAr: "الاتصال بقاعدة البيانات (Supabase) غير مهيأ حاليًا، لا يمكن تحديث الصلاحيات." };
+    return {
+      tool: "manageUsersAndRoles",
+      ok: false,
+      messageAr: "الاتصال بقاعدة البيانات (Supabase) غير مهيأ حاليًا، لا يمكن تحديث الصلاحيات.",
+    };
   }
 
-  const pointId = createRollbackPoint("manageUsersAndRoles", `تعديل رتبة المستخدم: ${targetId} -> ${targetRole}`, ctx?.layout || null);
+  const pointId = createRollbackPoint(
+    "manageUsersAndRoles",
+    `تعديل رتبة المستخدم: ${targetId} -> ${targetRole}`,
+    ctx?.layout || null,
+  );
 
   try {
     let resolvedUserId = targetId;
@@ -154,15 +192,13 @@ export async function manageUsersAndRoles(
     }
 
     // 2. Upsert role — this is the core action of the tool, so a failure here must fail the tool.
-    const { error: roleErr } = await supabase
-      .from("user_roles")
-      .upsert(
-        {
-          user_id: resolvedUserId,
-          role: targetRole,
-        } as never,
-        { onConflict: "user_id,role" } as any,
-      );
+    const { error: roleErr } = await supabase.from("user_roles").upsert(
+      {
+        user_id: resolvedUserId,
+        role: targetRole,
+      } as never,
+      { onConflict: "user_id,role" } as any,
+    );
 
     if (roleErr) throw roleErr;
 
@@ -271,7 +307,10 @@ export async function exportReportsAndAnalytics(
 
     const validOrderIds = (orders ?? []).filter((o) => o.status !== "cancelled").map((o) => o.id);
     if (validOrderIds.length) {
-      const { data: orderItems, error: itemsErr } = await supabase.from("order_items").select("product_id,quantity,price").in("order_id", validOrderIds);
+      const { data: orderItems, error: itemsErr } = await supabase
+        .from("order_items")
+        .select("product_id,quantity,price")
+        .in("order_id", validOrderIds);
       if (itemsErr) throw itemsErr;
       const totals = new Map<string, { salesCount: number; revenue: number }>();
       for (const item of orderItems ?? []) {
@@ -286,7 +325,10 @@ export async function exportReportsAndAnalytics(
         ? await supabase.from("products").select("id,name,name_ar").in("id", ids)
         : { data: [], error: null };
       if (prodsErr) throw prodsErr;
-      topProducts = (prods ?? []).map((p) => ({ name: p.name_ar || p.name, ...totals.get(p.id)! })).sort((a, b) => b.revenue - a.revenue).slice(0, 5);
+      topProducts = (prods ?? [])
+        .map((p) => ({ name: p.name_ar || p.name, ...totals.get(p.id)! }))
+        .sort((a, b) => b.revenue - a.revenue)
+        .slice(0, 5);
     }
   } catch (e) {
     // A failed query must not be silently reported as "0 orders" — that's indistinguishable
@@ -320,8 +362,14 @@ export async function exportReportsAndAnalytics(
 
   let csvContent = "";
   if (format === "csv") {
-    csvContent = `ID,Customer,Total Price,Status,Created At\n` +
-      ordersList.map((o) => `"${o.id}","${o.customer_name || "عميل"}","${o.total_amount}","${o.status}","${o.created_at}"`).join("\n");
+    csvContent =
+      `ID,Customer,Total Price,Status,Created At\n` +
+      ordersList
+        .map(
+          (o) =>
+            `"${o.id}","${o.customer_name || "عميل"}","${o.total_amount}","${o.status}","${o.created_at}"`,
+        )
+        .join("\n");
   }
 
   return {
@@ -348,7 +396,11 @@ export async function sendPushNotification(
   const audience = args.targetAudience || "all";
   const actionUrl = args.actionUrl || "/categories";
 
-  const pointId = createRollbackPoint("sendPushNotification", `إرسال إشعار فوري: ${title}`, ctx?.layout || null);
+  const pointId = createRollbackPoint(
+    "sendPushNotification",
+    `إرسال إشعار فوري: ${title}`,
+    ctx?.layout || null,
+  );
 
   // Update announcement bar in layout (in-memory, immediately visible in the current session)
   const layoutUpdated = !!ctx;
@@ -365,7 +417,11 @@ export async function sendPushNotification(
   let dbError: string | null = null;
   if (isSupabaseConfigured()) {
     try {
-      const { data: existing } = await supabase.from("store_settings").select("id").limit(1).maybeSingle();
+      const { data: existing } = await supabase
+        .from("store_settings")
+        .select("id")
+        .limit(1)
+        .maybeSingle();
       if (existing?.id) {
         const { error } = await supabase
           .from("store_settings")
@@ -432,10 +488,18 @@ export async function manageDeliveryZones(
   }
 
   if (!isSupabaseConfigured()) {
-    return { tool: "manageDeliveryZones", ok: false, messageAr: "الاتصال بقاعدة البيانات (Supabase) غير مهيأ حاليًا، لا يمكن تحديث مناطق التوصيل." };
+    return {
+      tool: "manageDeliveryZones",
+      ok: false,
+      messageAr: "الاتصال بقاعدة البيانات (Supabase) غير مهيأ حاليًا، لا يمكن تحديث مناطق التوصيل.",
+    };
   }
 
-  const pointId = createRollbackPoint("manageDeliveryZones", `تعديل منطقة التوصيل: ${name}`, ctx?.layout || null);
+  const pointId = createRollbackPoint(
+    "manageDeliveryZones",
+    `تعديل منطقة التوصيل: ${name}`,
+    ctx?.layout || null,
+  );
 
   try {
     if (args.zoneId) {
@@ -446,7 +510,11 @@ export async function manageDeliveryZones(
         .maybeSingle();
 
       if (prev) {
-        attachDbUndo(pointId, { table: "delivery_zones", kind: "restore-rows", rows: [prev as Record<string, unknown>] });
+        attachDbUndo(pointId, {
+          table: "delivery_zones",
+          kind: "restore-rows",
+          rows: [prev as Record<string, unknown>],
+        });
       }
 
       const { error } = await supabase
@@ -471,7 +539,11 @@ export async function manageDeliveryZones(
         .maybeSingle();
 
       if (existingZone?.id) {
-        attachDbUndo(pointId, { table: "delivery_zones", kind: "restore-rows", rows: [existingZone as Record<string, unknown>] });
+        attachDbUndo(pointId, {
+          table: "delivery_zones",
+          kind: "restore-rows",
+          rows: [existingZone as Record<string, unknown>],
+        });
 
         const { error } = await supabase
           .from("delivery_zones")

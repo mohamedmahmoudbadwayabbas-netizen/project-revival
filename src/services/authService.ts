@@ -33,15 +33,24 @@ export function getArabicAuthErrorMessage(error: unknown): string {
   if (!error) return "حدث خطأ غير متوقع، يرجى المحاولة مرة أخرى";
 
   const errObj = error as Record<string, unknown>;
-  const rawMessage = typeof error === "string" ? error : String(errObj.message || errObj.error_description || "");
+  const rawMessage =
+    typeof error === "string" ? error : String(errObj.message || errObj.error_description || "");
   const code = String(errObj.code || errObj.error || "").toLowerCase();
   const lowerMsg = rawMessage.toLowerCase();
 
   // Code or Message pattern matches
-  if (lowerMsg.includes("invalid login credentials") || code === "invalid_credentials" || lowerMsg.includes("invalid_grant")) {
+  if (
+    lowerMsg.includes("invalid login credentials") ||
+    code === "invalid_credentials" ||
+    lowerMsg.includes("invalid_grant")
+  ) {
     return "البريد الإلكتروني أو كلمة المرور غير صحيحة، يرجى التحقق وإعادة المحاولة.";
   }
-  if (lowerMsg.includes("user already registered") || code === "user_already_exists" || lowerMsg.includes("already registered")) {
+  if (
+    lowerMsg.includes("user already registered") ||
+    code === "user_already_exists" ||
+    lowerMsg.includes("already registered")
+  ) {
     return "هذا الحساب مسجل بالفعل مسبقاً. يمكنك تسجيل الدخول مباشرة.";
   }
   if (lowerMsg.includes("email not confirmed") || code === "email_not_confirmed") {
@@ -50,10 +59,18 @@ export function getArabicAuthErrorMessage(error: unknown): string {
   if (lowerMsg.includes("password should be at least") || lowerMsg.includes("weak_password")) {
     return "كلمة المرور ضعيفة. يجب أن تتكون من 6 أحرف أو أرقام على الأقل.";
   }
-  if (lowerMsg.includes("rate limit") || lowerMsg.includes("over_email_send_rate_limit") || lowerMsg.includes("over_sms_send_rate_limit")) {
+  if (
+    lowerMsg.includes("rate limit") ||
+    lowerMsg.includes("over_email_send_rate_limit") ||
+    lowerMsg.includes("over_sms_send_rate_limit")
+  ) {
     return "تم تجاوز الحد المسموح من المحاولات. يرجى الانتظار دقيقة واحدة ثم المحاولة مجدداً.";
   }
-  if (lowerMsg.includes("token has expired") || lowerMsg.includes("otp_expired") || lowerMsg.includes("token is invalid")) {
+  if (
+    lowerMsg.includes("token has expired") ||
+    lowerMsg.includes("otp_expired") ||
+    lowerMsg.includes("token is invalid")
+  ) {
     return "رمز التحقق (OTP) غير صحيح أو انتهت صلاحيته. يرجى طلب رمز جديد.";
   }
   if (lowerMsg.includes("invalid phone") || lowerMsg.includes("phone number is invalid")) {
@@ -114,7 +131,10 @@ export function resolveUserRole(user?: User | null, profile?: UserProfile | null
 // AUTH API METHODS
 // ---------------------------------------------------------------------------
 
-export async function signInWithEmail(emailInput: string, passwordInput: string): Promise<AuthResponse<Session>> {
+export async function signInWithEmail(
+  emailInput: string,
+  passwordInput: string,
+): Promise<AuthResponse<Session>> {
   try {
     const email = emailInput.trim().toLowerCase();
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -135,8 +155,10 @@ export async function signInWithEmail(emailInput: string, passwordInput: string)
 export async function signUpWithEmail(
   emailInput: string,
   passwordInput: string,
-  metadata?: { fullName?: string; phone?: string; role?: UserRole }
-): Promise<AuthResponse<{ user: User | null; session: Session | null; needsEmailConfirmation?: boolean }>> {
+  metadata?: { fullName?: string; phone?: string; role?: UserRole },
+): Promise<
+  AuthResponse<{ user: User | null; session: Session | null; needsEmailConfirmation?: boolean }>
+> {
   try {
     const email = emailInput.trim().toLowerCase();
     const cleanPhone = metadata?.phone ? formatPhoneNumber(metadata.phone) : undefined;
@@ -164,18 +186,18 @@ export async function signUpWithEmail(
     // Also attempt profile record upsert if session exists
     if (data.user) {
       try {
-        await supabase
-          .from("profiles")
-          .upsert(
-            {
-              id: data.user.id,
-              full_name: cleanName,
-              phone: cleanPhone,
-              updated_at: new Date().toISOString(),
-            },
-            { onConflict: "id" }
-          );
-      } catch (err) {}
+        await supabase.from("profiles").upsert(
+          {
+            id: data.user.id,
+            full_name: cleanName,
+            phone: cleanPhone,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "id" },
+        );
+      } catch (err) {
+        console.warn("Failed to synchronize the user profile.", err);
+      }
     }
 
     return {
@@ -190,7 +212,9 @@ export async function signUpWithEmail(
   }
 }
 
-export async function signInWithGoogle(customRedirectUri?: string): Promise<AuthResponse<{ url?: string }>> {
+export async function signInWithGoogle(
+  customRedirectUri?: string,
+): Promise<AuthResponse<{ url?: string }>> {
   try {
     const origin = typeof window !== "undefined" ? window.location.origin : "";
     const { lovable } = await import("@/integrations/lovable/index");
@@ -229,7 +253,7 @@ export async function sendPhoneOtp(phoneInput: string): Promise<AuthResponse<boo
 export async function verifyPhoneOtp(
   phoneInput: string,
   tokenInput: string,
-  type: "sms" | "phone_change" = "sms"
+  type: "sms" | "phone_change" = "sms",
 ): Promise<AuthResponse<Session>> {
   try {
     const phone = formatPhoneNumber(phoneInput);
@@ -251,7 +275,10 @@ export async function verifyPhoneOtp(
   }
 }
 
-export async function sendMagicLink(emailInput: string, customRedirectUri?: string): Promise<AuthResponse<boolean>> {
+export async function sendMagicLink(
+  emailInput: string,
+  customRedirectUri?: string,
+): Promise<AuthResponse<boolean>> {
   try {
     const email = emailInput.trim().toLowerCase();
     const origin = typeof window !== "undefined" ? window.location.origin : "";
@@ -274,7 +301,10 @@ export async function sendMagicLink(emailInput: string, customRedirectUri?: stri
   }
 }
 
-export async function sendPasswordResetEmail(emailInput: string, customRedirectUri?: string): Promise<AuthResponse<boolean>> {
+export async function sendPasswordResetEmail(
+  emailInput: string,
+  customRedirectUri?: string,
+): Promise<AuthResponse<boolean>> {
   try {
     const email = emailInput.trim().toLowerCase();
     const origin = typeof window !== "undefined" ? window.location.origin : "";
@@ -312,19 +342,26 @@ export async function updateUserPassword(newPassword: string): Promise<AuthRespo
 
 export async function updateUserProfile(
   userId: string,
-  profileUpdates: Partial<UserProfile>
+  profileUpdates: Partial<UserProfile>,
 ): Promise<AuthResponse<UserProfile>> {
   try {
     // 1. Update auth user metadata
-    if (profileUpdates.full_name || profileUpdates.phone || profileUpdates.role || profileUpdates.avatar_url) {
-      await supabase.auth.updateUser({
-        data: {
-          full_name: profileUpdates.full_name,
-          phone: profileUpdates.phone,
-          role: profileUpdates.role,
-          avatar_url: profileUpdates.avatar_url,
-        },
-      }).catch(() => {});
+    if (
+      profileUpdates.full_name ||
+      profileUpdates.phone ||
+      profileUpdates.role ||
+      profileUpdates.avatar_url
+    ) {
+      await supabase.auth
+        .updateUser({
+          data: {
+            full_name: profileUpdates.full_name,
+            phone: profileUpdates.phone,
+            role: profileUpdates.role,
+            avatar_url: profileUpdates.avatar_url,
+          },
+        })
+        .catch(() => {});
     }
 
     // 2. Update profiles table record

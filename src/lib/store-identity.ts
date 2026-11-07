@@ -28,9 +28,12 @@ export function normalizeStoreIdentity<T extends object>(settings: T): T {
   const next = { ...settings } as Record<string, unknown>;
   if (legacyMatch(next.primary_color, LEGACY_PRIMARY)) next.primary_color = STORE_IDENTITY.greenHsl;
   if (legacyMatch(next.accent_color, LEGACY_ACCENT)) next.accent_color = STORE_IDENTITY.rustHsl;
-  if (legacyMatch(next.background_color, LEGACY_BACKGROUND)) next.background_color = STORE_IDENTITY.creamHsl;
-  if (legacyMatch(next.foreground_color, LEGACY_FOREGROUND)) next.foreground_color = STORE_IDENTITY.inkHsl;
-  if (legacyMatch(next.announcement_bg_color, LEGACY_PRIMARY)) next.announcement_bg_color = STORE_IDENTITY.greenHsl;
+  if (legacyMatch(next.background_color, LEGACY_BACKGROUND))
+    next.background_color = STORE_IDENTITY.creamHsl;
+  if (legacyMatch(next.foreground_color, LEGACY_FOREGROUND))
+    next.foreground_color = STORE_IDENTITY.inkHsl;
+  if (legacyMatch(next.announcement_bg_color, LEGACY_PRIMARY))
+    next.announcement_bg_color = STORE_IDENTITY.greenHsl;
   if (legacyMatch(next.primary_hex, LEGACY_PRIMARY)) next.primary_hex = STORE_IDENTITY.green;
   if (legacyMatch(next.accent_hex, LEGACY_ACCENT)) next.accent_hex = STORE_IDENTITY.rust;
   return next as T;

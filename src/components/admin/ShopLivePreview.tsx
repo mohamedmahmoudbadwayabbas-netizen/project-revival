@@ -124,7 +124,7 @@ export function ShopLivePreview({ layout }: ShopLivePreviewProps) {
     <div
       className="flex flex-col h-full rounded-3xl border border-border/80 bg-card overflow-hidden shadow-lg"
       style={{
-        // @ts-ignore
+        // @ts-expect-error Custom preview CSS variables are not part of React's CSSProperties type.
         "--preview-primary": paletteMeta.primary,
         "--preview-radius": currentRadius,
       }}
@@ -218,7 +218,9 @@ export function ShopLivePreview({ layout }: ShopLivePreviewProps) {
                 🌿
               </div>
               <div>
-                <div className="font-display font-bold text-xs text-foreground">سوبرماركت الوادي الأخضر</div>
+                <div className="font-display font-bold text-xs text-foreground">
+                  سوبرماركت الوادي الأخضر
+                </div>
                 <div className="text-[9px] text-muted-foreground">أونلاين هايبر ماركت</div>
               </div>
             </div>

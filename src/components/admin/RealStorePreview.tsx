@@ -5,7 +5,13 @@ type Device = "mobile" | "tablet" | "desktop";
 const WIDTHS: Record<Device, number> = { mobile: 390, tablet: 768, desktop: 1280 };
 
 /** Embeds the real storefront and pushes unsaved settings into it (nothing is saved). */
-export function RealStorePreview({ draft, dirty }: { draft: Record<string, unknown>; dirty: boolean }) {
+export function RealStorePreview({
+  draft,
+  dirty,
+}: {
+  draft: Record<string, unknown>;
+  dirty: boolean;
+}) {
   const frame = useRef<HTMLIFrameElement>(null);
   const box = useRef<HTMLDivElement>(null);
   const [device, setDevice] = useState<Device>("mobile");
@@ -48,16 +54,20 @@ export function RealStorePreview({ draft, dirty }: { draft: Record<string, unkno
       <div className="flex items-center justify-between gap-2">
         <div>
           <div className="text-sm font-black text-foreground">المعاينة الحقيقية للمتجر</div>
-          <div className={`text-[11px] font-bold ${dirty ? "text-offer" : "text-muted-foreground"}`}>
+          <div
+            className={`text-[11px] font-bold ${dirty ? "text-offer" : "text-muted-foreground"}`}
+          >
             {dirty ? "تعديلات غير محفوظة — تظهر هنا فقط" : "مطابقة للمتجر الحالي"}
           </div>
         </div>
         <div className="flex items-center gap-1 rounded-xl bg-secondary p-1">
-          {([
-            ["mobile", Smartphone, "هاتف"],
-            ["tablet", Tablet, "تابلت"],
-            ["desktop", Monitor, "كمبيوتر"],
-          ] as const).map(([d, Icon, label]) => (
+          {(
+            [
+              ["mobile", Smartphone, "هاتف"],
+              ["tablet", Tablet, "تابلت"],
+              ["desktop", Monitor, "كمبيوتر"],
+            ] as const
+          ).map(([d, Icon, label]) => (
             <button
               key={d}
               type="button"
@@ -68,19 +78,34 @@ export function RealStorePreview({ draft, dirty }: { draft: Record<string, unkno
               <Icon className="h-4 w-4" />
             </button>
           ))}
-          <button type="button" title="إعادة تحميل" onClick={() => setKey((k) => k + 1)} className="grid h-8 w-8 place-items-center rounded-lg text-muted-foreground">
+          <button
+            type="button"
+            title="إعادة تحميل"
+            onClick={() => setKey((k) => k + 1)}
+            className="grid h-8 w-8 place-items-center rounded-lg text-muted-foreground"
+          >
             <RefreshCw className="h-4 w-4" />
           </button>
         </div>
       </div>
-      <div ref={box} className="w-full overflow-hidden rounded-2xl border border-border bg-background" style={{ height: h * scale }}>
+      <div
+        ref={box}
+        className="w-full overflow-hidden rounded-2xl border border-border bg-background"
+        style={{ height: h * scale }}
+      >
         <iframe
           key={key}
           ref={frame}
           src="/"
           title="معاينة المتجر"
           onLoad={push}
-          style={{ width: w, height: h, transform: `scale(${scale})`, transformOrigin: "top right", border: 0 }}
+          style={{
+            width: w,
+            height: h,
+            transform: `scale(${scale})`,
+            transformOrigin: "top right",
+            border: 0,
+          }}
           className="block ms-auto"
         />
       </div>

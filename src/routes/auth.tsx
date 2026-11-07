@@ -16,7 +16,10 @@ export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
       { title: "تسجيل الدخول / حساب جديد — سوبرماركت الوادي الأخضر" },
-      { name: "description", content: "سجّل دخولك أو أنشئ حساباً جديداً في متجر سوبرماركت الوادي الأخضر" },
+      {
+        name: "description",
+        content: "سجّل دخولك أو أنشئ حساباً جديداً في متجر سوبرماركت الوادي الأخضر",
+      },
     ],
   }),
   validateSearch: (s: Record<string, unknown>) => ({
@@ -91,9 +94,7 @@ export function AuthPage() {
       if (res.error) return toast.error(res.error);
 
       if (res.needsConfirmation) {
-        toast.success(
-          "تم إنشاء الحساب بنجاح! يرجى فحص بريدك الإلكتروني لتأكيد التسجيل.",
-        );
+        toast.success("تم إنشاء الحساب بنجاح! يرجى فحص بريدك الإلكتروني لتأكيد التسجيل.");
       } else {
         toast.success("تم إنشاء الحساب وتسجيل الدخول بنجاح 🎉");
       }
@@ -114,9 +115,10 @@ export function AuthPage() {
         // Fallback to password check if SMS gateway is in test mode
         if (password && password.length >= 6) {
           setBusy(true);
-          const loginRes = mode === "signin" 
-            ? await signInWithPhone(phone, password)
-            : await signUpWithPhone(phone, password, fullName);
+          const loginRes =
+            mode === "signin"
+              ? await signInWithPhone(phone, password)
+              : await signUpWithPhone(phone, password, fullName);
           setBusy(false);
           if (!loginRes.error) {
             toast.success("تم تسجيل الدخول برقم الهاتف بنجاح 📱");
@@ -176,7 +178,10 @@ export function AuthPage() {
             <Leaf className="h-6 w-6" />
           </div>
           <div>
-            <div className="font-display text-xl font-extrabold" style={{ color: "var(--brand-green)" }}>
+            <div
+              className="font-display text-xl font-extrabold"
+              style={{ color: "var(--brand-green)" }}
+            >
               سوبرماركت الوادي الأخضر
             </div>
             <div className="text-[11px] font-semibold text-muted-foreground">
@@ -226,15 +231,15 @@ export function AuthPage() {
             {mode === "forgot"
               ? "استعادة كلمة المرور"
               : mode === "signin"
-              ? "مرحباً بعودتك إلى متجرك 🌿"
-              : "انضم لعائلة الوادي الأخضر 🎉"}
+                ? "مرحباً بعودتك إلى متجرك 🌿"
+                : "انضم لعائلة الوادي الأخضر 🎉"}
           </h1>
           <p className="mt-1 text-center text-xs text-muted-foreground font-semibold">
             {mode === "forgot"
               ? "أدخل بريدك الإلكتروني لإرسال تعليمات إعادة التعيين"
               : mode === "signin"
-              ? "أدخل بياناتك للمتابعة والتسوق"
-              : "سجّل الآن واطلب منتجاتك الطازجة بكل سهولة"}
+                ? "أدخل بياناتك للمتابعة والتسوق"
+                : "سجّل الآن واطلب منتجاتك الطازجة بكل سهولة"}
           </p>
 
           {/* زر جوجل */}
@@ -438,7 +443,9 @@ export function AuthPage() {
                   )}
 
                   <label className="block">
-                    <span className="mb-1 block text-xs font-bold text-foreground">رقم الهاتف المحمول</span>
+                    <span className="mb-1 block text-xs font-bold text-foreground">
+                      رقم الهاتف المحمول
+                    </span>
                     <div className="flex items-center gap-2" dir="ltr">
                       <span className="h-10 px-3 flex items-center justify-center rounded-xl bg-secondary text-xs font-mono font-bold text-foreground border border-border">
                         🇪🇬 +20
@@ -460,14 +467,20 @@ export function AuthPage() {
                     className="mt-4 h-11 w-full rounded-2xl text-sm font-black text-white shadow-md shadow-emerald-700/20"
                     style={{ background: "var(--gradient-hero)" }}
                   >
-                    {busy ? <RefreshCw className="h-4 w-4 animate-spin" /> : "إرسال رمز التحقق (OTP)"}
+                    {busy ? (
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                    ) : (
+                      "إرسال رمز التحقق (OTP)"
+                    )}
                   </Button>
                 </>
               ) : (
                 <>
                   <div className="bg-secondary/50 p-3 rounded-2xl flex items-center justify-between text-xs mb-2">
                     <div>
-                      <span className="text-muted-foreground block text-[10px]">الرمز مُرسل إلى:</span>
+                      <span className="text-muted-foreground block text-[10px]">
+                        الرمز مُرسل إلى:
+                      </span>
                       <span className="font-mono font-bold text-foreground">{phone}</span>
                     </div>
                     <button
@@ -546,4 +559,3 @@ export function AuthPage() {
 }
 
 export default AuthPage;
-

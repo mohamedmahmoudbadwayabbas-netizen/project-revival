@@ -50,7 +50,10 @@ export function WeightSelector({
             </span>
           )}
         </div>
-        <div dir="ltr" className="flex items-center gap-1 overflow-x-auto pb-0.5 no-scrollbar tabular-nums">
+        <div
+          dir="ltr"
+          className="flex items-center gap-1 overflow-x-auto pb-0.5 no-scrollbar tabular-nums"
+        >
           {WEIGHT_OPTIONS.map((opt) => {
             const isSelected = Math.abs(selectedWeight - opt.value) < 0.01;
             return (
@@ -94,7 +97,10 @@ export function WeightSelector({
               تحديد وزن الصنف (بالجرام / الكيلو)
             </h4>
             <p className="text-[10px] text-muted-foreground font-medium">
-              سعر الكيلو: <bdi dir="ltr" className="tabular-nums">{product.price_per_unit.toFixed(2)} EGP</bdi>
+              سعر الكيلو:{" "}
+              <bdi dir="ltr" className="tabular-nums">
+                {product.price_per_unit.toFixed(2)} EGP
+              </bdi>
             </p>
           </div>
         </div>
@@ -140,10 +146,15 @@ export function WeightSelector({
       <div className="flex items-center justify-between gap-3 pt-2 border-t border-border/50">
         <span className="text-[11px] font-bold text-muted-foreground">
           الوزن المحدد:{" "}
-          <strong dir="ltr" className="inline-block text-foreground tabular-nums">{formatWeightLabel(selectedWeight)}</strong>
+          <strong dir="ltr" className="inline-block text-foreground tabular-nums">
+            {formatWeightLabel(selectedWeight)}
+          </strong>
         </span>
 
-        <div dir="ltr" className="flex items-center gap-1.5 rounded-full border border-border bg-secondary/50 p-1 tabular-nums">
+        <div
+          dir="ltr"
+          className="flex items-center gap-1.5 rounded-full border border-border bg-secondary/50 p-1 tabular-nums"
+        >
           <Button
             type="button"
             aria-label="تقليل 250 جم"

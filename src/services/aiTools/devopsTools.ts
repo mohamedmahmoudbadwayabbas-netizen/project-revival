@@ -20,7 +20,10 @@ import {
 import type { ProjectEngineResponse } from "./projectEngineService";
 import type { ToolExecutionContext, ToolExecutionResult } from "./types";
 
-function mapResponse(tool: ToolExecutionResult["tool"], response: ProjectEngineResponse): ToolExecutionResult {
+function mapResponse(
+  tool: ToolExecutionResult["tool"],
+  response: ProjectEngineResponse,
+): ToolExecutionResult {
   return {
     tool,
     ok: response.ok,
@@ -36,20 +39,38 @@ function mapResponse(tool: ToolExecutionResult["tool"], response: ProjectEngineR
 export async function getDirectoryTree(
   args: { rootDir?: string; maxDepth?: number } = {},
 ): Promise<ToolExecutionResult> {
-  return mapResponse("getDirectoryTree", await getProjectDirectoryTree(args.rootDir || "/src", args.maxDepth || 8));
+  return mapResponse(
+    "getDirectoryTree",
+    await getProjectDirectoryTree(args.rootDir || "/src", args.maxDepth || 8),
+  );
 }
 
-export async function getFileContentTool(args: { filePath?: string }): Promise<ToolExecutionResult> {
+export async function getFileContentTool(args: {
+  filePath?: string;
+}): Promise<ToolExecutionResult> {
   const path = (args.filePath || "").trim();
-  if (!path) return { tool: "getFileContent", ok: false, success: false, messageAr: "مسار الملف (filePath) مطلوب." };
+  if (!path)
+    return {
+      tool: "getFileContent",
+      ok: false,
+      success: false,
+      messageAr: "مسار الملف (filePath) مطلوب.",
+    };
   return mapResponse("getFileContent", await readProjectFile(path));
 }
 
-export async function searchCodebase(
-  args: { query?: string; category?: string },
-): Promise<ToolExecutionResult> {
+export async function searchCodebase(args: {
+  query?: string;
+  category?: string;
+}): Promise<ToolExecutionResult> {
   const query = (args.query || "").trim();
-  if (!query) return { tool: "searchCodebase", ok: false, success: false, messageAr: "نص البحث (query) مطلوب." };
+  if (!query)
+    return {
+      tool: "searchCodebase",
+      ok: false,
+      success: false,
+      messageAr: "نص البحث (query) مطلوب.",
+    };
   return mapResponse("searchCodebase", await searchProjectCode(query, args.category));
 }
 
@@ -66,17 +87,32 @@ export async function writeNewFile(
   _ctx?: ToolExecutionContext,
 ): Promise<ToolExecutionResult> {
   const path = (args.filePath || "").trim();
-  if (!path) return { tool: "writeNewFile", ok: false, success: false, messageAr: "مسار الملف (filePath) مطلوب." };
+  if (!path)
+    return {
+      tool: "writeNewFile",
+      ok: false,
+      success: false,
+      messageAr: "مسار الملف (filePath) مطلوب.",
+    };
   const response = await createFileChange(path, args.content ?? "", args.description);
   return mapResponse("writeNewFile", response);
 }
 
 export async function updateFileAST(
-  args: { filePath?: string; changes?: { searchPattern?: string; replacement?: string; newCode?: string } },
+  args: {
+    filePath?: string;
+    changes?: { searchPattern?: string; replacement?: string; newCode?: string };
+  },
   _ctx?: ToolExecutionContext,
 ): Promise<ToolExecutionResult> {
   const path = (args.filePath || "").trim();
-  if (!path) return { tool: "updateFileAST", ok: false, success: false, messageAr: "مسار الملف (filePath) مطلوب." };
+  if (!path)
+    return {
+      tool: "updateFileAST",
+      ok: false,
+      success: false,
+      messageAr: "مسار الملف (filePath) مطلوب.",
+    };
   const response = await updateFileChange(path, args.changes || {});
   return mapResponse("updateFileAST", response);
 }
@@ -86,7 +122,8 @@ export async function deleteFileTool(
   _ctx?: ToolExecutionContext,
 ): Promise<ToolExecutionResult> {
   const path = (args.filePath || "").trim();
-  if (!path) return { tool: "deleteFile", ok: false, success: false, messageAr: "مسار الملف مطلوب لحذفه." };
+  if (!path)
+    return { tool: "deleteFile", ok: false, success: false, messageAr: "مسار الملف مطلوب لحذفه." };
   return mapResponse("deleteFile", await deleteFileChange(path));
 }
 

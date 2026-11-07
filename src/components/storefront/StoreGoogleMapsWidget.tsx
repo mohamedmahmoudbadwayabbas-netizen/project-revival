@@ -222,7 +222,9 @@ export function StoreGoogleMapsWidget({
         </div>
 
         <span className="text-[10px] font-bold text-muted-foreground hidden sm:inline">
-          {activeView === "map" ? "تحديد مباشر عبر الأقمار الصناعية" : "اختيار سريع للمناطق المصرية"}
+          {activeView === "map"
+            ? "تحديد مباشر عبر الأقمار الصناعية"
+            : "اختيار سريع للمناطق المصرية"}
         </span>
       </div>
 

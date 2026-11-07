@@ -11,7 +11,10 @@ export function AiAlertBanner() {
 
   useEffect(() => {
     let alive = true;
-    const tick = () => list().then((a) => alive && setAlerts(a)).catch(() => {});
+    const tick = () =>
+      list()
+        .then((a) => alive && setAlerts(a))
+        .catch(() => {});
     tick();
     const t = setInterval(tick, 60_000);
     return () => {
@@ -24,12 +27,18 @@ export function AiAlertBanner() {
   return (
     <div className="space-y-2 px-4 pt-4 sm:px-8" dir="rtl">
       {alerts.map((a) => (
-        <div key={a.id} role="alert" className="flex items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+        <div
+          key={a.id}
+          role="alert"
+          className="flex items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
+        >
           <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
           <div className="flex-1">
             <p className="font-semibold">تنبيه الذكاء الاصطناعي</p>
             <p>{a.message}</p>
-            <Link to="/admin/settings" className="underline font-medium">افتح الإعدادات</Link>
+            <Link to="/admin/settings" className="underline font-medium">
+              افتح الإعدادات
+            </Link>
           </div>
           <button
             aria-label="إخفاء التنبيه"

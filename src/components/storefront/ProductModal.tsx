@@ -48,9 +48,7 @@ export function ProductModal({
           ) : (
             <div className="grid h-full w-full place-items-center text-6xl">🌿</div>
           )}
-          {Boolean(
-            product.is_popular || product.is_top_seller,
-          ) && (
+          {Boolean(product.is_popular || product.is_top_seller) && (
             <span className="absolute top-3 end-3 rounded-full bg-primary px-3 py-1 text-xs font-black text-primary-foreground">
               الأكثر مبيعاً 🔥
             </span>
@@ -60,15 +58,26 @@ export function ProductModal({
               عرض خاص
             </span>
           )}
-          {outOfStock && <span className="absolute bottom-3 start-3 rounded-full bg-destructive px-3 py-1 text-xs font-bold text-destructive-foreground">نفدت الكمية</span>}
+          {outOfStock && (
+            <span className="absolute bottom-3 start-3 rounded-full bg-destructive px-3 py-1 text-xs font-bold text-destructive-foreground">
+              نفدت الكمية
+            </span>
+          )}
         </div>
         <div className="p-5">
           <DialogHeader className="space-y-1 text-start">
             <DialogTitle className="font-display text-xl font-bold">{product.name}</DialogTitle>
             <p className="text-xs text-muted-foreground">
-              {product.is_by_weight
-                ? <>السعر: <bdi dir="ltr" className="tabular-nums">{product.price_per_unit.toFixed(2)} EGP / كجم</bdi></>
-                : product.unit_label}
+              {product.is_by_weight ? (
+                <>
+                  السعر:{" "}
+                  <bdi dir="ltr" className="tabular-nums">
+                    {product.price_per_unit.toFixed(2)} EGP / كجم
+                  </bdi>
+                </>
+              ) : (
+                product.unit_label
+              )}
             </p>
           </DialogHeader>
 
@@ -91,19 +100,31 @@ export function ProductModal({
 
           <div className="mt-4 flex items-center justify-between">
             <div>
-              <div dir="ltr" className="font-display text-2xl font-bold text-primary text-left tabular-nums">
+              <div
+                dir="ltr"
+                className="font-display text-2xl font-bold text-primary text-left tabular-nums"
+              >
                 {calculateEstimatedPrice(product, qty).toFixed(2)}
                 <span className="ms-1 text-xs font-bold text-muted-foreground">ج.م</span>
               </div>
               <div className="text-[11px] text-muted-foreground font-semibold">
-                {product.is_by_weight
-                  ? <>الوزن المحدد: <bdi dir="ltr">{formatWeightLabel(qty)}</bdi></>
-                  : <bdi dir="ltr">{qty} {product.unit_label}</bdi>}
+                {product.is_by_weight ? (
+                  <>
+                    الوزن المحدد: <bdi dir="ltr">{formatWeightLabel(qty)}</bdi>
+                  </>
+                ) : (
+                  <bdi dir="ltr">
+                    {qty} {product.unit_label}
+                  </bdi>
+                )}
               </div>
             </div>
 
             {!product.is_by_weight && !outOfStock && (
-              <div dir="ltr" className="flex items-center gap-1 rounded-full border border-border bg-secondary/40 p-1 tabular-nums">
+              <div
+                dir="ltr"
+                className="flex items-center gap-1 rounded-full border border-border bg-secondary/40 p-1 tabular-nums"
+              >
                 <Button
                   aria-label="تقليل الكمية"
                   variant="ghost"

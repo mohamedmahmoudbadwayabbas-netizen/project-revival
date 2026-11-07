@@ -3,7 +3,8 @@
 
 ## Phase 0 — تطبيق أرشيف المشروع
 - [x] نسخ ملفات `project-revival-main-v2.zip` إلى مساحة العمل مع استثناء `.env` المحلي.
-- [x] تشغيل الاختبارات والبناء والتحقق من نتيجة الاستبدال (الاختبارات والبناء ناجحان؛ ESLint يفشل بمشكلات قائمة واسعة).
+- [x] تشغيل الاختبارات والبناء والتحقق من نتيجة الاستبدال.
+- [x] إصلاح أخطاء ESLint والتنسيق والتحقق من TypeScript والاختبارات والبناء.
 
 ## Phase N — Nawat + product page + AI self-test (NEXT MODEL, do in one run)
 Full details and pre-solved blockers: IMPORT_PROTOCOL.md section 6.

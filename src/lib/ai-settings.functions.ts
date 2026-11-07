@@ -3,7 +3,10 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 async function assertAdmin(context: { supabase: any; userId: string }) {
-  const { data } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+  const { data } = await context.supabase.rpc("has_role", {
+    _user_id: context.userId,
+    _role: "admin",
+  });
   if (!data) throw new Error("هذه الإعدادات متاحة لمسؤول المتجر فقط.");
 }
 
@@ -40,7 +43,7 @@ export const updateAiSettings = createServerFn({ method: "POST" })
     const keepKey = !data.apiKey && current?.provider === data.provider;
     await saveAiSettings({
       provider: data.provider,
-      api_key: data.apiKey || (keepKey ? current?.api_key ?? null : null),
+      api_key: data.apiKey || (keepKey ? (current?.api_key ?? null) : null),
       base_url: data.baseUrl || null,
       model: data.model || null,
     });
@@ -59,7 +62,10 @@ export const testAiConnection = createServerFn({ method: "POST" })
     try {
       if (s && s.provider !== "gemini") {
         const r = await mod.callOpenAICompatible(s, contents, { maxOutputTokens: 20 });
-        return { ok: true, message: `تم الاتصال بنجاح. رد النموذج: ${r.text.slice(0, 40) || "OK"}` };
+        return {
+          ok: true,
+          message: `تم الاتصال بنجاح. رد النموذج: ${r.text.slice(0, 40) || "OK"}`,
+        };
       }
       const { GoogleGenAI } = await import("@google/genai");
       const keys = mod.splitKeys(s?.api_key || process.env["GEMINI_API_KEY"]);
@@ -68,23 +74,42 @@ export const testAiConnection = createServerFn({ method: "POST" })
       let okCount = 0;
       for (let i = 0; i < keys.length; i++) {
         try {
-          const ai = new GoogleGenAI({ apiKey: keys[i], httpOptions: { retryOptions: { attempts: 1 } } });
-          await ai.models.generateContent({ model: s?.model || "gemini-3.8-flash", contents: contents as any });
+          const ai = new GoogleGenAI({
+            apiKey: keys[i],
+            httpOptions: { retryOptions: { attempts: 1 } },
+          });
+          await ai.models.generateContent({
+            model: s?.model || "gemini-3.8-flash",
+            contents: contents as any,
+          });
           okCount++;
           results.push(`#${i + 1} ✓`);
         } catch (e) {
           const k = mod.classifyProviderError(null, String((e as Error)?.message ?? e));
-          results.push(`#${i + 1} ${k === "quota" ? "نفدت الحصة" : k === "auth" ? "غير صالح" : "مشغول"}`);
+          results.push(
+            `#${i + 1} ${k === "quota" ? "نفدت الحصة" : k === "auth" ? "غير صالح" : "مشغول"}`,
+          );
         }
       }
-      return { ok: okCount > 0, message: `${okCount} من ${keys.length} مفاتيح تعمل الآن: ${results.join(" · ")}` };
+      return {
+        ok: okCount > 0,
+        message: `${okCount} من ${keys.length} مفاتيح تعمل الآن: ${results.join(" · ")}`,
+      };
     } catch (error) {
       const msg = String((error as Error)?.message ?? error);
       const status = error instanceof mod.ProviderError ? error.status : null;
       const kind = mod.classifyProviderError(status, msg);
-      if (kind === "quota") return { ok: false, message: "المفتاح صحيح لكن الحصة أو الرصيد نفد. اشحن الرصيد أو استخدم مفتاحًا آخر." };
+      if (kind === "quota")
+        return {
+          ok: false,
+          message: "المفتاح صحيح لكن الحصة أو الرصيد نفد. اشحن الرصيد أو استخدم مفتاحًا آخر.",
+        };
       if (kind === "auth") return { ok: false, message: "المفتاح غير صالح أو مرفوض من المزود." };
-      if (/404|not.?found/i.test(msg)) return { ok: false, message: "اسم النموذج غير موجود لدى هذا المزود. تأكد من كتابته بشكل صحيح." };
+      if (/404|not.?found/i.test(msg))
+        return {
+          ok: false,
+          message: "اسم النموذج غير موجود لدى هذا المزود. تأكد من كتابته بشكل صحيح.",
+        };
       return { ok: false, message: `تعذر الاتصال: ${msg.slice(0, 160)}` };
     }
   });

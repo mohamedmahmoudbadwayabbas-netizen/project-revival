@@ -54,7 +54,7 @@ function NotFoundComponent() {
 
 function ErrorComponent({ error, reset }: ErrorComponentProps) {
   const reportedError = useMemo(
-    () => error instanceof Error ? error : new Error(String(error)),
+    () => (error instanceof Error ? error : new Error(String(error))),
     [error],
   );
   console.error(reportedError);
@@ -174,7 +174,7 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-  
+
   useEffect(() => {
     // Attempt auto-seed ONLY IF Supabase products are empty (as requested)
     autoSeedDatabaseIfNeeded().catch(console.error);
@@ -214,7 +214,11 @@ function RootComponent() {
 
 // صفحات لها شريطها الخاص: الأدمن، الدخول، وصفحة نواة (/assistant).
 function hasOwnChrome(pathname: string) {
-  return pathname.startsWith("/admin") || pathname.startsWith("/auth") || pathname.startsWith("/assistant");
+  return (
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/auth") ||
+    pathname.startsWith("/assistant")
+  );
 }
 
 function StorefrontAnnouncement() {

@@ -49,12 +49,14 @@ export function sanitizeLines(raw: unknown): GuestCartLine[] {
     const line: GuestCartLine = { productId, quantity };
     const w = Number(o.selectedWeight);
     if (Number.isFinite(w) && w > 0) line.selectedWeight = +Math.min(w, MAX_QTY).toFixed(3);
-    if (SUBS.includes(o.substitution as GuestSubstitution)) line.substitution = o.substitution as GuestSubstitution;
+    if (SUBS.includes(o.substitution as GuestSubstitution))
+      line.substitution = o.substitution as GuestSubstitution;
     if (typeof o.byWeight === "boolean") line.byWeight = o.byWeight;
     if (typeof o.unitLabel === "string" && o.unitLabel.length <= 30) line.unitLabel = o.unitLabel;
     const prev = byId.get(productId);
     if (!prev) byId.set(productId, line);
-    else byId.set(productId, { ...prev, ...line, quantity: Math.max(prev.quantity, line.quantity) });
+    else
+      byId.set(productId, { ...prev, ...line, quantity: Math.max(prev.quantity, line.quantity) });
   }
   return [...byId.values()].slice(0, MAX_LINES);
 }

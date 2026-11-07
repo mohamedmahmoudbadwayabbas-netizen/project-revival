@@ -54,14 +54,28 @@ export function AbandonedCartAgent() {
         .not("user_id", "is", null)
         .lt("created_at", cutoff);
       if (cartError) throw cartError;
-      if (!cartRows?.length) { setCarts([]); setSelectedCart(null); return; }
+      if (!cartRows?.length) {
+        setCarts([]);
+        setSelectedCart(null);
+        return;
+      }
 
       const userIds = [...new Set(cartRows.map((r) => r.user_id).filter(Boolean))] as string[];
-      const productIds = [...new Set(cartRows.map((r) => r.product_id).filter(Boolean))] as string[];
+      const productIds = [
+        ...new Set(cartRows.map((r) => r.product_id).filter(Boolean)),
+      ] as string[];
       const [profilesResult, productsResult, ordersResult] = await Promise.all([
         supabase.from("profiles").select("id,full_name,phone").in("id", userIds),
-        supabase.from("products").select("id,name,name_ar,price,is_active").in("id", productIds).eq("is_active", true),
-        supabase.from("orders").select("id,user_id,created_at").in("user_id", userIds).gte("created_at", cutoff),
+        supabase
+          .from("products")
+          .select("id,name,name_ar,price,is_active")
+          .in("id", productIds)
+          .eq("is_active", true),
+        supabase
+          .from("orders")
+          .select("id,user_id,created_at")
+          .in("user_id", userIds)
+          .gte("created_at", cutoff),
       ]);
       if (profilesResult.error) throw profilesResult.error;
       if (productsResult.error) throw productsResult.error;
@@ -81,22 +95,37 @@ export function AbandonedCartAgent() {
       const mapped: AbandonedCartData[] = [];
       for (const [userId, items] of latestByUser) {
         const lastActivity = Math.max(...items.map((i) => new Date(i.created_at ?? 0).getTime()));
-        const hasOrderAfterCart = (recentOrders ?? []).some((o) => o.user_id === userId && new Date(o.created_at ?? 0).getTime() >= lastActivity);
+        const hasOrderAfterCart = (recentOrders ?? []).some(
+          (o) => o.user_id === userId && new Date(o.created_at ?? 0).getTime() >= lastActivity,
+        );
         if (hasOrderAfterCart) continue;
         const profile = profileMap.get(userId);
         if (!profile?.phone) continue;
         // Never compose a recovery message with mock names or zero prices when
         // a cart references a product that could not be verified in Supabase.
         if (items.some((item) => !item.product_id || !productMap.has(item.product_id))) continue;
-        const totalPrice = items.reduce((sum, item) => sum + Number(productMap.get(item.product_id ?? "")?.price ?? 0) * Number(item.quantity ?? 0), 0);
+        const totalPrice = items.reduce(
+          (sum, item) =>
+            sum +
+            Number(productMap.get(item.product_id ?? "")?.price ?? 0) * Number(item.quantity ?? 0),
+          0,
+        );
         mapped.push({
           id: `cart-${userId}`,
           customerName: profile.full_name || "عميل المتجر",
           phone: profile.phone,
           itemsCount: items.length,
-          itemsList: items.map((i) => productMap.get(i.product_id ?? "")?.name_ar || productMap.get(i.product_id ?? "")?.name || "صنف"),
+          itemsList: items.map(
+            (i) =>
+              productMap.get(i.product_id ?? "")?.name_ar ||
+              productMap.get(i.product_id ?? "")?.name ||
+              "صنف",
+          ),
           totalPrice,
-          lastUpdated: new Date(lastActivity).toLocaleString("ar-EG", { dateStyle: "short", timeStyle: "short" }),
+          lastUpdated: new Date(lastActivity).toLocaleString("ar-EG", {
+            dateStyle: "short",
+            timeStyle: "short",
+          }),
         });
       }
       setCarts(mapped);
@@ -112,21 +141,24 @@ export function AbandonedCartAgent() {
     scanAbandonedCarts();
   }, []);
 
-  const handleGenerateDraft = useCallback(async (cart: AbandonedCartData) => {
-    setGenerating(true);
-    try {
-      const res = await generateAbandonedCartRecovery({
-        ...cart,
-        couponSuggested: couponCode,
-      });
-      setDraftResult(res);
-      setCustomDraft(res.messageText);
-    } catch (e) {
-      toast.error("حدث خطأ أثناء صياغة رسالة الاسترداد");
-    } finally {
-      setGenerating(false);
-    }
-  }, [couponCode]);
+  const handleGenerateDraft = useCallback(
+    async (cart: AbandonedCartData) => {
+      setGenerating(true);
+      try {
+        const res = await generateAbandonedCartRecovery({
+          ...cart,
+          couponSuggested: couponCode,
+        });
+        setDraftResult(res);
+        setCustomDraft(res.messageText);
+      } catch (e) {
+        toast.error("حدث خطأ أثناء صياغة رسالة الاسترداد");
+      } finally {
+        setGenerating(false);
+      }
+    },
+    [couponCode],
+  );
 
   useEffect(() => {
     if (selectedCart) {
@@ -284,11 +316,11 @@ export function AbandonedCartAgent() {
               </div>
               {selectedCart && (
                 <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground font-bold">كوبون للتحقق:</span>
+                  <span className="text-xs text-muted-foreground font-bold">كوبون للتحقق:</span>
                   <Input
                     value={couponCode}
                     onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                      placeholder="اختياري"
+                    placeholder="اختياري"
                     className="h-7 w-28 text-center font-mono font-black text-xs uppercase rounded-lg border-emerald-500"
                   />
                 </div>

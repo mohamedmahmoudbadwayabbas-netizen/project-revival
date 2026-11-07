@@ -41,13 +41,19 @@ export function recoverAnswerFromThinking(thinking: string): { thinking: string;
   if (!src) return { thinking: "", text: "" };
   const lines = src.split("\n");
   const idx = lines.findIndex((l) => /^\s*(#{1,6}\s|\*\*[^*]+\*\*|[-*]\s|\d+[.)]\s)/.test(l));
-  if (idx > 0) return { thinking: lines.slice(0, idx).join("\n").trim(), text: lines.slice(idx).join("\n").trim() };
+  if (idx > 0)
+    return {
+      thinking: lines.slice(0, idx).join("\n").trim(),
+      text: lines.slice(idx).join("\n").trim(),
+    };
   const paras = src.split(/\n\s*\n/);
-  if (paras.length > 1) return { thinking: paras.slice(0, -1).join("\n\n").trim(), text: paras.at(-1)!.trim() };
+  if (paras.length > 1)
+    return { thinking: paras.slice(0, -1).join("\n\n").trim(), text: paras.at(-1)!.trim() };
   return { thinking: "", text: src };
 }
 
-const PLANNING_RE = /(المستخدم\s+(سأل|بيسأل|يسأل|عايز)|^سأ[^\s]*|^هرد|^هقارن|^هكتب|أتكلم\s+بالعامية|زي\s+ما\s+مطلوب|أداة\s+(البحث|searchProducts)|^let me|^i will|^i'll|^the user)/im;
+const PLANNING_RE =
+  /(المستخدم\s+(سأل|بيسأل|يسأل|عايز)|^سأ[^\s]*|^هرد|^هقارن|^هكتب|أتكلم\s+بالعامية|زي\s+ما\s+مطلوب|أداة\s+(البحث|searchProducts)|^let me|^i will|^i'll|^the user)/im;
 
 /**
  * بعض النماذج تقفل التفكير بدري وتكتب مسودة تخطيط قبل الإجابة الفعلية.
@@ -75,7 +81,9 @@ export function extractProductPicks(text: string): { text: string; picks: Produc
   }
   const list = Array.isArray(parsed)
     ? parsed
-    : parsed && typeof parsed === "object" && Array.isArray((parsed as { products?: unknown }).products)
+    : parsed &&
+        typeof parsed === "object" &&
+        Array.isArray((parsed as { products?: unknown }).products)
       ? (parsed as { products: unknown[] }).products
       : [];
   const picks: ProductPick[] = [];

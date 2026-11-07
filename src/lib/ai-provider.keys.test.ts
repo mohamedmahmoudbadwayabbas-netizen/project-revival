@@ -3,7 +3,12 @@ import { groqKeys, orderKeys, markKeyCooldown } from "./ai-provider.server";
 
 describe("groq key pool", () => {
   it("collects GROQ_API_KEY and numbered keys", () => {
-    expect(groqKeys({ GROQ_API_KEY: "a", GROQ_API_KEY_2: "b", GROQ_API_KEY_3: "c,d" })).toEqual(["a", "b", "c", "d"]);
+    expect(groqKeys({ GROQ_API_KEY: "a", GROQ_API_KEY_2: "b", GROQ_API_KEY_3: "c,d" })).toEqual([
+      "a",
+      "b",
+      "c",
+      "d",
+    ]);
   });
   it("skips a key in cooldown", () => {
     markKeyCooldown("k1", 60000);

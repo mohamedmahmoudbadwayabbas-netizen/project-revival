@@ -2,11 +2,7 @@ import { useEffect, useState } from "react";
 import { Building2, Package, Clock, MapPin } from "lucide-react";
 import { AnimatedCounter } from "@/components/admin/AnimatedCounter";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  LiveBranch,
-  fetchLiveBranches,
-  UNIFIED_ALL_BRANCHES_ID,
-} from "@/lib/branches-data";
+import { LiveBranch, fetchLiveBranches, UNIFIED_ALL_BRANCHES_ID } from "@/lib/branches-data";
 
 interface BranchCardsOverviewProps {
   onSelectBranch?: (branchId: string) => void;
@@ -74,7 +70,10 @@ export function BranchCardsOverview({
     return (
       <div className="grid gap-3 md:grid-cols-3">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="h-36 rounded-xl bg-zinc-100 dark:bg-zinc-800 animate-pulse border border-zinc-200/60 dark:border-zinc-800" />
+          <div
+            key={i}
+            className="h-36 rounded-xl bg-zinc-100 dark:bg-zinc-800 animate-pulse border border-zinc-200/60 dark:border-zinc-800"
+          />
         ))}
       </div>
     );

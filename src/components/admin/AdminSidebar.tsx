@@ -156,11 +156,7 @@ export function AdminSidebar() {
   };
 
   return (
-    <Sidebar
-      collapsible="icon"
-      side="right"
-      className="border-l border-sidebar-border"
-    >
+    <Sidebar collapsible="icon" side="right" className="border-l border-sidebar-border">
       {/* Sidebar Header */}
       <SidebarHeader className="border-b border-sidebar-border p-4">
         <div className="flex items-center gap-3">
@@ -219,9 +215,7 @@ export function AdminSidebar() {
                               )}
                               strokeWidth={1.5}
                             />
-                            {!collapsed && (
-                              <span className="truncate">{item.title}</span>
-                            )}
+                            {!collapsed && <span className="truncate">{item.title}</span>}
                           </div>
                           {!collapsed && item.badge && (
                             <span
@@ -249,7 +243,10 @@ export function AdminSidebar() {
         {!collapsed && (
           <div className="px-2 py-1.5 rounded-xl bg-sidebar-accent border border-sidebar-border text-[11px] flex items-center justify-between">
             <div className="flex items-center gap-1.5 min-w-0">
-              <ShieldCheck className="h-3.5 w-3.5 text-sidebar-primary shrink-0" strokeWidth={1.5} />
+              <ShieldCheck
+                className="h-3.5 w-3.5 text-sidebar-primary shrink-0"
+                strokeWidth={1.5}
+              />
               <span className="truncate text-sidebar-foreground font-mono text-[10px]" dir="ltr">
                 {user?.email || "admin@store.com"}
               </span>
@@ -284,4 +281,3 @@ export function AdminSidebar() {
     </Sidebar>
   );
 }
-

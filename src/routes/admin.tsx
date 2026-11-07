@@ -6,7 +6,15 @@ import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { ColorModeProvider } from "@/lib/color-mode-context";
 import { ColorModeToggle } from "@/components/ColorModeToggle";
 import { useAuth } from "@/lib/auth-context";
-import { ShieldCheck, Store, Database, Building2, Loader2, Sparkles, ExternalLink } from "lucide-react";
+import {
+  ShieldCheck,
+  Store,
+  Database,
+  Building2,
+  Loader2,
+  Sparkles,
+  ExternalLink,
+} from "lucide-react";
 import { BRAND_NAME_AR } from "@/lib/brand";
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
@@ -44,9 +52,7 @@ export function AdminLayout() {
       <div className="min-h-screen grid place-items-center bg-background" dir="rtl">
         <div className="text-center space-y-3">
           <Loader2 className="h-6 w-6 animate-spin text-primary mx-auto" strokeWidth={1.5} />
-          <p className="text-xs font-medium text-zinc-500">
-            جاري التحقق من صلاحيات المسؤول...
-          </p>
+          <p className="text-xs font-medium text-zinc-500">جاري التحقق من صلاحيات المسؤول...</p>
         </div>
       </div>
     );
@@ -78,7 +84,11 @@ export function AdminLayout() {
                 </Link>
                 <ColorModeToggle />
                 <Link to="/" target="_blank" rel="noopener noreferrer">
-                  <Button variant="ghost" size="sm" className="h-9 rounded-xl gap-1 text-muted-foreground">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-9 rounded-xl gap-1 text-muted-foreground"
+                  >
                     <ExternalLink className="h-4 w-4" strokeWidth={1.5} />
                     <span className="hidden md:inline">المتجر</span>
                   </Button>
@@ -86,7 +96,13 @@ export function AdminLayout() {
               </div>
             </header>
             <AiAlertBanner />
-            <main className={isCopilotRoute ? "flex-1 w-full h-[calc(100dvh-4rem)] overflow-hidden" : "flex-1 p-4 sm:p-8 max-w-[1400px] mx-auto w-full"}>
+            <main
+              className={
+                isCopilotRoute
+                  ? "flex-1 w-full h-[calc(100dvh-4rem)] overflow-hidden"
+                  : "flex-1 p-4 sm:p-8 max-w-[1400px] mx-auto w-full"
+              }
+            >
               <Outlet />
             </main>
           </SidebarInset>

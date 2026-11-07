@@ -29,7 +29,10 @@ function safeRelative(path: string) {
 export const Route = createFileRoute("/.lovable/oauth/consent")({
   ssr: false,
   head: () => ({
-    meta: [{ title: "منح الوصول — سوبرماركت الوادي الأخضر" }, { name: "robots", content: "noindex,nofollow" }],
+    meta: [
+      { title: "منح الوصول — سوبرماركت الوادي الأخضر" },
+      { name: "robots", content: "noindex,nofollow" },
+    ],
   }),
   validateSearch: (s: Record<string, unknown>) => ({
     authorization_id: typeof s.authorization_id === "string" ? s.authorization_id : "",

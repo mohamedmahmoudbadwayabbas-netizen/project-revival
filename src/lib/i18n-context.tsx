@@ -48,7 +48,9 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       if (savedLang === "ar" || savedLang === "en") setLangState(savedLang);
       const savedTheme = localStorage.getItem("theme") as Theme;
       if (savedTheme === "light" || savedTheme === "dark") setThemeState(savedTheme);
-    } catch {}
+    } catch {
+      // Local storage may be unavailable in private or restricted browser contexts.
+    }
   }, []);
 
   useEffect(() => {
@@ -57,7 +59,9 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     document.documentElement.dir = dir;
     try {
       localStorage.setItem("lang", lang);
-    } catch {}
+    } catch {
+      // Local storage may be unavailable in private or restricted browser contexts.
+    }
   }, [lang, dir]);
 
   useEffect(() => {
@@ -65,7 +69,9 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     document.documentElement.classList.toggle("dark", theme === "dark");
     try {
       localStorage.setItem("theme", theme);
-    } catch {}
+    } catch {
+      // Local storage may be unavailable in private or restricted browser contexts.
+    }
   }, [theme]);
 
   const value = useMemo<I18nCtx>(

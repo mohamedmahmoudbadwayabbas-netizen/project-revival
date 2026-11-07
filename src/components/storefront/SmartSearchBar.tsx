@@ -154,7 +154,10 @@ export function SmartSearchBar({
                 <div className="px-3 py-1.5 text-[11px] font-black text-muted-foreground flex items-center justify-between">
                   <span className="flex items-center gap-1">
                     <Sparkles className="h-3 w-3 text-emerald-500" /> نتائج البحث السريع (
-                    <bdi dir="ltr" className="tabular-nums">{results.length}</bdi>)
+                    <bdi dir="ltr" className="tabular-nums">
+                      {results.length}
+                    </bdi>
+                    )
                   </span>
                   <span className="text-[10px] font-bold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-full">
                     تصحيح إملائي تلقائي 🎯
@@ -188,7 +191,10 @@ export function SmartSearchBar({
                           <h4 className="text-xs font-black text-foreground truncate group-hover:text-primary transition-colors">
                             {product.name}
                           </h4>
-                          <div dir="ltr" className="flex flex-wrap items-center gap-2 text-left tabular-nums text-[11px] text-muted-foreground font-bold mt-0.5">
+                          <div
+                            dir="ltr"
+                            className="flex flex-wrap items-center gap-2 text-left tabular-nums text-[11px] text-muted-foreground font-bold mt-0.5"
+                          >
                             <span className="text-emerald-600 dark:text-emerald-400 font-black">
                               {product.price_per_unit.toFixed(2)} EGP
                             </span>
@@ -201,7 +207,11 @@ export function SmartSearchBar({
                               {product.is_by_weight ? "بالوزن" : product.unit_label || "قطعة"}
                             </span>
                           </div>
-                          {unavailable && <span className="text-[10px] font-bold text-destructive">نفدت الكمية</span>}
+                          {unavailable && (
+                            <span className="text-[10px] font-bold text-destructive">
+                              نفدت الكمية
+                            </span>
+                          )}
                         </div>
                       </div>
 

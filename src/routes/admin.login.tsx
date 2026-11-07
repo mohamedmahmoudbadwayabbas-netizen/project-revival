@@ -96,9 +96,7 @@ function AdminLogin() {
                 سلسلة 3 فروع • Supabase Auth
               </span>
             </div>
-            <h1 className="font-display text-2xl font-black text-foreground">
-              {BRAND_NAME_AR}
-            </h1>
+            <h1 className="font-display text-2xl font-black text-foreground">{BRAND_NAME_AR}</h1>
             <p className="text-xs text-muted-foreground font-medium">
               بوابة الدخول المشفرة والمؤمنة للوحة التحكم المركزية
             </p>

@@ -31,7 +31,12 @@ export const PRODUCT_COLUMNS =
   "id,name,name_ar,description,description_ar,price,original_price,image_url,images,category_id,stock,rating,reviews_count,is_featured,is_active,created_at";
 export function normalizeProduct(row: any): Product {
   const price = Number(row.price ?? row.price_per_unit ?? 0);
-  const oldPrice = row.original_price != null ? Number(row.original_price) : (row.old_price != null ? Number(row.old_price) : null);
+  const oldPrice =
+    row.original_price != null
+      ? Number(row.original_price)
+      : row.old_price != null
+        ? Number(row.old_price)
+        : null;
   const stock = Number(row.stock ?? row.stock_quantity ?? 0);
   const isFeatured = Boolean(row.is_featured);
 
@@ -53,7 +58,12 @@ export function normalizeProduct(row: any): Product {
     is_on_sale: Boolean(row.is_on_sale ?? (oldPrice != null && oldPrice > price)),
     is_featured: isFeatured,
     is_top_seller: Boolean(row.is_top_seller),
-    avg_rating: row.rating != null ? Number(row.rating) : (row.avg_rating != null ? Number(row.avg_rating) : null),
+    avg_rating:
+      row.rating != null
+        ? Number(row.rating)
+        : row.avg_rating != null
+          ? Number(row.avg_rating)
+          : null,
     reviews_count: Number(row.reviews_count ?? 0),
   } as Product;
 }
@@ -129,16 +139,18 @@ export async function fetchHeroBanners(): Promise<HeroBanner[]> {
     return [];
   }
   if (!data || (!data.hero_image_url && !data.hero_bg_image)) return [];
-  return [{
-    id: data.id,
-    image_url: data.hero_image_url || data.hero_bg_image,
-    title: data.hero_title,
-    subtitle: data.hero_subtitle,
-    cta_text: data.hero_cta_text,
-    link_url: null,
-    sort_order: 0,
-    is_active: true,
-  }];
+  return [
+    {
+      id: data.id,
+      image_url: data.hero_image_url || data.hero_bg_image,
+      title: data.hero_title,
+      subtitle: data.hero_subtitle,
+      cta_text: data.hero_cta_text,
+      link_url: null,
+      sort_order: 0,
+      is_active: true,
+    },
+  ];
 }
 
 export function useHeroBanners() {

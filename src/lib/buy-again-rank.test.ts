@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { rankPurchases } from "./buy-again-rank";
 
-const r = (productId: string | null, quantity: number, orderedAt: string, status = "delivered") => ({ productId, quantity, orderedAt, status });
+const r = (
+  productId: string | null,
+  quantity: number,
+  orderedAt: string,
+  status = "delivered",
+) => ({ productId, quantity, orderedAt, status });
 
 describe("rankPurchases", () => {
   it("ranks by frequency then recency", () => {
@@ -15,7 +20,14 @@ describe("rankPurchases", () => {
     expect(out[0]).toMatchObject({ timesBought: 2, lastQuantity: 2 });
   });
   it("ignores cancelled orders, null products and bad quantities", () => {
-    expect(rankPurchases([r("a", 1, "2026-10-01T00:00:00Z", "cancelled"), r(null, 1, "2026-10-01T00:00:00Z"), r("b", 0, "2026-10-01T00:00:00Z"), r("c", 1, "bad-date")])).toEqual([]);
+    expect(
+      rankPurchases([
+        r("a", 1, "2026-10-01T00:00:00Z", "cancelled"),
+        r(null, 1, "2026-10-01T00:00:00Z"),
+        r("b", 0, "2026-10-01T00:00:00Z"),
+        r("c", 1, "bad-date"),
+      ]),
+    ).toEqual([]);
   });
   it("respects the limit", () => {
     const rows = Array.from({ length: 20 }, (_, i) => r(`p${i}`, 1, "2026-10-01T00:00:00Z"));

@@ -14,12 +14,7 @@ export type AiPlanStatus =
   | "PLAN_BLOCKED";
 
 export type AiPlanStepStatus =
-  | "PENDING"
-  | "RUNNING"
-  | "EXECUTED"
-  | "VERIFIED"
-  | "FAILED"
-  | "BLOCKED";
+  "PENDING" | "RUNNING" | "EXECUTED" | "VERIFIED" | "FAILED" | "BLOCKED";
 
 export interface AiPlanStep {
   stepId: string;
@@ -96,7 +91,12 @@ export async function executeAiPlan(
       step.status = "BLOCKED";
       blockDependentSteps(plan, new Set([step.stepId]));
       plan.status = "PLAN_BLOCKED";
-      return { plan, success: false, status: plan.status, error: `Dependencies are not satisfied for step ${step.stepId}.` };
+      return {
+        plan,
+        success: false,
+        status: plan.status,
+        error: `Dependencies are not satisfied for step ${step.stepId}.`,
+      };
     }
 
     step.status = "RUNNING";
@@ -119,7 +119,12 @@ export async function executeAiPlan(
       step.status = "FAILED";
       blockDependentSteps(plan, new Set([step.stepId]));
       plan.status = "PLAN_FAILED";
-      return { plan, success: false, status: plan.status, error: result.verificationDetails || "Step verification failed." };
+      return {
+        plan,
+        success: false,
+        status: plan.status,
+        error: result.verificationDetails || "Step verification failed.",
+      };
     }
 
     if (step.verificationRequired) {

@@ -50,7 +50,10 @@ import { EmptyState } from "@/components/storefront/EmptyState";
 export const Route = createFileRoute("/_authenticated/account")({
   ssr: false,
   head: () => ({
-    meta: [{ title: "حسابي — سوبرماركت الوادي الأخضر" }, { name: "robots", content: "noindex,nofollow" }],
+    meta: [
+      { title: "حسابي — سوبرماركت الوادي الأخضر" },
+      { name: "robots", content: "noindex,nofollow" },
+    ],
   }),
   component: AccountPage,
 });
@@ -593,7 +596,9 @@ function AddressesTab({ userId }: { userId: string }) {
   });
   const [form, setForm] = useState<Address>({ full_name: "", phone: "", address: "", city: "" });
 
-  useEffect(() => { if (data) setForm(data); }, [data]);
+  useEffect(() => {
+    if (data) setForm(data);
+  }, [data]);
 
   const save = async () => {
     const { error } = await supabase.from("profiles").upsert({
@@ -612,15 +617,37 @@ function AddressesTab({ userId }: { userId: string }) {
   if (isLoading) return <Loader />;
   return (
     <Card className="rounded-3xl border border-emerald-100 dark:border-emerald-900/30 bg-card p-6 shadow-sm">
-      <h3 className="mb-2 font-display text-lg font-black text-foreground">عنوان التوصيل الافتراضي 📍</h3>
-      <p className="mb-5 text-sm text-muted-foreground">قاعدة البيانات الحالية تدعم عنوانًا افتراضيًا واحدًا مرتبطًا بملفك الشخصي.</p>
+      <h3 className="mb-2 font-display text-lg font-black text-foreground">
+        عنوان التوصيل الافتراضي 📍
+      </h3>
+      <p className="mb-5 text-sm text-muted-foreground">
+        قاعدة البيانات الحالية تدعم عنوانًا افتراضيًا واحدًا مرتبطًا بملفك الشخصي.
+      </p>
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="الاسم الكامل" value={form.full_name} onChange={(v) => setForm({ ...form, full_name: v })} />
-        <Field label="رقم الهاتف" value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} />
-        <div className="sm:col-span-2"><Field label="العنوان" value={form.address} onChange={(v) => setForm({ ...form, address: v })} /></div>
+        <Field
+          label="الاسم الكامل"
+          value={form.full_name}
+          onChange={(v) => setForm({ ...form, full_name: v })}
+        />
+        <Field
+          label="رقم الهاتف"
+          value={form.phone}
+          onChange={(v) => setForm({ ...form, phone: v })}
+        />
+        <div className="sm:col-span-2">
+          <Field
+            label="العنوان"
+            value={form.address}
+            onChange={(v) => setForm({ ...form, address: v })}
+          />
+        </div>
         <Field label="المدينة" value={form.city} onChange={(v) => setForm({ ...form, city: v })} />
       </div>
-      <div className="mt-6 flex justify-end"><Button onClick={save} className="rounded-xl">حفظ العنوان</Button></div>
+      <div className="mt-6 flex justify-end">
+        <Button onClick={save} className="rounded-xl">
+          حفظ العنوان
+        </Button>
+      </div>
     </Card>
   );
 }
@@ -730,7 +757,11 @@ function Field({
   return (
     <label className="block">
       <span className="mb-1.5 block text-xs font-bold text-foreground">{label}</span>
-      <Input value={value} onChange={(event) => onChange(event.target.value)} className="h-10 rounded-xl" />
+      <Input
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="h-10 rounded-xl"
+      />
     </label>
   );
 }
@@ -839,4 +870,3 @@ function PasswordSection() {
     </div>
   );
 }
-

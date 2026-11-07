@@ -39,7 +39,13 @@ describe("guest cart storage", () => {
     const s = memoryStorage({ [GUEST_CART_KEY]: "{not json" });
     expect(readGuestCart(s)).toEqual([]);
     expect(
-      sanitizeLines([null, 5, { productId: "", quantity: 1 }, { productId: "p", quantity: -2 }, { productId: "p", quantity: "x" }]),
+      sanitizeLines([
+        null,
+        5,
+        { productId: "", quantity: 1 },
+        { productId: "p", quantity: -2 },
+        { productId: "p", quantity: "x" },
+      ]),
     ).toEqual([]);
   });
 
@@ -77,12 +83,16 @@ describe("guest cart storage", () => {
 
 describe("computeMergeUpserts", () => {
   it("adds products missing from the account cart", () => {
-    expect(computeMergeUpserts(new Map(), [{ productId: "a", quantity: 2 }])).toEqual([{ productId: "a", quantity: 2 }]);
+    expect(computeMergeUpserts(new Map(), [{ productId: "a", quantity: 2 }])).toEqual([
+      { productId: "a", quantity: 2 },
+    ]);
   });
 
   it("takes the larger quantity and never sums (no duplication on repeat merge)", () => {
     const remote = new Map([["a", 3]]);
     expect(computeMergeUpserts(remote, [{ productId: "a", quantity: 2 }])).toEqual([]);
-    expect(computeMergeUpserts(remote, [{ productId: "a", quantity: 5 }])).toEqual([{ productId: "a", quantity: 5 }]);
+    expect(computeMergeUpserts(remote, [{ productId: "a", quantity: 5 }])).toEqual([
+      { productId: "a", quantity: 5 },
+    ]);
   });
 });

@@ -107,9 +107,7 @@ export function ExecutiveSummaryWidget({ kpis, onExecuteCommand }: ExecutiveSumm
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-zinc-500">
-                    مؤشر الكفاءة:
-                  </span>
+                  <span className="text-xs text-zinc-500">مؤشر الكفاءة:</span>
                   <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded border border-emerald-200/60 dark:border-emerald-800">
                     %{summary.overallHealthScore}
                   </span>
@@ -123,7 +121,10 @@ export function ExecutiveSummaryWidget({ kpis, onExecuteCommand }: ExecutiveSumm
                     key={idx}
                     className="p-3 rounded-lg border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-700 dark:text-zinc-300 flex items-start gap-2"
                   >
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0 mt-0.5" strokeWidth={1.5} />
+                    <CheckCircle2
+                      className="h-3.5 w-3.5 text-emerald-600 shrink-0 mt-0.5"
+                      strokeWidth={1.5}
+                    />
                     <span>{insight}</span>
                   </div>
                 ))}

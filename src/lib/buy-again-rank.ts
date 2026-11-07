@@ -10,7 +10,12 @@ export type PurchaseRow = {
   status?: string | null;
 };
 
-export type RankedPurchase = { productId: string; timesBought: number; lastQuantity: number; lastAt: string };
+export type RankedPurchase = {
+  productId: string;
+  timesBought: number;
+  lastQuantity: number;
+  lastAt: string;
+};
 
 const EXCLUDED = new Set(["cancelled", "canceled", "rejected", "failed"]);
 
@@ -25,10 +30,18 @@ export function rankPurchases(rows: readonly PurchaseRow[], limit = 12): RankedP
     if (!Number.isFinite(t)) continue;
     const prev = byProduct.get(r.productId);
     if (!prev) {
-      byProduct.set(r.productId, { productId: r.productId, timesBought: 1, lastQuantity: qty, lastAt: r.orderedAt });
+      byProduct.set(r.productId, {
+        productId: r.productId,
+        timesBought: 1,
+        lastQuantity: qty,
+        lastAt: r.orderedAt,
+      });
     } else {
       prev.timesBought += 1;
-      if (t > Date.parse(prev.lastAt)) { prev.lastAt = r.orderedAt; prev.lastQuantity = qty; }
+      if (t > Date.parse(prev.lastAt)) {
+        prev.lastAt = r.orderedAt;
+        prev.lastQuantity = qty;
+      }
     }
   }
   return [...byProduct.values()]

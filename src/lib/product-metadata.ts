@@ -85,11 +85,22 @@ export function extractProductDetails(product?: Product | null): ParsedProductDe
   }
 
   // 2. Parse from Description metadata blocks if structured
-  if (rawDesc.includes("#وسوم:") || rawDesc.includes("#خصائص:") || rawDesc.includes("#تخزين:") || rawDesc.includes("#مصدر:") || rawDesc.includes("#تغذية:")) {
+  if (
+    rawDesc.includes("#وسوم:") ||
+    rawDesc.includes("#خصائص:") ||
+    rawDesc.includes("#تخزين:") ||
+    rawDesc.includes("#مصدر:") ||
+    rawDesc.includes("#تغذية:")
+  ) {
     // Extract Tags
     const tagsMatch = rawDesc.match(/#وسوم:\s*([^\n]+)/);
     if (tagsMatch && tagsMatch[1]) {
-      tags.push(...tagsMatch[1].split(",").map((t) => t.trim().replace(/^#/, "")).filter(Boolean));
+      tags.push(
+        ...tagsMatch[1]
+          .split(",")
+          .map((t) => t.trim().replace(/^#/, ""))
+          .filter(Boolean),
+      );
     }
 
     // Extract Characteristics
@@ -121,9 +132,11 @@ export function extractProductDetails(product?: Product | null): ParsedProductDe
     if (nutrMatch && nutrMatch[1]) {
       const parts = nutrMatch[1].split("|").map((p) => p.trim());
       for (const p of parts) {
-        if (p.includes("سعرات:") || p.includes("سعرة:")) nutrition.calories = p.split(":")[1]?.trim() || nutrition.calories;
+        if (p.includes("سعرات:") || p.includes("سعرة:"))
+          nutrition.calories = p.split(":")[1]?.trim() || nutrition.calories;
         if (p.includes("بروتين:")) nutrition.protein = p.split(":")[1]?.trim() || nutrition.protein;
-        if (p.includes("كربوهيدرات:") || p.includes("كارب:")) nutrition.carbs = p.split(":")[1]?.trim() || nutrition.carbs;
+        if (p.includes("كربوهيدرات:") || p.includes("كارب:"))
+          nutrition.carbs = p.split(":")[1]?.trim() || nutrition.carbs;
         if (p.includes("ألياف:")) nutrition.fiber = p.split(":")[1]?.trim() || nutrition.fiber;
         if (p.includes("دهون:")) nutrition.fats = p.split(":")[1]?.trim() || nutrition.fats;
       }
@@ -142,28 +155,54 @@ export function extractProductDetails(product?: Product | null): ParsedProductDe
   // Fallbacks based on category/name if still empty
   const name = product.name || "";
   if (!cookingTip) {
-    if (name.includes("لحم") || name.includes("كفتة") || name.includes("فراخ") || name.includes("دجاج")) {
-      cookingTip = "نصيحة الشيف: للحصول على أفضل مذاق وطراوة، يُتبل اللحم قبل الطهي بنصف ساعة مع قليل من زيت الزيتون والبهارات الطازجة.";
-    } else if (name.includes("جبن") || name.includes("لبن") || name.includes("قشطة") || name.includes("زبادي")) {
-      cookingTip = "نصيحة الشيف: يُقدم بارداً مع رشة زعتر بري وزيت زيتون بكر وخبز بلدي ساخن لوجبة إفطار متكاملة.";
+    if (
+      name.includes("لحم") ||
+      name.includes("كفتة") ||
+      name.includes("فراخ") ||
+      name.includes("دجاج")
+    ) {
+      cookingTip =
+        "نصيحة الشيف: للحصول على أفضل مذاق وطراوة، يُتبل اللحم قبل الطهي بنصف ساعة مع قليل من زيت الزيتون والبهارات الطازجة.";
+    } else if (
+      name.includes("جبن") ||
+      name.includes("لبن") ||
+      name.includes("قشطة") ||
+      name.includes("زبادي")
+    ) {
+      cookingTip =
+        "نصيحة الشيف: يُقدم بارداً مع رشة زعتر بري وزيت زيتون بكر وخبز بلدي ساخن لوجبة إفطار متكاملة.";
     } else {
-      cookingTip = "نصيحة الشيف: يُفضل استخدامه طازجاً في وصفاتك اليومية لإبراز النكهة الطبيعية الغنية والقيمة الغذائية العالية.";
+      cookingTip =
+        "نصيحة الشيف: يُفضل استخدامه طازجاً في وصفاتك اليومية لإبراز النكهة الطبيعية الغنية والقيمة الغذائية العالية.";
     }
   }
 
   if (characteristics.length === 0) {
     if (name.includes("لحم") || name.includes("دجاج") || name.includes("فراخ")) {
-      characteristics.push("لحوم بلدية طازجة 100%", "ذبح وتجهيز يومي معتمد", "إشراف ورقابة بيطرية كاملة");
+      characteristics.push(
+        "لحوم بلدية طازجة 100%",
+        "ذبح وتجهيز يومي معتمد",
+        "إشراف ورقابة بيطرية كاملة",
+      );
     } else if (name.includes("جبن") || name.includes("حليب") || name.includes("لبن")) {
-      characteristics.push("ألبان طبيعية 100%", "غني بالكالسيوم والبروتينات", "خالي من الزيوت النباتية المهدرجة");
+      characteristics.push(
+        "ألبان طبيعية 100%",
+        "غني بالكالسيوم والبروتينات",
+        "خالي من الزيوت النباتية المهدرجة",
+      );
     } else {
-      characteristics.push("طبيعي وطازج 100%", "منتقى بعناية من أفضل المزارع", "تغليف صحي آمن ومحكم");
+      characteristics.push(
+        "طبيعي وطازج 100%",
+        "منتقى بعناية من أفضل المزارع",
+        "تغليف صحي آمن ومحكم",
+      );
     }
   }
 
   if (!storageInstructions) {
     if (name.includes("لحم") || name.includes("دجاج") || name.includes("فراخ")) {
-      storageInstructions = "يُحفظ مبرداً عند 0 إلى 2 مئوية للاستهلاك خلال يومين، أو يُجمد عند -18 مئوية.";
+      storageInstructions =
+        "يُحفظ مبرداً عند 0 إلى 2 مئوية للاستهلاك خلال يومين، أو يُجمد عند -18 مئوية.";
     } else if (name.includes("جبن") || name.includes("حليب") || name.includes("لبن")) {
       storageInstructions = "يُحفظ في الثلاجة في درجة حرارة 2 - 5 مئوية داخل عبوة محكمة الإغلاق.";
     } else {

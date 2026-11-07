@@ -14,7 +14,9 @@ describe("splitThinking", () => {
 
 describe("extractProductPicks", () => {
   it("reads the products block and removes it from the text", () => {
-    const r = extractProductPicks('خد دول:\n```products\n[{"id":"a","quantity":2,"reason":"للغدا"}]\n```');
+    const r = extractProductPicks(
+      'خد دول:\n```products\n[{"id":"a","quantity":2,"reason":"للغدا"}]\n```',
+    );
     expect(r.text).toBe("خد دول:");
     expect(r.picks).toEqual([{ id: "a", quantity: 2, reason: "للغدا" }]);
   });
@@ -34,7 +36,9 @@ describe("recoverAnswerFromThinking", () => {
 
 describe("stripLeakedPlanning", () => {
   it("moves planning lines before the first heading into thinking", () => {
-    const r = stripLeakedPlanning("وأتكلم بالعامية المصرية زي ما مطلوب مني.\n# فراخ البلدي vs فراخ المزارع\nنص");
+    const r = stripLeakedPlanning(
+      "وأتكلم بالعامية المصرية زي ما مطلوب مني.\n# فراخ البلدي vs فراخ المزارع\nنص",
+    );
     expect(r.leaked).toBe("وأتكلم بالعامية المصرية زي ما مطلوب مني.");
     expect(r.text.startsWith("# فراخ")).toBe(true);
   });

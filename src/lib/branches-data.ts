@@ -31,23 +31,20 @@ export const UNIFIED_ALL_BRANCHES_ID = "all";
 /**
  * Calculates live branch stats from real Supabase orders & products
  */
-export function calculateLiveStats(
-  orders: any[],
-  products: any[],
-  branchId?: string,
-): BranchStats {
+export function calculateLiveStats(orders: any[], products: any[], branchId?: string): BranchStats {
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
 
   // Filter orders for branch if branchId is not 'all' or undefined
-  const relevantOrders = branchId && branchId !== UNIFIED_ALL_BRANCHES_ID
-    ? orders.filter(
-        (o) =>
-          o.delivery_zone_id === branchId ||
-          o.deliveryZoneId === branchId ||
-          (o.address && o.address.toLowerCase().includes(branchId.toLowerCase())),
-      )
-    : orders;
+  const relevantOrders =
+    branchId && branchId !== UNIFIED_ALL_BRANCHES_ID
+      ? orders.filter(
+          (o) =>
+            o.delivery_zone_id === branchId ||
+            o.deliveryZoneId === branchId ||
+            (o.address && o.address.toLowerCase().includes(branchId.toLowerCase())),
+        )
+      : orders;
 
   const validRevenueOrders = relevantOrders.filter((o) => o.status !== "cancelled");
 
@@ -85,7 +82,10 @@ export function calculateLiveStats(
 
   const stockHealth =
     totalProducts > 0
-      ? Math.max(0, Math.min(100, Math.round(((totalProducts - lowStockCount) / totalProducts) * 100)))
+      ? Math.max(
+          0,
+          Math.min(100, Math.round(((totalProducts - lowStockCount) / totalProducts) * 100)),
+        )
       : 100;
 
   return {
@@ -103,13 +103,17 @@ export function calculateLiveStats(
  */
 export async function fetchLiveBranches(): Promise<LiveBranch[]> {
   try {
-    const [{ data: zonesData }, { data: settingsData }, { data: ordersData }, { data: productsData }] =
-      await Promise.all([
-        supabase.from("delivery_zones").select("*").order("sort_order", { ascending: true }),
-        supabase.from("store_settings").select("site_name,store_address,whatsapp_number").limit(1),
-        supabase.from("orders").select("id,delivery_zone_id,total_price,status,created_at,address"),
-        supabase.from("products").select("id,stock"),
-      ]);
+    const [
+      { data: zonesData },
+      { data: settingsData },
+      { data: ordersData },
+      { data: productsData },
+    ] = await Promise.all([
+      supabase.from("delivery_zones").select("*").order("sort_order", { ascending: true }),
+      supabase.from("store_settings").select("site_name,store_address,whatsapp_number").limit(1),
+      supabase.from("orders").select("id,delivery_zone_id,total_price,status,created_at,address"),
+      supabase.from("products").select("id,stock"),
+    ]);
 
     const orders = ordersData || [];
     const products = productsData || [];

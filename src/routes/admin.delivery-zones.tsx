@@ -167,7 +167,10 @@ function ZonesPage() {
 
   const toggle = async (z: Zone) => {
     const updated = { ...z, is_active: !z.is_active };
-    const { error } = await supabase.from("delivery_zones").update({ is_active: updated.is_active }).eq("id", z.id);
+    const { error } = await supabase
+      .from("delivery_zones")
+      .update({ is_active: updated.is_active })
+      .eq("id", z.id);
     if (error) return toast.error(`تعذر تحديث المنطقة: ${error.message}`);
     toast.success(updated.is_active ? "تم تفعيل المنطقة" : "تم تعطيل المنطقة");
     await load();

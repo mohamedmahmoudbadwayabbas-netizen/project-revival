@@ -27,15 +27,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  ResponsiveContainer,
-  Tooltip,
-  CartesianGrid,
-} from "recharts";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid } from "recharts";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "motion/react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -44,11 +36,7 @@ import { BranchSelector } from "@/components/admin/BranchSelector";
 import { StockAndExpiryAlertsModal } from "@/components/admin/StockAndExpiryAlertsModal";
 import { ExecutiveSummaryWidget } from "@/components/admin/ExecutiveSummaryWidget";
 import { BranchCardsOverview } from "@/components/admin/BranchCardsOverview";
-import {
-  LiveBranch,
-  fetchLiveBranches,
-  UNIFIED_ALL_BRANCHES_ID,
-} from "@/lib/branches-data";
+import { LiveBranch, fetchLiveBranches, UNIFIED_ALL_BRANCHES_ID } from "@/lib/branches-data";
 
 export const Route = createFileRoute("/admin/")({
   head: () => ({
@@ -137,9 +125,7 @@ function getRelativeTime(dateString: string) {
 
 function OverviewPage() {
   const [orders, setOrders] = useState<OrderRow[]>([]);
-  const [lowStock, setLowStock] = useState<
-    { id: string; name: string; stock: number }[]
-  >([]);
+  const [lowStock, setLowStock] = useState<{ id: string; name: string; stock: number }[]>([]);
   const [branches, setBranches] = useState<LiveBranch[]>([]);
   const [selectedBranchId, setSelectedBranchId] = useState<string>("all");
   const [alertsModalOpen, setAlertsModalOpen] = useState(false);
@@ -156,9 +142,7 @@ function OverviewPage() {
         fetchLiveBranches(),
       ]);
       setOrders((ords ?? []) as unknown as OrderRow[]);
-      const low = (prods ?? []).filter(
-        (p: any) => (p.stock ?? 0) <= 5,
-      );
+      const low = (prods ?? []).filter((p: any) => (p.stock ?? 0) <= 5);
       setLowStock(low as any);
       setBranches(liveBranches);
     } catch (err) {
@@ -187,12 +171,8 @@ function OverviewPage() {
         setOrders((prev) => prev.filter((o) => o.id !== delId));
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "products" }, async () => {
-        const { data: prods } = await supabase
-          .from("products")
-          .select("id,name,stock");
-        const low = (prods ?? []).filter(
-          (p: any) => (p.stock ?? 0) <= 5,
-        );
+        const { data: prods } = await supabase.from("products").select("id,name,stock");
+        const low = (prods ?? []).filter((p: any) => (p.stock ?? 0) <= 5);
         setLowStock(low as any);
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "delivery_zones" }, () => {
@@ -253,7 +233,8 @@ function OverviewPage() {
       return sum / ordersTodayList.length;
     }
     return filteredOrders.length > 0
-      ? filteredOrders.reduce((acc, o) => acc + Number(o.total_amount || 0), 0) / filteredOrders.length
+      ? filteredOrders.reduce((acc, o) => acc + Number(o.total_amount || 0), 0) /
+          filteredOrders.length
       : 0;
   }, [ordersTodayList, filteredOrders]);
 
@@ -283,9 +264,7 @@ function OverviewPage() {
   }, [filteredOrders]);
 
   const ordersPipeline = useMemo(() => {
-    const done = ordersTodayList.filter(
-      (o) => o.status === "delivered",
-    ).length;
+    const done = ordersTodayList.filter((o) => o.status === "delivered").length;
     const total = ordersTodayList.length || 1;
     const completionRate = Math.round((done / total) * 100);
     return { done, completionRate };
@@ -393,13 +372,23 @@ function OverviewPage() {
     <div className="admin-dashboard space-y-6 p-4 sm:p-6 font-sans">
       <section className="admin-dashboard__hero">
         <div>
-          <span className="admin-dashboard__eyebrow"><Activity size={14} /> لوحة المتجر اليوم</span>
+          <span className="admin-dashboard__eyebrow">
+            <Activity size={14} /> لوحة المتجر اليوم
+          </span>
           <h2>صباح الخير، مدير المتجر</h2>
           <p>هذه نظرة سريعة على نشاط متجرك اليوم ومؤشرات التشغيل.</p>
         </div>
         <div className="admin-dashboard__hero-meta">
-          <span><i /> البيانات متصلة مباشرة</span>
-          <small>{new Intl.DateTimeFormat("ar-EG", { weekday: "long", day: "numeric", month: "long" }).format(new Date())}</small>
+          <span>
+            <i /> البيانات متصلة مباشرة
+          </span>
+          <small>
+            {new Intl.DateTimeFormat("ar-EG", {
+              weekday: "long",
+              day: "numeric",
+              month: "long",
+            }).format(new Date())}
+          </small>
         </div>
       </section>
       <SmartInsights />
@@ -407,17 +396,13 @@ function OverviewPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-200/80 dark:border-zinc-800 pb-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
-              الرئيسية
-            </h1>
+            <h1 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">الرئيسية</h1>
             <span className="inline-flex items-center gap-1 px-1.5 py-0.2 text-[10px] font-medium rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 animate-pulse" />
               مزامنة فورية
             </span>
           </div>
-          <p className="text-xs text-zinc-500 mt-0.5">
-            متابعة المبيعات ومسار الطلبات والمخزون
-          </p>
+          <p className="text-xs text-zinc-500 mt-0.5">متابعة المبيعات ومسار الطلبات والمخزون</p>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
@@ -441,7 +426,15 @@ function OverviewPage() {
               <span>إضافة منتج</span>
             </Button>
           </Link>
-          <Link to="/admin/orders"><Button size="sm" className="h-9 rounded-xl hero-gradient text-primary-foreground text-xs font-bold gap-1.5"><Receipt className="h-3.5 w-3.5" />طلب جديد</Button></Link>
+          <Link to="/admin/orders">
+            <Button
+              size="sm"
+              className="h-9 rounded-xl hero-gradient text-primary-foreground text-xs font-bold gap-1.5"
+            >
+              <Receipt className="h-3.5 w-3.5" />
+              طلب جديد
+            </Button>
+          </Link>
         </div>
       </div>
 
@@ -451,9 +444,7 @@ function OverviewPage() {
         {/* Card 1: Revenue */}
         <Card className="rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-zinc-500">
-              مبيعات اليوم
-            </span>
+            <span className="text-xs font-medium text-zinc-500">مبيعات اليوم</span>
             <span className="text-[11px] font-medium text-emerald-700 bg-emerald-50 dark:bg-emerald-950/50 dark:text-emerald-300 px-1.5 py-0.2 rounded border border-emerald-200/60 dark:border-emerald-800">
               {weeklyGrowth}
             </span>
@@ -466,9 +457,7 @@ function OverviewPage() {
         {/* Card 2: Orders */}
         <Card className="rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-zinc-500">
-              طلبات اليوم
-            </span>
+            <span className="text-xs font-medium text-zinc-500">طلبات اليوم</span>
             <span className="text-[11px] font-medium text-zinc-700 bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-300 px-1.5 py-0.2 rounded">
               %{ordersPipeline.completionRate} إنجاز
             </span>
@@ -484,9 +473,7 @@ function OverviewPage() {
           className="rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-xs cursor-pointer hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-zinc-500">
-              أصناف تحت حد الأمان
-            </span>
+            <span className="text-xs font-medium text-zinc-500">أصناف تحت حد الأمان</span>
             <span
               className={`text-[11px] font-medium px-1.5 py-0.2 rounded ${
                 lowStock.length > 0
@@ -506,12 +493,16 @@ function OverviewPage() {
         <Card className="rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-zinc-500">متوسط قيمة الطلب</span>
-            <span className="admin-dashboard__metric-icon"><ShoppingCart className="h-4 w-4" /></span>
+            <span className="admin-dashboard__metric-icon">
+              <ShoppingCart className="h-4 w-4" />
+            </span>
           </div>
           <div className="mt-2 text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">
             <AnimatedCounter value={avgOrderValue} decimals={0} suffix="ج.م" />
           </div>
-          <small className="admin-dashboard__metric-note">من إجمالي {filteredOrders.length.toLocaleString("ar-EG")} طلب</small>
+          <small className="admin-dashboard__metric-note">
+            من إجمالي {filteredOrders.length.toLocaleString("ar-EG")} طلب
+          </small>
         </Card>
       </div>
 
@@ -534,12 +525,8 @@ function OverviewPage() {
         <Card className="rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-xs lg:col-span-2">
           <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
             <div>
-              <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
-                تحليل المبيعات
-              </h3>
-              <p className="text-[11px] text-zinc-400">
-                تتبع النشاط المالي وعدد الطلبات
-              </p>
+              <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100">تحليل المبيعات</h3>
+              <p className="text-[11px] text-zinc-400">تتبع النشاط المالي وعدد الطلبات</p>
             </div>
 
             <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-800 p-0.5 rounded-lg text-xs">
@@ -579,8 +566,18 @@ function OverviewPage() {
           <div className="h-64 w-full pt-3" dir="ltr">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" opacity={0.5} vertical={false} />
-                <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#71717a" }} axisLine={{ stroke: "#e4e4e7" }} tickLine={false} />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="#e4e4e7"
+                  opacity={0.5}
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="label"
+                  tick={{ fontSize: 10, fill: "#71717a" }}
+                  axisLine={{ stroke: "#e4e4e7" }}
+                  tickLine={false}
+                />
                 <YAxis tick={{ fontSize: 10, fill: "#71717a" }} axisLine={false} tickLine={false} />
                 <Tooltip
                   contentStyle={{
@@ -602,17 +599,13 @@ function OverviewPage() {
         <Card className="rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
-              <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
-                أحدث الطلبات
-              </h3>
+              <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100">أحدث الطلبات</h3>
               <span className="text-[10px] text-zinc-400">مباشر</span>
             </div>
 
             <div className="space-y-2 pt-3">
               {liveOrdersFeed.length === 0 ? (
-                <div className="p-8 text-center text-xs text-zinc-400">
-                  لا توجد طلبات مسجلة
-                </div>
+                <div className="p-8 text-center text-xs text-zinc-400">لا توجد طلبات مسجلة</div>
               ) : (
                 liveOrdersFeed.map((ord) => (
                   <div
@@ -660,25 +653,24 @@ function OverviewPage() {
           <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
             المنتجات الأكثر طلباً
           </h3>
-          <Link to="/admin/products" className="text-[11px] text-emerald-700 dark:text-emerald-400 hover:underline">
+          <Link
+            to="/admin/products"
+            className="text-[11px] text-emerald-700 dark:text-emerald-400 hover:underline"
+          >
             إدارة المنتجات
           </Link>
         </div>
 
         <div className="pt-3 space-y-2">
           {bestSellers.length === 0 ? (
-            <div className="p-6 text-center text-xs text-zinc-400">
-              لا توجد بيانات مبيعات بعد
-            </div>
+            <div className="p-6 text-center text-xs text-zinc-400">لا توجد بيانات مبيعات بعد</div>
           ) : (
             bestSellers.map((item, idx) => (
               <div key={item.name} className="flex items-center justify-between text-xs py-1">
                 <span className="text-zinc-800 dark:text-zinc-200 font-medium truncate">
                   {idx + 1}. {item.name}
                 </span>
-                <span className="text-zinc-500 font-mono text-[11px]">
-                  {item.qty} وحدة
-                </span>
+                <span className="text-zinc-500 font-mono text-[11px]">{item.qty} وحدة</span>
               </div>
             ))
           )}
@@ -687,13 +679,14 @@ function OverviewPage() {
 
       {/* Order Preview Dialog */}
       <Dialog open={!!previewOrder} onOpenChange={() => setPreviewOrder(null)}>
-        <DialogContent className="max-w-sm rounded-xl p-5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800" dir="rtl">
+        <DialogContent
+          className="max-w-sm rounded-xl p-5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800"
+          dir="rtl"
+        >
           <DialogHeader className="pb-2 border-b border-zinc-100 dark:border-zinc-800">
             <DialogTitle className="text-sm font-bold flex items-center justify-between">
               <span>تفاصيل الطلب</span>
-              <span className="text-xs font-normal text-zinc-500">
-                {previewOrder?.status}
-              </span>
+              <span className="text-xs font-normal text-zinc-500">{previewOrder?.status}</span>
             </DialogTitle>
           </DialogHeader>
 

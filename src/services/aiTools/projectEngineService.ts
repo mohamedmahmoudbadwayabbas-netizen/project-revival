@@ -1,11 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export type ProjectEngineStatus =
-  | "SUCCESS"
-  | "NOT_CONFIGURED"
-  | "APPROVAL_REQUIRED"
-  | "NOT_IMPLEMENTED"
-  | "FAILED";
+  "SUCCESS" | "NOT_CONFIGURED" | "APPROVAL_REQUIRED" | "NOT_IMPLEMENTED" | "FAILED";
 
 export interface ProjectEngineResponse<T = Record<string, unknown>> {
   ok: boolean;
@@ -69,7 +65,6 @@ export function searchProjectCode(query: string, category?: string) {
   }>("searchCodebase", { query, category });
 }
 
-
 export function validateChangeSet(changeSet: Record<string, unknown>) {
   return invokeProjectEngine("validateChanges", { changeSet });
 }
@@ -82,10 +77,7 @@ export function requestChangeApproval(changeSet: Record<string, unknown>) {
   }>("prepareChangeSet", { changeSet });
 }
 
-export function applyApprovedChanges(
-  changeSet: Record<string, unknown>,
-  approvalToken: string,
-) {
+export function applyApprovedChanges(changeSet: Record<string, unknown>, approvalToken: string) {
   return invokeProjectEngine("applyChanges", { changeSet, approvalToken });
 }
 

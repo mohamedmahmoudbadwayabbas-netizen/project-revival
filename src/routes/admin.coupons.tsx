@@ -45,7 +45,7 @@ type Coupon = {
   used_count: number;
   expires_at: string | null;
   is_active: boolean;
-    created_at?: string;
+  created_at?: string;
 };
 
 export const Route = createFileRoute("/admin/coupons")({
@@ -101,7 +101,10 @@ function CouponsPage() {
 
   const toggleActive = async (c: Coupon) => {
     const updated = { ...c, is_active: !c.is_active };
-    const { error } = await supabase.from("coupons").update({ is_active: updated.is_active }).eq("id", c.id);
+    const { error } = await supabase
+      .from("coupons")
+      .update({ is_active: updated.is_active })
+      .eq("id", c.id);
     if (error) return toast.error(`تعذر تحديث الكوبون: ${error.message}`);
     toast.success(updated.is_active ? "تم تفعيل الكوبون بنجاح ✨" : "تم إيقاف الكوبون");
     await loadData();
@@ -127,7 +130,7 @@ function CouponsPage() {
     }
 
     const payload = {
-            code: editing.code.trim().toUpperCase(),
+      code: editing.code.trim().toUpperCase(),
       discount_type: editing.discount_type || "percentage",
       discount_value: Number(editing.discount_value),
       min_order_amount: editing.min_order_amount ? Number(editing.min_order_amount) : null,
@@ -202,7 +205,7 @@ function CouponsPage() {
               discount_value: 15,
               min_order_amount: 100,
               is_active: true,
-                          })
+            })
           }
           className="rounded-2xl hero-gradient text-primary-foreground font-black text-xs gap-2 h-10 px-4 shadow-md"
         >

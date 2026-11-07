@@ -23,7 +23,9 @@ export function BuyAgainRail({ onOpenProduct }: { onOpenProduct?: (p: Product) =
   return (
     <section className="mx-auto mt-6 max-w-[1320px] px-3 sm:px-6" aria-labelledby="buy-again-title">
       <div className="mb-3 flex items-center justify-between gap-3">
-        <h2 id="buy-again-title" className="text-lg font-bold text-primary-dark sm:text-2xl">اشتريتها سابقاً</h2>
+        <h2 id="buy-again-title" className="text-lg font-bold text-primary-dark sm:text-2xl">
+          اشتريتها سابقاً
+        </h2>
         <button
           type="button"
           onClick={addAll}
