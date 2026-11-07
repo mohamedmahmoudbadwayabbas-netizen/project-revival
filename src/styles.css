@@ -1776,3 +1776,12 @@ html:not(.dark) [class*="text-orange-600"] { color: var(--brand-rust) !important
   body { overflow-x: hidden; }
   img { max-width: 100%; }
 }
+
+/* Colorful hypermarket category tiles */
+@utility tile-green { background: oklch(0.95 0.06 150); color: oklch(0.45 0.15 150); }
+@utility tile-orange { background: oklch(0.95 0.06 60); color: oklch(0.58 0.18 50); }
+@utility tile-red { background: oklch(0.95 0.05 20); color: oklch(0.55 0.19 25); }
+@utility tile-blue { background: oklch(0.95 0.04 240); color: oklch(0.5 0.14 245); }
+@utility tile-yellow { background: oklch(0.96 0.07 95); color: oklch(0.55 0.13 80); }
+@utility tile-teal { background: oklch(0.95 0.05 190); color: oklch(0.5 0.11 195); }
+.dark .tile-green, .dark .tile-orange, .dark .tile-red, .dark .tile-blue, .dark .tile-yellow, .dark .tile-teal { background: oklch(0.28 0.03 160); }
