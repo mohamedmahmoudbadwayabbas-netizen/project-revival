@@ -19,6 +19,7 @@ const ICON_RULES: [RegExp, LucideIcon][] = [
   [/مشروب|عصير|drink/i, CupSoda],
 ];
 const FALLBACK_ICONS: LucideIcon[] = [Layers, Wheat, Leaf, Apple, Coffee, Candy];
+const TILE_TONES = ["tile-green", "tile-orange", "tile-red", "tile-blue", "tile-yellow", "tile-teal"];
 function categoryIcon(name: string, index: number): LucideIcon {
   return ICON_RULES.find(([re]) => re.test(name))?.[1] ?? FALLBACK_ICONS[index % FALLBACK_ICONS.length];
 }
@@ -107,7 +108,7 @@ export function CategoryGrid({
                     isActive ? "border-primary" : "border-transparent group-hover:border-primary/30",
                   )}
                 >
-                  <span className="grid h-full w-full place-items-center overflow-hidden rounded-xl bg-secondary">
+                  <span className={cn("grid h-full w-full place-items-center overflow-hidden rounded-xl", TILE_TONES[index % TILE_TONES.length])}>
                     {category.image_url ? (
                       <img
                         src={category.image_url}
@@ -117,7 +118,7 @@ export function CategoryGrid({
                         className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                       />
                     ) : (
-                      <Icon className="h-8 w-8 text-primary" aria-hidden="true" />
+                      <Icon className="h-9 w-9 transition-transform duration-300 group-hover:scale-110" aria-hidden="true" />
                     )}
                   </span>
                 </span>

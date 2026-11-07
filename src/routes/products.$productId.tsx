@@ -410,7 +410,7 @@ function ReadyState({ product, unavailable, categoryName }: { product: PageProdu
       )}
 
       {!unavailable && (
-        <div className="fixed inset-x-0 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-40 border-t border-border bg-background/95 p-3 shadow-[0_-8px_32px_-20px_rgba(0,0,0,0.35)] backdrop-blur sm:hidden">
+        <div className="fixed inset-x-0 bottom-0 z-40 rounded-t-3xl border-t border-border bg-background/95 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_-8px_32px_-20px_rgba(0,0,0,0.35)] backdrop-blur sm:hidden">
           <div className="flex items-center gap-3">
             <QuantityStepper value={qty} onChange={setQty} step={step} min={min} max={max} unit={unit} />
             <Button className="h-11 flex-1 rounded-2xl font-black" onClick={(e) => void add(e.currentTarget)} disabled={isAdding || limitReached}>

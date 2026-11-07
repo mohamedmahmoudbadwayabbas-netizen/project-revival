@@ -287,13 +287,13 @@ export function Header() {
           )}
 
           <ColorModeToggle className="rounded-2xl bg-secondary/60 hover:bg-secondary" />
-          <UserMenu />
+          <div className="hidden md:block"><UserMenu /></div>
 
           <Link
             id="cart-icon-target"
             to="/cart"
             aria-label={t("nav.cart")}
-            className="relative grid h-10 w-10 place-items-center rounded-2xl bg-secondary/60 hover:bg-secondary text-foreground transition-all duration-200 cursor-pointer shadow-xs active:scale-95"
+            className="relative hidden md:grid h-10 w-10 place-items-center rounded-2xl bg-secondary/60 hover:bg-secondary text-foreground transition-all duration-200 cursor-pointer shadow-xs active:scale-95"
           >
             <ShoppingBag className="h-5 w-5" />
             {totalCount > 0 && (

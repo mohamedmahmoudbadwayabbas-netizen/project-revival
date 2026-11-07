@@ -83,8 +83,7 @@ export function HomePage() {
   }, []);
 
   const heroBanner = heroBanners[0];
-  const heroTitle = "سلة البيت الكاملة، تبدأ بفكرة.";
-  const heroSubtitle =
+    const heroSubtitle =
     "اكتب اسم منتج أو جزءًا من قائمتك، أو ابدأ من أحد أقسام الهايبر ماركت.";
 
   const handleSelectCategory = (categoryId: string | null) => {
@@ -207,77 +206,63 @@ export function HomePage() {
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-background pb-28 text-right text-foreground md:pb-0" dir="rtl">
-      {/* HERO — light */}
-      <section className="px-3 pt-4 sm:px-6 sm:pt-6" aria-labelledby="home-hero-title">
-        <div className="mx-auto grid max-w-[1320px] items-center gap-8 overflow-hidden rounded-3xl border border-border bg-card p-6 shadow-card sm:p-10 lg:grid-cols-[1.1fr_1fr] lg:gap-12 lg:p-12">
-          <div className="flex flex-col gap-5">
-            <span className="inline-flex w-fit items-center gap-2 rounded-full bg-secondary px-4 py-1.5 text-sm font-bold text-primary">
-              <Truck className="h-4 w-4" aria-hidden="true" />
-              هايبر ماركت لكل احتياجات البيت
+      {/* PROMO HERO — compact on phones, products show early */}
+      <section className="px-3 pt-3 sm:px-6 sm:pt-6" aria-labelledby="home-hero-title">
+        <div className="mx-auto max-w-[1320px] md:hidden">
+          <SmartSearchBar placeholder="ابحث عن منتج أو اكتب قائمة مشترياتك…" />
+        </div>
+        <div className="relative mx-auto mt-3 max-w-[1320px] overflow-hidden rounded-3xl bg-fresh text-primary-foreground shadow-elegant md:mt-0">
+          <img
+            src={heroBanner?.image_url || settings.hero_image_url || heroLuxe}
+            alt="تشكيلة من البقالة والمنتجات الطازجة"
+            width={1600}
+            height={1008}
+            fetchPriority="high"
+            decoding="async"
+            className="absolute inset-y-0 left-0 h-full w-[55%] object-cover md:w-1/2"
+            style={{ maskImage: "linear-gradient(to left, transparent, black 45%)", WebkitMaskImage: "linear-gradient(to left, transparent, black 45%)" }}
+          />
+          <div className="relative flex min-h-[190px] max-w-[62%] flex-col justify-center gap-2 p-5 sm:min-h-[320px] sm:gap-4 sm:p-10 md:max-w-[50%]">
+            <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-accent px-3 py-1 text-[11px] font-black text-accent-foreground sm:text-sm">
+              <Truck className="h-3.5 w-3.5" aria-hidden="true" /> توصيل في ٤٥ دقيقة
             </span>
-            <h1 id="home-hero-title" className="text-3xl font-bold leading-[1.35] text-primary-dark sm:text-4xl lg:text-5xl">
-              {heroTitle}
+            <h1 id="home-hero-title" className="text-xl font-black leading-snug sm:text-4xl lg:text-5xl">
+              {heroBanner?.title || "طازج كل يوم.. لباب بيتك"}
             </h1>
-            <p className="max-w-xl text-base leading-8 text-muted-foreground">{heroSubtitle}</p>
-            <div className="max-w-xl">
-              <label htmlFor="home-search" className="sr-only">ابحث في المتجر</label>
+            <p className="hidden text-base leading-8 opacity-90 sm:block">{heroSubtitle}</p>
+            <div className="hidden max-w-md md:block">
               <SmartSearchBar placeholder="ابحث عن منتج أو اكتب قائمة مشترياتك…" />
             </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                onClick={() => document.getElementById("supermarket-shelves")?.scrollIntoView({ behavior: "smooth" })}
-                className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-primary px-7 text-base font-bold text-primary-foreground transition-colors hover:bg-primary-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-              >
-                {heroBanner?.cta_text || settings.hero_cta_text || "تسوّق الآن"}
-                <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-              </button>
-              <Link
-                to="/assistant"
-                className="inline-flex min-h-12 items-center gap-2 rounded-xl border border-primary px-6 text-base font-bold text-primary transition-colors hover:bg-secondary"
-              >
-                <Sparkles className="h-4 w-4" aria-hidden="true" />
-                اسأل نواة
-              </Link>
-            </div>
-          </div>
-          <div className="relative aspect-[4/3] overflow-hidden rounded-3xl bg-secondary">
-            <img
-              src={heroBanner?.image_url || settings.hero_image_url || heroLuxe}
-              alt="تشكيلة من البقالة والمنتجات الطازجة"
-              width={1600}
-              height={1008}
-              fetchPriority="high"
-              decoding="async"
-              className="h-full w-full object-cover"
-            />
+            <button
+              type="button"
+              onClick={() => document.getElementById("supermarket-shelves")?.scrollIntoView({ behavior: "smooth" })}
+              className="mt-1 inline-flex min-h-11 w-fit items-center gap-2 rounded-xl bg-background px-5 text-sm font-black text-primary shadow-card transition-transform active:scale-95 sm:text-base"
+            >
+              {heroBanner?.cta_text || settings.hero_cta_text || "تسوّق الآن"}
+              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+            </button>
           </div>
         </div>
       </section>
 
-      {/* TRUST STRIP */}
-      <section className="mx-auto mt-4 max-w-[1320px] px-3 sm:px-6" aria-label="مميزات التسوق">
-        <ul className="grid grid-cols-1 gap-2 rounded-2xl border border-border bg-card p-3 sm:grid-cols-3 sm:gap-0 sm:divide-x sm:divide-x-reverse sm:divide-border">
+      {/* TRUST PILLS — one compact row */}
+      <section className="mx-auto mt-3 max-w-[1320px] px-3 sm:px-6" aria-label="مميزات التسوق">
+        <ul className="no-scrollbar flex gap-2 overflow-x-auto">
           {[
-            { icon: Truck, t: "توصيل سريع", d: "لباب بيتك" },
-            { icon: Banknote, t: "الدفع عند الاستلام", d: "ادفع نقدًا عند وصول طلبك" },
-            { icon: RotateCcw, t: "استبدال سهل", d: "لو في مشكلة في منتج" },
-          ].map(({ icon: Icon, t, d }) => (
-            <li key={t} className="flex items-center gap-3 px-3 py-1">
-              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-secondary text-primary">
-                <Icon className="h-5 w-5" aria-hidden="true" />
-              </span>
-              <span>
-                <strong className="block text-sm font-bold text-primary-dark">{t}</strong>
-                <small className="text-xs text-muted-foreground">{d}</small>
-              </span>
+            { icon: Truck, t: "توصيل سريع" },
+            { icon: Banknote, t: "الدفع عند الاستلام" },
+            { icon: RotateCcw, t: "استبدال سهل" },
+          ].map(({ icon: Icon, t }) => (
+            <li key={t} className="flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-card px-3 py-2 text-xs font-bold text-primary-dark">
+              <Icon className="h-4 w-4 text-primary" aria-hidden="true" />
+              {t}
             </li>
           ))}
         </ul>
       </section>
 
       <div className="mx-auto max-w-[1320px] px-3 sm:px-6">
-        <section id="home-departments" className="mt-12">
+        <section id="home-departments" className="mt-6 sm:mt-10">
           <CategoryGrid
             categories={categories}
             active={selectedCategory}

@@ -9,7 +9,7 @@ export function BottomNav() {
   const { totalCount } = useCart();
   const { user } = useAuth();
 
-  if (pathname.startsWith("/admin") || pathname.startsWith("/auth") || pathname.startsWith("/assistant")) return null;
+  if (pathname.startsWith("/admin") || pathname.startsWith("/auth") || pathname.startsWith("/assistant") || pathname.startsWith("/products/")) return null;
 
   const accountTo = user ? "/account" : "/auth";
   const isCart = pathname.startsWith("/cart");
