@@ -85,10 +85,7 @@ import { DEFAULT_GEMINI_MODEL } from "@/lib/gemini-config";
 
 export const Route = createFileRoute("/admin/copilot")({
   head: () => ({
-    meta: [
-      { title: "المساعد الذكي — إدارة المتجر" },
-      { name: "robots", content: "noindex,nofollow" },
-    ],
+    meta: [{ title: "نبراس — ذكاء تشغيل المتجر" }, { name: "robots", content: "noindex,nofollow" }],
   }),
   component: AdminCoPilotPage,
 });
@@ -153,7 +150,8 @@ function AdminCoPilotPage() {
   const { role } = useAuth();
   const settings = useSettings();
   const storeName = settings.site_name || BRAND_NAME_AR;
-  const aiAssistantName = "مساعد الوادي";
+  const aiAssistantName = "نبراس";
+  const aiAssistantSubtitle = "ذكاء تشغيل المتجر";
   const { config: layoutConfig, updateConfig, resetConfig, setThemePalette } = useLayoutConfig();
 
   // Active workspace mode
@@ -462,33 +460,36 @@ function AdminCoPilotPage() {
 
   return (
     <div
-      className="relative h-[calc(100dvh-3.5rem)] flex flex-col overflow-hidden bg-slate-100 dark:bg-zinc-950 font-sans"
+      className="relative h-[calc(100dvh-3.5rem)] flex flex-col overflow-hidden bg-[#f5f7fb] dark:bg-[#0a0d12] font-sans"
       dir="rtl"
     >
       {/* ─── 1. TOP HEADER & NAVIGATION ─── */}
-      <div className="flex-none border-b border-white/20 dark:border-white/10 bg-card px-4 py-3 z-20 shadow-[0_4px_30px_rgba(0,0,0,0.03)] relative">
-        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div className="relative z-20 flex-none border-b border-slate-200/80 bg-white/90 px-3 py-3 shadow-[0_8px_32px_rgba(15,23,42,0.06)] backdrop-blur-xl dark:border-white/10 dark:bg-[#11151c]/90 sm:px-5">
+        <div className="mx-auto flex max-w-[1500px] flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           {/* Identity & Status */}
-          <div className="flex items-center gap-2.5 w-full sm:w-auto">
-            <div className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-primary-foreground shadow-xs shrink-0">
-              <Sparkles className="h-4 w-4" strokeWidth={1.5} />
+          <div className="flex w-full items-center gap-3 sm:w-auto">
+            <div className="relative grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-2xl bg-gradient-to-br from-[#0f766e] via-primary to-[#164e63] text-white shadow-lg shadow-primary/20">
+              <span className="text-xl font-black tracking-tight">ن</span>
+              <span className="absolute -bottom-3 -start-2 h-7 w-7 rounded-full bg-white/20 blur-sm" />
             </div>
             <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100 truncate">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="truncate text-base font-black tracking-tight text-slate-950 dark:text-white">
                   {aiAssistantName}
                 </span>
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-medium bg-secondary text-primary border border-border">
-                  <Sparkles className="h-3 w-3" />
-                  {selectedModel}
+                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300">
+                  {aiAssistantSubtitle}
                 </span>
               </div>
+              <p className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">
+                مساعدك التنفيذي لاتخاذ قرارات أسرع وأدق
+              </p>
             </div>
           </div>
 
           {/* Mode Switcher & Actions */}
           <div className="flex items-center gap-1.5 flex-wrap justify-end w-full sm:w-auto">
-            <div className="flex items-center gap-0.5 bg-zinc-100 dark:bg-zinc-800 p-0.5 rounded-lg border border-zinc-200/60 dark:border-zinc-700">
+            <div className="flex items-center gap-0.5 overflow-x-auto rounded-xl border border-slate-200 bg-slate-100/80 p-1 dark:border-white/10 dark:bg-white/5">
               {(
                 [
                   { id: "review", label: "المراجعة", icon: ClipboardList },
@@ -506,10 +507,10 @@ function AdminCoPilotPage() {
                       setActiveMode(tab.id);
                       setMobilePane("panel");
                     }}
-                    className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
+                    className={`flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold transition-all ${
                       isActive
-                        ? "bg-card text-primary shadow-xs"
-                        : "text-muted-foreground hover:text-foreground"
+                        ? "bg-white text-primary shadow-sm dark:bg-white/10"
+                        : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
                     }`}
                   >
                     <Icon className="h-3.5 w-3.5" strokeWidth={1.5} />
@@ -525,7 +526,7 @@ function AdminCoPilotPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-7 px-2 rounded-lg text-xs font-medium border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 cursor-pointer gap-1"
+                  className="h-10 rounded-xl border-slate-200 bg-white px-3 text-xs font-bold shadow-sm hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
                 >
                   <Wrench className="h-3.5 w-3.5 text-zinc-500" strokeWidth={1.5} />
                   <span>الأدوات</span>
@@ -582,12 +583,12 @@ function AdminCoPilotPage() {
       </div>
 
       <section
-        className="mx-3 mt-1 shrink-0 rounded-xl border border-border bg-card px-3 py-1 shadow-sm sm:mx-4"
+        className="mx-3 mt-3 shrink-0 rounded-2xl border border-slate-200/80 bg-white/80 px-4 py-2 shadow-sm backdrop-blur sm:mx-5 dark:border-white/10 dark:bg-white/[0.03]"
         aria-label="حالة بيانات المتجر ووضع التنفيذ"
       >
         <div className="flex flex-row flex-wrap items-center justify-between gap-2">
           <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-foreground">
+            <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200">
               <span>{storeName}</span>
               <span className="text-muted-foreground">·</span>
               <span className="inline-flex items-center gap-1.5">
@@ -722,17 +723,19 @@ function AdminCoPilotPage() {
       <div className="flex-1 min-h-0 flex flex-col lg:flex-row relative">
         {/* RIGHT PANE: CHAT (First in RTL) */}
         <div
-          className={`${mobilePane === "chat" ? "flex" : "hidden"} lg:flex w-full flex-1 min-h-0 lg:min-w-0 mt-2 lg:mt-0 border-t lg:border-t-0 lg:border-l border-border bg-card flex-col z-10 relative shadow-sm`}
+          className={`${mobilePane === "chat" ? "flex" : "hidden"} lg:flex relative z-10 mt-3 min-h-0 w-full flex-1 flex-col border-t border-slate-200 bg-white shadow-sm lg:mt-3 lg:min-w-0 lg:border-s lg:border-t-0 lg:border-slate-200/80 dark:border-white/10 dark:bg-[#0f131a]`}
         >
-          <div className="hidden lg:block flex-none border-b border-border px-4 py-3">
+          <div className="hidden flex-none border-b border-slate-200/80 px-5 py-4 lg:block dark:border-white/10">
             <div className="flex items-center justify-between gap-3">
               <div className="flex min-w-0 items-center gap-3">
-                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground">
-                  <Sparkles className="h-5 w-5" />
+                <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-primary to-[#164e63] text-white shadow-md shadow-primary/20">
+                  <span className="text-lg font-black">ن</span>
                 </div>
                 <div className="min-w-0">
-                  <h1 className="truncate text-sm font-bold text-foreground">{aiAssistantName}</h1>
-                  <p className="truncate text-[11px] text-muted-foreground">
+                  <h1 className="truncate text-base font-black text-foreground">
+                    {aiAssistantName}
+                  </h1>
+                  <p className="truncate text-xs text-muted-foreground">
                     يقرأ بيانات المتجر الحية، ولا ينفذ تعديلًا دون موافقتك
                   </p>
                 </div>
@@ -763,21 +766,27 @@ function AdminCoPilotPage() {
               </div>
             </div>
           </div>
-          <div className="flex-1 min-h-0 overflow-y-auto px-4 py-5 space-y-4">
-            <div className="max-w-2xl mx-auto space-y-4">
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-3 py-5 sm:px-6">
+            <div className="mx-auto max-w-3xl space-y-5">
               {chatHistory.length === 0 && (
-                <div className="mx-auto max-w-xl py-3 text-center sm:py-10">
-                  <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-sm">
-                    <Sparkles className="h-8 w-8" />
+                <div className="mx-auto max-w-2xl rounded-[2rem] border border-slate-200/80 bg-gradient-to-b from-white to-slate-50 px-5 py-8 text-center shadow-sm sm:py-12 dark:border-white/10 dark:from-white/[0.06] dark:to-transparent">
+                  <div className="relative mx-auto mb-5 grid h-20 w-20 place-items-center rounded-[1.75rem] bg-gradient-to-br from-primary via-[#0f766e] to-[#164e63] text-white shadow-xl shadow-primary/20">
+                    <span className="text-4xl font-black">ن</span>
+                    <span className="absolute -bottom-2 -end-2 grid h-7 w-7 place-items-center rounded-full border-4 border-white bg-emerald-500 dark:border-[#11151c]">
+                      <Check className="h-3.5 w-3.5" />
+                    </span>
                   </div>
-                  <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+                  <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-primary">
+                    {aiAssistantSubtitle}
+                  </p>
+                  <h2 className="text-3xl font-black tracking-tight text-foreground sm:text-4xl">
                     أهلًا، أنا {aiAssistantName}
                   </h2>
-                  <p className="mx-auto mt-3 max-w-lg text-sm leading-7 text-muted-foreground">
-                    اسألني عن منتجاتك ومبيعاتك ومخزونك. أبحث في بيانات المتجر أولًا، وأعرض أي تعديل
-                    للمراجعة قبل تنفيذه.
+                  <p className="mx-auto mt-4 max-w-xl text-sm leading-8 text-muted-foreground sm:text-base">
+                    أساعدك على إدارة المتجر بقرارات مبنية على البيانات الحية. اسألني عن المنتجات
+                    والمبيعات والمخزون، وسأعرض أي تغيير للمراجعة قبل التنفيذ.
                   </p>
-                  <div className="mt-6 grid gap-2 sm:grid-cols-2 text-start">
+                  <div className="mt-8 grid gap-3 text-start sm:grid-cols-2">
                     {[
                       "حلل لي مبيعات هذا الأسبوع",
                       "ما المنتجات التي أوشكت على النفاد؟",
@@ -788,7 +797,7 @@ function AdminCoPilotPage() {
                         key={q}
                         type="button"
                         onClick={() => setChatInput(q)}
-                        className="rounded-xl border border-border bg-background px-4 py-3 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:bg-secondary"
+                        className="rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-sm font-bold text-foreground shadow-sm transition hover:-translate-y-0.5 hover:border-primary hover:shadow-md dark:border-white/10 dark:bg-white/[0.04]"
                       >
                         <Sparkles className="me-1.5 inline h-3.5 w-3.5 text-primary" />
                         {q}
@@ -982,9 +991,9 @@ function AdminCoPilotPage() {
           </div>
 
           {/* Input Area */}
-          <div className="flex-none border-t border-border bg-card px-3 pt-3 pb-[calc(env(safe-area-inset-bottom,0px)+.5rem)]">
+          <div className="flex-none border-t border-slate-200/80 bg-white px-3 pt-4 pb-[calc(env(safe-area-inset-bottom,0px)+.75rem)] dark:border-white/10 dark:bg-[#0f131a] sm:px-5">
             <form onSubmit={handleFormSubmit} className="max-w-2xl mx-auto relative group">
-              <div className="absolute inset-0 bg-background rounded-2xl shadow-sm border-2 border-border pointer-events-none transition-colors group-focus-within:border-primary/50 dark:group-focus-within:border-primary/50 group-focus-within:ring-2 group-focus-within:ring-primary/20" />
+              <div className="pointer-events-none absolute inset-0 rounded-2xl border border-slate-200 bg-slate-50 shadow-sm transition-colors group-focus-within:border-primary/50 group-focus-within:ring-4 group-focus-within:ring-primary/10 dark:border-white/10 dark:bg-white/[0.04]" />
               <div className="relative flex flex-col p-2">
                 {attachedFile && (
                   <div className="mx-2 mt-1 mb-2 px-3 py-2 bg-emerald-50 dark:bg-emerald-950/30 rounded-xl flex items-center justify-between border border-emerald-100 dark:border-emerald-900/50">
@@ -1015,7 +1024,7 @@ function AdminCoPilotPage() {
                     <button
                       type="button"
                       onClick={() => setIsPickerOpen(true)}
-                      className="p-2 shrink-0 rounded-xl text-zinc-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition-colors"
+                      className="shrink-0 rounded-xl p-2 text-slate-400 transition-colors hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-900/30"
                       title="إرفاق ملف للتحليل"
                     >
                       <Paperclip className="h-4 w-4" strokeWidth={1.5} />
@@ -1029,7 +1038,7 @@ function AdminCoPilotPage() {
                           ? "جاري المعالجة..."
                           : "اكتب أمرك هنا... (مثال: أضف منتج جبنة بيضاء بـ 140 جنيه)"
                       }
-                      className="w-full bg-transparent border-0 focus:ring-0 resize-none text-sm py-1.5 px-0 min-h-[38px] max-h-[96px] text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 font-medium"
+                      className="min-h-[42px] w-full resize-none border-0 bg-transparent px-0 py-2 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:ring-0 dark:text-slate-100"
                       rows={1}
                       disabled={isProcessing || Boolean(pendingAction)}
                       dir="auto"
@@ -1040,14 +1049,14 @@ function AdminCoPilotPage() {
                     disabled={
                       isProcessing || Boolean(pendingAction) || (!chatInput.trim() && !attachedFile)
                     }
-                    className="mb-1 shrink-0 grid h-10 w-10 place-items-center rounded-full bg-primary text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors shadow-[0_4px_16px_rgba(47,93,75,0.3)]"
+                    className="mb-1 grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary text-white shadow-[0_4px_16px_rgba(47,93,75,0.3)] transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <Send className="h-4 w-4 rtl:-scale-x-100" strokeWidth={1.5} />
                   </button>
                 </div>
               </div>
             </form>
-            <div className="mt-1.5 flex items-center justify-between text-[10px] text-muted-foreground font-medium max-w-2xl mx-auto px-1">
+            <div className="mx-auto mt-2 flex max-w-2xl items-center justify-between px-1 text-[11px] font-medium text-muted-foreground">
               <span className="flex items-center gap-1">
                 <Sparkles className="h-3 w-3 text-emerald-500" strokeWidth={1.5} />{" "}
                 <span>{selectedModel}</span>
@@ -1063,7 +1072,7 @@ function AdminCoPilotPage() {
 
         {/* LEFT PANE: review queue and supporting workspace */}
         <aside
-          className={`${mobilePane === "panel" ? "flex" : "hidden"} lg:flex w-full lg:w-[370px] xl:w-[420px] flex-1 lg:flex-none mt-2 lg:mt-0 lg:h-full shrink-0 border-t lg:border-t-0 lg:border-r border-border bg-secondary flex-col min-h-0`}
+          className={`${mobilePane === "panel" ? "flex" : "hidden"} lg:flex w-full shrink-0 flex-1 flex-col mt-3 min-h-0 border-t border-slate-200 bg-slate-50 lg:mt-3 lg:h-full lg:w-[370px] lg:flex-none lg:border-t-0 lg:border-s dark:border-white/10 dark:bg-[#11151c] xl:w-[420px]`}
         >
           {activeMode === "review" ? (
             <>

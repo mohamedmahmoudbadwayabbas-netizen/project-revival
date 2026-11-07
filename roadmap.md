@@ -50,6 +50,7 @@ Full details and pre-solved blockers: IMPORT_PROTOCOL.md section 6.
 - [x] Enabled `bulkPriceUpdate`, `manageUsersAndRoles`, `rollbackLastAction`, and `updateRawJsonMetadata` through the in-chat approval path.
 - [x] Renamed misleading coupon and announcement tool names to match their real behavior.
 - [x] Refreshed assistant typography, empty state, quick actions, and mobile approval presentation.
+- [x] Rebranded the admin copilot as «نبراس» and completed the responsive visual redesign for desktop, tablet, and mobile.
 
 ## Phase A — AI unification + admin fixes
 
