@@ -25,3 +25,4 @@ Full details and pre-solved blockers: IMPORT_PROTOCOL.md section 6.
 
 ## Phase C — Data import
 - [ ] Old products/categories/orders/customers exports, images.
+- [x] تحديث شامل لتصميم المتجر وألوان الهايبر ماركت (الهاتف/التابلت/الكمبيوتر)
