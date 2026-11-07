@@ -21,14 +21,14 @@ export type AiToolName =
   | "getCategories"
   | "updateLayoutConfig"
   | "updateThemeColors"
-  | "createDiscountBundle"
+  | "createCouponCampaign"
   | "sendAbandonedCartRecovery"
   | "rollbackLastAction"
   | "executeCustomCSS"
   | "updateRawJsonMetadata"
   | "manageUsersAndRoles"
   | "exportReportsAndAnalytics"
-  | "sendPushNotification"
+  | "updateStoreAnnouncement"
   | "manageDeliveryZones"
   | "getDirectoryTree"
   | "getFileContent"
@@ -64,6 +64,7 @@ export interface ToolExecutionContext {
   layout: StoreLayoutConfig;
   updateLayout: (next: StoreLayoutConfig) => void;
   refresh?: () => void;
+  approvalGranted?: boolean;
 }
 
 export interface ToolExecutionResult {

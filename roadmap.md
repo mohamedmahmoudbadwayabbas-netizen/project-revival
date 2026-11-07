@@ -44,6 +44,13 @@ Full details and pre-solved blockers: IMPORT_PROTOCOL.md section 6.
 - [x] Removed unsupported Gemini model IDs and unverified model fallback labels from the client.
 - [ ] Apply migration 0016 in the target database and connect the admin assignment UI to `assign_driver`.
 
+## Alwadi Assistant
+
+- [x] Inline approval cards execute high-risk and destructive store tools after explicit admin confirmation.
+- [x] Enabled `bulkPriceUpdate`, `manageUsersAndRoles`, `rollbackLastAction`, and `updateRawJsonMetadata` through the in-chat approval path.
+- [x] Renamed misleading coupon and announcement tool names to match their real behavior.
+- [x] Refreshed assistant typography, empty state, quick actions, and mobile approval presentation.
+
 ## Phase A — AI unification + admin fixes
 
 - [x] Dahl in DB, Groq primary via GROQ_API_KEY secret, shared generatePlainText, product copy for new products, save payload fixed, speed fixes.

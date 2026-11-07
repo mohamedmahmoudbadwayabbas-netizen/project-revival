@@ -26,7 +26,7 @@ export {
   updateRawJsonMetadata,
   manageUsersAndRoles,
   exportReportsAndAnalytics,
-  sendPushNotification,
+  updateStoreAnnouncement,
   manageDeliveryZones,
   getDirectoryTree,
   getFileContentTool,

@@ -49,7 +49,7 @@ import {
   updateRawJsonMetadata,
   manageUsersAndRoles,
   exportReportsAndAnalytics,
-  sendPushNotification,
+  updateStoreAnnouncement,
   manageDeliveryZones,
 } from "./aiTools/operationalTools";
 import {
@@ -110,7 +110,7 @@ export {
   updateRawJsonMetadata,
   manageUsersAndRoles,
   exportReportsAndAnalytics,
-  sendPushNotification,
+  updateStoreAnnouncement,
   manageDeliveryZones,
   getDirectoryTree,
   getFileContentTool,

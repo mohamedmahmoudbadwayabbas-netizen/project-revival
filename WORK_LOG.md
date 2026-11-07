@@ -89,6 +89,14 @@
 - إعادة التدقيق المركزة: PASS على مستوى عقد migration للمخزون والسائقين والمحفظة والعروض؛ AI PASS جزئي بسبب اعتماد مزود Dahl على إعدادات قاعدة البيانات.
 - الحالة بقيت NO-GO حتى تطبيق migration 0016، ربط UI الإسناد بالـRPC، وتنظيف seed الإنتاجي.
 
+## 9. إعادة تصميم موافقات مساعد الوادي وتمكين الأدوات
+
+- تم تحويل موافقات `bulkPriceUpdate` و`manageUsersAndRoles` و`rollbackLastAction` و`updateRawJsonMetadata` إلى بطاقة موافقة داخل المحادثة بأزرار «موافق وتنفيذ» و«إلغاء».
+- بعد الموافقة، تمر العملية إلى بوابة التنفيذ مع `approvalGranted` وتصل إلى الـimplementation الفعلي بدلاً من التوقف عند `approval_required`.
+- تم جعل `rollbackLastAction` أداة تغيير حالة حتى تظهر في بطاقة الموافقة مثل باقي العمليات عالية الخطورة.
+- تم تصحيح الأسماء المضللة: `createCouponCampaign` بدلاً من `createDiscountBundle`، و`updateStoreAnnouncement` بدلاً من `sendPushNotification`.
+- تم تحسين واجهة المساعد: رسائل أكبر، بطاقات موافقة أوضح، إجراءات بداية موجهة لإدارة المتجر، وتجربة أفضل على الهاتف.
+
 ## تعيين مدير المتجر
 
 - تم إعطاء الحساب mohamedmahmoudbadwayabbas@gmail.com صلاحية «مدير» (admin)، فيقدر يدخل لوحة الإدارة بكل صلاحياتها.

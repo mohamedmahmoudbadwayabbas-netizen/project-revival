@@ -385,9 +385,9 @@ export async function exportReportsAndAnalytics(
   };
 }
 
-/* ───────────────────────── 5. sendPushNotification ───────────────────────── */
+/* ───────────────────────── 5. updateStoreAnnouncement ───────────────────────── */
 
-export async function sendPushNotification(
+export async function updateStoreAnnouncement(
   args: { title?: string; message?: string; targetAudience?: string; actionUrl?: string },
   ctx?: ToolExecutionContext,
 ): Promise<ToolExecutionResult> {
@@ -397,7 +397,7 @@ export async function sendPushNotification(
   const actionUrl = args.actionUrl || "/categories";
 
   const pointId = createRollbackPoint(
-    "sendPushNotification",
+    "updateStoreAnnouncement",
     `إرسال إشعار فوري: ${title}`,
     ctx?.layout || null,
   );
@@ -442,19 +442,17 @@ export async function sendPushNotification(
     }
   }
 
-  // Note: this tool only updates the on-site announcement bar (store_settings.announcement_text) —
-  // there is no real push-notification channel (FCM/OneSignal/etc.) wired up. "sendPushNotification"
-  // is a legacy name from an earlier design; it does not push anything to visitors' devices.
+  // This tool deliberately updates the on-site announcement only; device push is not configured.
   if (!layoutUpdated && !dbSynced) {
     return {
-      tool: "sendPushNotification",
+      tool: "updateStoreAnnouncement",
       ok: false,
       messageAr: `تعذر تحديث شريط الإعلانات: لا يوجد سياق واجهة نشط ${dbError ? `والخطأ من قاعدة البيانات: ${dbError}` : "ولا اتصال بقاعدة البيانات"}.`,
     };
   }
 
   return {
-    tool: "sendPushNotification",
+    tool: "updateStoreAnnouncement",
     ok: true,
     rollbackPointId: pointId,
     messageAr: dbSynced

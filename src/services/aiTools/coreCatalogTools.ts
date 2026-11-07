@@ -881,7 +881,7 @@ export async function toolUpdateThemeColors(
   };
 }
 
-/* ───────────────────────── 8. createDiscountBundle ───────────────────────── */
+/* ───────────────────────── 8. createCouponCampaign ───────────────────────── */
 
 export async function toolCreateDiscountBundle(
   args: {
@@ -900,7 +900,7 @@ export async function toolCreateDiscountBundle(
   const hours = Number(args.hours ?? 6);
   const expiresAt = new Date(Date.now() + hours * 3600 * 1000).toISOString();
   const pointId = createRollbackPoint(
-    "createDiscountBundle",
+    "createCouponCampaign",
     `إنشاء كوبون: ${code}`,
     ctx?.layout || null,
   );
@@ -934,14 +934,14 @@ export async function toolCreateDiscountBundle(
       attachDbUndo(pointId, { table: "coupons", kind: "delete-row", id: inserted.id });
     } catch (e) {
       return {
-        tool: "createDiscountBundle",
+        tool: "createCouponCampaign",
         ok: false,
         messageAr: `تعذر إنشاء الكوبون في قاعدة البيانات: ${(e as Error).message}`,
       };
     }
   } else {
     return {
-      tool: "createDiscountBundle",
+      tool: "createCouponCampaign",
       ok: false,
       messageAr: "تعذر إنشاء الكوبون لأن اتصال قاعدة البيانات غير مهيأ.",
     };
@@ -959,7 +959,7 @@ export async function toolCreateDiscountBundle(
   }
 
   return {
-    tool: "createDiscountBundle",
+    tool: "createCouponCampaign",
     ok: true,
     rollbackPointId: pointId,
     messageAr: `تم إنشاء باقة الخصم وتفعيل كود «${code}» (${type === "percentage" ? `${value}%` : `${value} ج.م`}) لمدة ${hours} ساعات.`,

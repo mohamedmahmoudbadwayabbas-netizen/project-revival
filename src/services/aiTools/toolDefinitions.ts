@@ -245,13 +245,13 @@ const ALL_AI_TOOL_SUITE: AiToolDefinition[] = [
 
   // ── CORE 4: MARKETING & RECOVERY ──
   {
-    name: "createDiscountBundle",
+    name: "createCouponCampaign",
     group: "marketing",
     labelAr: "إنشاء باقة خصم",
     descriptionAr: "توليد كوبون خصم حقيقي في جدول coupons وربطه بعداد العروض في الواجهة",
     mutatesState: true,
     declaration: {
-      name: "createDiscountBundle",
+      name: "createCouponCampaign",
       description:
         "Create a discount coupon in Supabase coupons and surface it in storefront flash sale timer.",
       parameters: {
@@ -298,7 +298,7 @@ const ALL_AI_TOOL_SUITE: AiToolDefinition[] = [
     group: "safety",
     labelAr: "تراجع عن آخر أمر",
     descriptionAr: "استرجاع حالة المتجر وقاعدة البيانات إلى ما قبل آخر أمر تم تنفيذه",
-    mutatesState: false,
+    mutatesState: true,
     declaration: {
       name: "rollbackLastAction",
       description:
@@ -404,15 +404,15 @@ const ALL_AI_TOOL_SUITE: AiToolDefinition[] = [
     },
   },
   {
-    name: "sendPushNotification",
+    name: "updateStoreAnnouncement",
     group: "operations",
-    labelAr: "إرسال إشعار فوري (Push)",
-    descriptionAr: "بث إشعار فوري لعملاء المتجر وتحديث شريط التنبيهات العام بالمتجر",
+    labelAr: "تحديث شريط الإعلان",
+    descriptionAr: "تحديث شريط الإعلان العام في المتجر وحفظه في إعدادات المتجر",
     mutatesState: true,
     declaration: {
-      name: "sendPushNotification",
+      name: "updateStoreAnnouncement",
       description:
-        "Triggers and broadcasts a real-time web push notification / announcement alert to store users.",
+        "Updates the on-site store announcement bar and persists it in store_settings. This does not send device push notifications.",
       parameters: {
         type: "object",
         properties: {

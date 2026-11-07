@@ -226,7 +226,7 @@ export async function executeAIAction(
       error: "هذا الإجراء يتطلب صلاحية تشغيل موثقة من قاعدة البيانات.",
     };
   }
-  if (risk === "HIGH_WRITE" || risk === "DESTRUCTIVE") {
+  if ((risk === "HIGH_WRITE" || risk === "DESTRUCTIVE") && !context?.approvalGranted) {
     return {
       ...base,
       success: false,

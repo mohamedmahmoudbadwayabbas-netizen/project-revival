@@ -23,7 +23,7 @@ import {
   updateRawJsonMetadata,
   manageUsersAndRoles,
   exportReportsAndAnalytics,
-  sendPushNotification,
+  updateStoreAnnouncement,
   manageDeliveryZones,
 } from "./operationalTools";
 import { getDirectoryTree, getFileContentTool, searchCodebase, getAppErrors } from "./devopsTools";
@@ -95,7 +95,7 @@ async function _executeAiToolInner(
       break;
 
     // ── Marketing ──
-    case "createDiscountBundle":
+    case "createCouponCampaign":
       result = await toolCreateDiscountBundle(args as any, ctx);
       break;
     case "sendAbandonedCartRecovery":
@@ -122,8 +122,8 @@ async function _executeAiToolInner(
     case "exportReportsAndAnalytics":
       result = await exportReportsAndAnalytics(args as any, ctx);
       break;
-    case "sendPushNotification":
-      result = await sendPushNotification(args as any, ctx);
+    case "updateStoreAnnouncement":
+      result = await updateStoreAnnouncement(args as any, ctx);
       break;
     case "manageDeliveryZones":
       result = await manageDeliveryZones(args as any, ctx);

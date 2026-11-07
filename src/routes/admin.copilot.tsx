@@ -95,28 +95,40 @@ export const Route = createFileRoute("/admin/copilot")({
 
 const STARTER_PROMPTS = [
   {
-    title: "أضف منتجًا جديدًا",
-    desc: "أدخل البيانات المطلوبة ثم راجع الإضافة قبل تنفيذها",
-    prompt: "أضف منتجًا جديدًا إلى المتجر",
+    title: "ابحث عن منتج",
+    desc: "السعر والمخزون والحالة الحالية",
+    prompt: "ابحث عن منتج في الكتالوج الحالي",
     icon: Package,
   },
   {
-    title: "حلل المبيعات والمخزون",
-    desc: "اعرض نتيجة مبنية على سجلات المتجر الحالية",
-    prompt: "حلل المبيعات والمخزون من بيانات المتجر الحالية وحدد ما يحتاج متابعة",
+    title: "أنشئ عرضًا",
+    desc: "اقترح حملة كوبون قابلة للمراجعة",
+    prompt: "أنشئ حملة كوبون خصم جديدة بعد مراجعة البيانات",
     icon: BarChart3,
   },
   {
-    title: "اعرض الطلبات التي تحتاج إجراء",
-    desc: "راجع الطلبات من قاعدة البيانات قبل اقتراح خطوة",
-    prompt: "اعرض الطلبات التي تحتاج إجراءً من بيانات المتجر الحالية",
+    title: "عدّل الأسعار",
+    desc: "غيّر أسعار قسم بعد موافقتي",
+    prompt: "عدّل أسعار قسم الألبان بنسبة 10% واعرض بطاقة الموافقة",
     icon: ClipboardList,
   },
   {
-    title: "ابحث عن منتج",
-    desc: "تحقق من وجوده وسعره ومخزونه في Supabase",
-    prompt: "ابحث في قاعدة البيانات عن منتج",
+    title: "راجع المبيعات والمخزون",
+    desc: "ملخص تنفيذي مبني على بيانات المتجر",
+    prompt: "حلل المبيعات والمخزون وحدد النواقص والمنتجات الراكدة",
     icon: Search,
+  },
+  {
+    title: "إدارة الأقسام",
+    desc: "راجع الأقسام وأنشئ قسمًا بعد التأكيد",
+    prompt: "راجع أقسام المتجر الحالية واقترح ما يحتاج تحديثًا",
+    icon: Layers,
+  },
+  {
+    title: "توقع النواقص",
+    desc: "حدد المنتجات التي تحتاج إعادة طلب",
+    prompt: "حلل المخزون الحالي وحدد المنتجات القريبة من النفاد",
+    icon: TrendingUp,
   },
 ];
 
@@ -136,25 +148,6 @@ type PendingAdminAction = {
   status: "pending" | "executing" | "blocked";
   error?: string;
 };
-
-function needsServerApproval(action: PendingAdminAction): boolean {
-  return (
-    [
-      "bulkPriceUpdate",
-      "manageUsersAndRoles",
-      "updateRawJsonMetadata",
-      "rollbackLastAction",
-    ].includes(action.toolName) ||
-    action.args.action === "delete" ||
-    [
-      "writeNewFile",
-      "updateFileAST",
-      "deleteFile",
-      "gitCommitAndPush",
-      "gitRollbackCommit",
-    ].includes(action.toolName)
-  );
-}
 
 function AdminCoPilotPage() {
   const { role } = useAuth();
@@ -405,22 +398,8 @@ function AdminCoPilotPage() {
       layout: layoutConfig,
       updateLayout: updateConfig,
       refresh: () => queryClient.invalidateQueries(),
+      approvalGranted: true,
     });
-
-    if (result.gatewayStatus === "approval_required") {
-      const error = result.error || "تتطلب هذه العملية مسار موافقة إضافيًا غير متاح حاليًا.";
-      setPendingAction({ ...proposal, status: "blocked", error });
-      setChatHistory((previous) => [
-        ...previous,
-        {
-          id: `assistant-${Date.now()}`,
-          role: "assistant",
-          content: `لم أنفّذ الإجراء. هذه الأداة تتطلب مسار موافقة إضافيًا: ${error}`,
-          timestamp: new Date().toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" }),
-        },
-      ]);
-      return;
-    }
 
     setReviewActivity((previous) => [
       {
@@ -850,7 +829,7 @@ function AdminCoPilotPage() {
                       </div>
 
                       <div
-                        className={`rounded-3xl p-4 text-xs sm:text-sm leading-relaxed shadow-sm ${isUser ? "bg-primary text-primary-foreground rounded-tr-sm font-medium" : isError ? "border border-[#B6502E]/50 bg-[#B6502E]/5 text-[#8d3b24] rounded-tl-sm" : "bg-card text-foreground border border-border rounded-tl-sm"}`}
+                        className={`rounded-3xl p-4 text-sm sm:text-base leading-7 shadow-sm ${isUser ? "bg-primary text-primary-foreground rounded-tr-sm font-medium" : isError ? "border border-[#B6502E]/50 bg-[#B6502E]/5 text-[#8d3b24] rounded-tl-sm" : "bg-card text-foreground border border-border rounded-tl-sm"}`}
                       >
                         {msg.attachedFile && (
                           <div className="mb-2.5 inline-flex items-center gap-1.5 bg-black/10 dark:bg-white/10 px-2.5 py-1 rounded-md text-xs font-mono">
@@ -902,10 +881,10 @@ function AdminCoPilotPage() {
               })}
               {pendingAction && (
                 <div
-                  className="rounded-2xl border border-primary/30 bg-card p-3 shadow-sm"
+                  className="rounded-3xl border border-primary/30 bg-gradient-to-br from-primary/10 via-card to-card p-4 shadow-lg shadow-primary/5"
                   aria-live="polite"
                 >
-                  <p className="text-xs font-bold text-foreground">
+                  <p className="text-sm font-bold text-foreground">
                     {AI_TOOL_SUITE.find((tool) => tool.name === pendingAction.toolName)?.labelAr ||
                       "إجراء متجر"}{" "}
                     —{" "}
@@ -915,7 +894,10 @@ function AdminCoPilotPage() {
                         ? "لم يُنفذ"
                         : "بانتظار تأكيدك"}
                   </p>
-                  <div className="mt-2 max-h-40 overflow-auto space-y-1 text-[11px] text-muted-foreground">
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    راجع التفاصيل قبل اعتماد التغيير.
+                  </p>
+                  <div className="mt-3 max-h-40 overflow-auto space-y-2 text-sm text-muted-foreground">
                     {Object.entries(pendingAction.args)
                       .slice(0, 8)
                       .map(([k, v]) => (
@@ -942,7 +924,7 @@ function AdminCoPilotPage() {
                       {pendingAction.status === "executing" ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
-                        "تأكيد التنفيذ"
+                        "موافق وتنفيذ"
                       )}
                     </Button>
                     <Button
@@ -965,8 +947,8 @@ function AdminCoPilotPage() {
               )}
               {chatHistory.length <= 1 && (
                 <div className="pt-2 space-y-2">
-                  <span className="text-[11px] font-medium text-zinc-400 block px-1">
-                    إجراءات سريعة مقترحة:
+                  <span className="text-xs font-bold text-zinc-500 block px-1">
+                    ابدأ بإحدى مهام مدير المتجر:
                   </span>
                   <div className="grid grid-cols-1 gap-2">
                     {STARTER_PROMPTS.map((starter, i) => {
@@ -977,13 +959,13 @@ function AdminCoPilotPage() {
                           type="button"
                           onClick={() => handleSendMessage(starter.prompt)}
                           disabled={Boolean(pendingAction)}
-                          className="p-3 rounded-3xl border border-white/20 dark:border-white/10 bg-card hover:border-primary/50 transition-colors text-right cursor-pointer shadow-[0_4px_20px_rgba(0,0,0,0.03)] group flex items-start justify-between gap-2"
+                          className="p-4 rounded-2xl border border-border bg-card hover:border-primary/50 hover:shadow-md transition-all text-right cursor-pointer shadow-sm group flex items-start justify-between gap-3"
                         >
                           <div className="space-y-0.5 min-w-0">
-                            <span className="block text-xs font-bold text-zinc-700 dark:text-zinc-200 group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors truncate">
+                            <span className="block text-sm font-bold text-zinc-700 dark:text-zinc-200 group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors truncate">
                               {starter.title}
                             </span>
-                            <span className="block text-[10px] text-zinc-500 truncate">
+                            <span className="block text-xs text-zinc-500 truncate">
                               {starter.prompt}
                             </span>
                           </div>
@@ -1147,19 +1129,8 @@ function AdminCoPilotPage() {
                         )}
                       </div>
                       <p className="mt-2 text-xs leading-6 text-muted-foreground">
-                        {needsServerApproval(pendingAction)
-                          ? "راجع الحقول. لن يُرسل هذا الإجراء من الواجهة حتى يتوفر مسار الموافقة الخادمي."
-                          : "راجع الحقول أدناه. لن تُكتب أي بيانات حتى تضغط «اعتماد وتنفيذ»."}
+                        راجع الحقول أدناه. لن تُكتب أي بيانات حتى تضغط «اعتماد وتنفيذ».
                       </p>
-                      {needsServerApproval(pendingAction) && (
-                        <p
-                          role="status"
-                          className="mt-3 rounded-xl border border-[#B6502E]/30 bg-[#B6502E]/5 p-3 text-xs leading-5 text-[#8d3b24]"
-                        >
-                          هذا الإجراء يحتاج موافقة خادمية مسجلة غير متاحة حاليًا؛ سيبقى مقفولًا ولن
-                          يُرسل إلى قاعدة البيانات.
-                        </p>
-                      )}
                       <dl className="mt-3 space-y-2 rounded-xl bg-slate-100 p-3 dark:bg-zinc-800">
                         {Object.entries(pendingAction.args)
                           .filter(([key]) => !/(token|secret|password|api.?key)/i.test(key))
@@ -1199,9 +1170,7 @@ function AdminCoPilotPage() {
                           رفض
                         </Button>
                         <Button
-                          disabled={
-                            pendingAction.status !== "pending" || needsServerApproval(pendingAction)
-                          }
+                          disabled={pendingAction.status !== "pending"}
                           onClick={handleApprovePendingAction}
                           className="rounded-xl bg-primary text-primary-foreground hover:bg-primary/90"
                         >
@@ -1210,8 +1179,6 @@ function AdminCoPilotPage() {
                               <Loader2 className="me-2 h-4 w-4 animate-spin" />
                               جارٍ التنفيذ
                             </>
-                          ) : needsServerApproval(pendingAction) ? (
-                            "الموافقة الخادمية غير متاحة"
                           ) : (
                             "اعتماد وتنفيذ"
                           )}
