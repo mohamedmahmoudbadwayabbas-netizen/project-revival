@@ -24,6 +24,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { flyToCart } from "@/lib/fly-to-cart";
 import { useAuth } from "@/lib/auth-context";
 import { getProductAdvice } from "@/lib/product-advice.functions";
+import { extractProductDetails } from "@/lib/product-metadata";
+import { WeightSelector } from "@/components/storefront/WeightSelector";
 
 type PageProduct = Product & { unit?: string | null };
 
@@ -276,6 +278,10 @@ function ReadyState({
     product.stock_quantity != null &&
     product.stock_quantity <= (product.low_stock_threshold ?? 5);
   const unit = unitText(product);
+  const details = extractProductDetails(product);
+  const setWeight = (weight: number, label: string) => {
+    setQty(weight);
+  };
 
   const add = async (el: HTMLElement) => {
     if (isAdding || unavailable || limitReached) return;
@@ -436,14 +442,23 @@ function ReadyState({
           )}
           {!unavailable && (
             <div className="hidden items-center gap-3 pt-1 sm:flex">
-              <QuantityStepper
-                value={qty}
-                onChange={setQty}
-                step={step}
-                min={min}
-                max={max}
-                unit={unit}
-              />
+              {weighted ? (
+                <WeightSelector
+                  product={product}
+                  selectedWeight={qty}
+                  onWeightChange={setWeight}
+                  compact
+                />
+              ) : (
+                <QuantityStepper
+                  value={qty}
+                  onChange={setQty}
+                  step={step}
+                  min={min}
+                  max={max}
+                  unit={unit}
+                />
+              )}
               <Button
                 className="h-11 flex-1 rounded-2xl text-base font-black"
                 onClick={(e) => void add(e.currentTarget)}
@@ -478,11 +493,17 @@ function ReadyState({
         </section>
       </div>
 
-      <div className="mt-8 grid gap-4 md:grid-cols-3">
+      <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-          <h2 className="mb-3 text-lg font-black text-primary">معلومات الاستخدام والتخزين</h2>
-          <p className="text-sm leading-relaxed text-muted-foreground">
-            لا تتوفر حاليًا تعليمات موثقة لهذا المنتج.
+          <h2 className="mb-3 text-lg font-black text-primary">خصائص المنتج</h2>
+          <ul className="space-y-2 text-sm leading-relaxed text-muted-foreground">
+            {details.characteristics.map((item) => (
+              <li key={item}>✓ {item}</li>
+            ))}
+          </ul>
+          <h3 className="mt-5 font-bold text-primary">طريقة الحفظ</h3>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            {details.storageInstructions}
           </p>
         </section>
         <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
@@ -503,6 +524,28 @@ function ReadyState({
               </dd>
             </div>
           </dl>
+        </section>
+        <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+          <h2 className="mb-3 text-lg font-black text-primary">المنشأ والقيمة الغذائية</h2>
+          <p className="mb-4 text-sm text-muted-foreground">{details.originSource}</p>
+          <p className="mb-2 text-xs font-bold text-primary">لكل 100 جم</p>
+          <dl className="grid grid-cols-2 gap-2 text-sm">
+            {[
+              ["السعرات", details.nutritionalInfo.calories],
+              ["البروتين", details.nutritionalInfo.protein],
+              ["الكربوهيدرات", details.nutritionalInfo.carbs],
+              ["الألياف", details.nutritionalInfo.fiber],
+              ["الدهون", details.nutritionalInfo.fats],
+            ].map(([label, value]) => (
+              <div key={label} className="rounded-lg bg-secondary/40 p-2">
+                <dt className="text-xs text-muted-foreground">{label}</dt>
+                <dd className="font-bold">{value}</dd>
+              </div>
+            ))}
+          </dl>
+          <p className="mt-4 rounded-xl bg-accent/10 p-3 text-sm leading-relaxed text-foreground">
+            {details.cookingTip}
+          </p>
         </section>
         <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
           <h2 className="mb-3 text-lg font-black text-primary">الوصف</h2>
@@ -580,14 +623,24 @@ function ReadyState({
       {!unavailable && (
         <div className="fixed inset-x-0 bottom-0 z-40 rounded-t-3xl border-t border-border bg-background/95 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_-8px_32px_-20px_rgba(0,0,0,0.35)] backdrop-blur sm:hidden">
           <div className="flex items-center gap-3">
-            <QuantityStepper
-              value={qty}
-              onChange={setQty}
-              step={step}
-              min={min}
-              max={max}
-              unit={unit}
-            />
+            {weighted ? (
+              <WeightSelector
+                product={product}
+                selectedWeight={qty}
+                onWeightChange={setWeight}
+                compact
+                showEstimatedPrice={false}
+              />
+            ) : (
+              <QuantityStepper
+                value={qty}
+                onChange={setQty}
+                step={step}
+                min={min}
+                max={max}
+                unit={unit}
+              />
+            )}
             <Button
               className="h-11 flex-1 rounded-2xl font-black"
               onClick={(e) => void add(e.currentTarget)}

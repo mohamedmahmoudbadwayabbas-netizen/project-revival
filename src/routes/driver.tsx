@@ -89,8 +89,7 @@ export const Route = createFileRoute("/driver")({
 });
 
 export function DriverPortalPage() {
-  const [driverName, setDriverName] = useState("الكابتن أحمد علي");
-  const [driverPhone, setDriverPhone] = useState("01012345678");
+  const [driverName] = useState("السائق");
   const [isOnline, setIsOnline] = useState(true);
   const [orders, setOrders] = useState<DriverOrder[]>([]);
   const [loading, setLoading] = useState(true);
@@ -118,15 +117,6 @@ export function DriverPortalPage() {
 
   const [chatModalOpen, setChatModalOpen] = useState(false);
   const [selectedOrderForChat, setSelectedOrderForChat] = useState<DriverOrder | null>(null);
-
-  // Store information
-  const storeInfo = {
-    name: "المركز اللوجستي — سمارت ستور",
-    address: "القاهرة، وسط البلد، شارع قصر النيل",
-    lat: 30.0444,
-    lng: 31.2357,
-    phone: "01099998888",
-  };
 
   // Fetch assigned orders
   const fetchAssignedOrders = useCallback(async () => {
@@ -526,21 +516,27 @@ export function DriverPortalPage() {
       </div>
 
       {/* الخريطة والتوجيه ثنائي المراحل للطلب النشط */}
-      {activeOrder && (
+      {activeOrder &&
+      isGpsActive &&
+      activeOrder.delivery_lat != null &&
+      activeOrder.delivery_lng != null ? (
         <DualStageLiveMap
           orderId={activeOrder.id}
           currentDriverCoords={currentCoords}
-          storeCoords={storeInfo}
           customerCoords={{
-            lat: activeOrder.delivery_lat || 30.0626,
-            lng: activeOrder.delivery_lng || 31.2497,
+            lat: activeOrder.delivery_lat,
+            lng: activeOrder.delivery_lng,
             name: activeOrder.customer_name,
             address: activeOrder.address,
           }}
           initialStage={activeStage}
           onStageChange={(st) => setActiveStage(st)}
         />
-      )}
+      ) : activeOrder ? (
+        <div className="rounded-3xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+          فعّل GPS وتأكد من توفر إحداثيات العميل والفرع لعرض المسار الحي.
+        </div>
+      ) : null}
 
       {/* قائمة وتفاصيل طلبات التوصيل المسندة للكابتن */}
       <div className="space-y-3 pt-2">
@@ -844,7 +840,6 @@ export function DriverPortalPage() {
           customerName={selectedOrderForChat.customer_name}
           customerPhone={selectedOrderForChat.phone}
           orderId={selectedOrderForChat.id}
-          storePhone={storeInfo.phone}
         />
       )}
     </div>

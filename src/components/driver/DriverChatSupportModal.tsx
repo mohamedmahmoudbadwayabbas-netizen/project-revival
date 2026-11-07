@@ -38,7 +38,7 @@ export function DriverChatSupportModal({
   customerName,
   customerPhone,
   orderId,
-  storePhone = "01099998888",
+  storePhone,
 }: DriverChatSupportModalProps) {
   const [activeTab, setActiveTab] = useState<"customer" | "support">("customer");
   const [customMsg, setCustomMsg] = useState("");
@@ -69,10 +69,15 @@ export function DriverChatSupportModal({
   };
 
   const handleOpenSupportWhatsApp = () => {
+    if (!storePhone) {
+      toast.error("رقم واتساب العمليات غير مضاف");
+      return;
+    }
     const msg = encodeURIComponent(
       `مرحباً فريق الدعم الفني لسوبرماركت الوادي الأخضر، أنا كابتن التوصيل وأحتاج لمساعدة بخصوص الطلب رقم #${orderId.slice(0, 8)} للعميل (${customerName}).`,
     );
-    window.open(`https://wa.me/201099998888?text=${msg}`, "_blank");
+    const supportPhone = storePhone.replace(/\D/g, "").replace(/^0/, "20");
+    window.open(`https://wa.me/${supportPhone}?text=${msg}`, "_blank");
   };
 
   const copyToClipboard = (text: string) => {
@@ -234,22 +239,34 @@ export function DriverChatSupportModal({
               </div>
 
               <div className="grid grid-cols-2 gap-2">
-                <a
-                  href={`tel:${storePhone}`}
-                  className="inline-flex items-center justify-center gap-2 h-11 px-3 rounded-2xl bg-primary text-primary-foreground font-black text-xs shadow-xs transition-colors"
-                >
-                  <Phone className="h-4 w-4" />
-                  <span>اتصال بالعمليات 📞</span>
-                </a>
+                {storePhone ? (
+                  <a
+                    href={`tel:${storePhone}`}
+                    className="inline-flex items-center justify-center gap-2 h-11 px-3 rounded-2xl bg-primary text-primary-foreground font-black text-xs shadow-xs transition-colors"
+                  >
+                    <Phone className="h-4 w-4" />
+                    <span>اتصال بالعمليات 📞</span>
+                  </a>
+                ) : (
+                  <span className="inline-flex items-center justify-center rounded-2xl bg-muted px-3 text-center text-xs font-bold text-muted-foreground">
+                    رقم العمليات غير مضاف
+                  </span>
+                )}
 
-                <button
-                  type="button"
-                  onClick={handleOpenSupportWhatsApp}
-                  className="inline-flex items-center justify-center gap-2 h-11 px-3 rounded-2xl bg-[#25D366] text-white font-black text-xs shadow-xs transition-colors"
-                >
-                  <MessageCircle className="h-4 w-4" />
-                  <span>واتساب العمليات 💬</span>
-                </button>
+                {storePhone ? (
+                  <button
+                    type="button"
+                    onClick={handleOpenSupportWhatsApp}
+                    className="inline-flex items-center justify-center gap-2 h-11 px-3 rounded-2xl bg-[#25D366] text-white font-black text-xs shadow-xs transition-colors"
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                    <span>واتساب العمليات 💬</span>
+                  </button>
+                ) : (
+                  <span className="inline-flex items-center justify-center rounded-2xl bg-muted px-3 text-center text-xs font-bold text-muted-foreground">
+                    واتساب العمليات غير مضاف
+                  </span>
+                )}
               </div>
             </div>
           )}

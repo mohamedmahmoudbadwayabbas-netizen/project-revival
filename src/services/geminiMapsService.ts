@@ -15,7 +15,7 @@ export interface MapsGroundingResponse {
 }
 
 /**
- * Queries Google Maps Grounding via Gemini 3.5 Flash / 3.7 Flash with googleMaps tool
+ * Queries Google Maps Grounding via the configured Gemini model with the googleMaps tool.
  */
 export async function queryGoogleMapsGrounding(
   prompt: string,

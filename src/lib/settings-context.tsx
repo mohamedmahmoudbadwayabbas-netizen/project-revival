@@ -45,7 +45,7 @@ export type StoreSettings = {
 
 // Store brand defaults use the approved Figma palette in HSL tokens.
 const DEFAULTS: StoreSettings = {
-  site_name: "الوادي الأخضر",
+  site_name: "متجر إلكتروني",
   logo_url: null,
   favicon_url: null,
   primary_color: STORE_IDENTITY.greenHsl,
@@ -53,12 +53,12 @@ const DEFAULTS: StoreSettings = {
   background_color: STORE_IDENTITY.creamHsl,
   foreground_color: STORE_IDENTITY.inkHsl,
   font_family: "Tajawal",
-  announcement_text: "🛒 سوبرماركت الوادي الأخضر — تصفّح المنتجات المتاحة واختر احتياجاتك.",
-  announcement_enabled: true,
+  announcement_text: "",
+  announcement_enabled: false,
   announcement_bg_color: STORE_IDENTITY.greenHsl,
   whatsapp_number: null,
-  hero_title: "كل احتياجات البيت في مكان واحد",
-  hero_subtitle: "تصفّح المنتجات المتاحة واختر ما يناسب قائمتك.",
+  hero_title: "",
+  hero_subtitle: "",
   hero_image_url: null,
   hero_cta_text: "تسوّق الآن 🛒",
   hero_bg_image:

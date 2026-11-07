@@ -49,6 +49,11 @@ export function recoverAnswerFromThinking(thinking: string): { thinking: string;
   const paras = src.split(/\n\s*\n/);
   if (paras.length > 1)
     return { thinking: paras.slice(0, -1).join("\n\n").trim(), text: paras.at(-1)!.trim() };
+  const sentence = /[؟!]|\.(?=\s)|[،؛](?=\s)/.exec(src);
+  if (sentence && sentence.index > 0) {
+    const boundary = sentence.index + sentence[0].length;
+    return { thinking: src.slice(0, boundary).trim(), text: src.slice(boundary).trim() };
+  }
   return { thinking: "", text: src };
 }
 

@@ -138,7 +138,7 @@ export function CategoryGrid({
               >
                 <span
                   className={cn(
-                    "grid h-24 w-24 place-items-center overflow-hidden rounded-2xl border-2 bg-card p-1 shadow-card transition-all duration-300 group-hover:-translate-y-1 sm:h-28 sm:w-28",
+                    "grid h-24 w-24 place-items-center overflow-hidden rounded-full border-2 bg-card p-1 shadow-card transition-all duration-300 group-hover:-translate-y-1 sm:h-28 sm:w-28",
                     isActive
                       ? "border-primary"
                       : "border-transparent group-hover:border-primary/30",
@@ -146,7 +146,7 @@ export function CategoryGrid({
                 >
                   <span
                     className={cn(
-                      "grid h-full w-full place-items-center overflow-hidden rounded-xl",
+                      "grid h-full w-full place-items-center overflow-hidden rounded-full",
                       TILE_TONES[index % TILE_TONES.length],
                     )}
                   >

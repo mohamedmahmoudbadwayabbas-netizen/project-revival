@@ -79,7 +79,7 @@ export const testAiConnection = createServerFn({ method: "POST" })
             httpOptions: { retryOptions: { attempts: 1 } },
           });
           await ai.models.generateContent({
-            model: s?.model || "gemini-3.8-flash",
+            model: s?.model || "gemini-2.5-flash",
             contents: contents as any,
           });
           okCount++;

@@ -26,6 +26,16 @@ describe("provider fallback & thinking", () => {
       { text: "أهلاً!" },
     ]);
   });
+  it("recovers a reply when the provider leaves <think> unclosed", () => {
+    const r = openAIToGemini({
+      choices: [{ message: { content: "<think>بفهم الطلب\n\nهتلاقي اللبن الطازج هنا." } }],
+    });
+    expect(r.text).toBe("هتلاقي اللبن الطازج هنا.");
+    expect(r.candidates[0].content.parts).toEqual([
+      { text: "بفهم الطلب", thought: true },
+      { text: "هتلاقي اللبن الطازج هنا." },
+    ]);
+  });
   it("uses the backup key when the first key is busy (429)", async () => {
     const used: string[] = [];
     const orig = globalThis.fetch;

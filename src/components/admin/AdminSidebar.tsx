@@ -30,6 +30,10 @@ import {
   Database,
   Users,
   History,
+  Gift,
+  ClipboardList,
+  LineChart,
+  Building,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
@@ -87,6 +91,21 @@ const navSections: NavSection[] = [
         icon: Receipt,
       },
       {
+        title: "اقتراحات إعادة الشراء",
+        url: "/admin/replenishment",
+        icon: ClipboardList,
+      },
+      {
+        title: "التنبؤ بالطلب",
+        url: "/admin/forecasting",
+        icon: LineChart,
+      },
+      {
+        title: "الفروع والمخزون الجغرافي",
+        url: "/admin/branches",
+        icon: Building,
+      },
+      {
         title: "العملاء",
         url: "/admin/customers",
         icon: Users,
@@ -105,6 +124,11 @@ const navSections: NavSection[] = [
         title: "الكوبونات والخصومات",
         url: "/admin/coupons",
         icon: Ticket,
+      },
+      {
+        title: "الباقات والعروض المركبة",
+        url: "/admin/bundles",
+        icon: Gift,
       },
       {
         title: "مناطق التوصيل",

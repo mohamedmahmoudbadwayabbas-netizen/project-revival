@@ -32,6 +32,11 @@ describe("recoverAnswerFromThinking", () => {
     expect(r.thinking).toBe("المستخدم بيسأل عن الخضار.");
     expect(r.text).toBe("# أفضل طرق الحفظ\n- في الثلاجة");
   });
+  it("uses the first Arabic sentence when an unclosed thought has no blank line", () => {
+    const r = recover("بفهم السؤال. دي الإجابة المناسبة ليك");
+    expect(r.thinking).toBe("بفهم السؤال.");
+    expect(r.text).toBe("دي الإجابة المناسبة ليك");
+  });
 });
 
 describe("stripLeakedPlanning", () => {

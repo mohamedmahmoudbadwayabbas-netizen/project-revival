@@ -8,7 +8,7 @@ export interface GenerateImageOptions {
   imageSize?: ImageSize;
   sourceImageBase64?: string;
   sourceImageMimeType?: string;
-  model?: "gemini-3.1-flash-lite-image" | "gemini-3.1-flash-image";
+  model?: "gemini-2.0-flash-exp";
 }
 
 export interface GenerateImageResult {
@@ -19,7 +19,7 @@ export interface GenerateImageResult {
 }
 
 /**
- * Generate or edit an image using the latest Google Gemini Image Models (Nano Banana series: gemini-3.1-flash-image / gemini-3.1-flash-lite-image)
+ * Generate or edit an image using the configured Google image model.
  */
 export async function generateAdminImage(
   options: GenerateImageOptions,
@@ -30,7 +30,7 @@ export async function generateAdminImage(
     imageSize = "1K",
     sourceImageBase64,
     sourceImageMimeType = "image/png",
-    model = "gemini-3.1-flash-image",
+    model = "gemini-2.0-flash-exp",
   } = options;
 
   if (!prompt || !prompt.trim()) {
@@ -48,7 +48,7 @@ export async function generateAdminImage(
       const response = await generateGeminiContent({
         data: {
           purpose: "image",
-          model: model || "gemini-3.1-flash-lite-image",
+          model: model || "gemini-2.0-flash-exp",
           contents: {
             parts: [
               {
@@ -74,13 +74,13 @@ export async function generateAdminImage(
             return {
               success: true,
               imageUrl,
-              modelUsed: model || "gemini-3.1-flash-lite-image",
+              modelUsed: model || "gemini-2.0-flash-exp",
             };
           }
         }
       }
     } else {
-      // Direct Text-to-Image generation using gemini-3.1-flash-image
+      // Direct text-to-image generation using the configured image model.
       const response = await generateGeminiContent({
         data: {
           purpose: "image",

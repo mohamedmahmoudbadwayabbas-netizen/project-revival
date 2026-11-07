@@ -160,7 +160,7 @@ export function ImageUploader({
             variant="outline"
             onClick={() => setShowAiModal(true)}
             className="h-10 px-3 rounded-xl text-xs font-black bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 gap-1.5 shrink-0"
-            title="توليد صورة بالذكاء الاصطناعي (Gemini 3.1 Flash Image)"
+            title="توليد صورة بالذكاء الاصطناعي (النموذج المضبوط في الإعدادات)"
           >
             <Sparkles className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
             <span>AI صورة</span>

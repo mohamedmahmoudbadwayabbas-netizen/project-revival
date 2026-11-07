@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchOrdersWithItems } from "@/services/orderDataService";
 import { Button } from "@/components/ui/button";
@@ -18,20 +18,12 @@ import {
   Eye,
   X,
   Truck,
-  CheckCircle2,
-  Clock,
-  MapPin,
   Phone,
-  User,
   Search,
   RefreshCw,
-  Play,
-  Pause,
-  Navigation,
-  ShieldCheck,
-  Sparkles,
   ShoppingBag,
-  Radio,
+  MessageCircle,
+  Navigation,
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "motion/react";
@@ -49,6 +41,7 @@ type OrderItem = {
 
 type Order = {
   id: string;
+  user_id?: string | null;
   customer_name: string;
   phone: string;
   address: string;
@@ -66,82 +59,51 @@ type Order = {
   driver_lng?: number | null;
 };
 
-type Driver = {
-  id: string;
-  name: string;
-  phone: string;
-  vehicle: string;
-  status: "available" | "busy";
-  avatar: string;
+type StoreSettings = {
+  site_name: string | null;
+  logo_url: string | null;
 };
 
-const DRIVERS_LIST: Driver[] = [
-  {
-    id: "d1",
-    name: "الكابتن أحمد علي",
-    phone: "01012345678",
-    vehicle: "دراجة نارية (سكوتر)",
-    status: "available",
-    avatar: "🏍️",
-  },
-  {
-    id: "d2",
-    name: "الكابتن محمود حسن",
-    phone: "01123456789",
-    vehicle: "سيارة فان تبريد",
-    status: "available",
-    avatar: "🚐",
-  },
-  {
-    id: "d3",
-    name: "الكابتن مصطفى بدر",
-    phone: "01234567890",
-    vehicle: "دراجة نارية (سكوتر)",
-    status: "available",
-    avatar: "🛵",
-  },
-];
+type CustomerSummary = {
+  orderCount: number;
+  totalSpend: number;
+  lastOrderAt: string | null;
+  loyaltyTier: string;
+};
+
+function deliverySlotFromNotes(notes: string | null) {
+  const match = notes?.match(/\[موعد التوصيل:\s*([^\]]+)\]/);
+  return match?.[1] ?? null;
+}
 
 const STATUSES = [
   {
     key: "pending",
-    label: "جديد 🔔",
+    label: "جديد",
     next: "confirmed",
     color: "bg-blue-500/10 text-blue-500 border-blue-500/20",
   },
   {
     key: "confirmed",
-    label: "قيد الإعداد 👨‍🍳",
-    next: "shipped",
+    label: "قيد التجهيز",
+    next: "ready_for_delivery",
     color: "bg-amber-500/10 text-amber-500 border-amber-500/20",
   },
   {
+    key: "ready_for_delivery",
+    label: "جاهز للتوصيل",
+    next: "shipped",
+    color: "bg-cyan-500/10 text-cyan-600 border-cyan-500/20",
+  },
+  {
     key: "shipped",
-    label: "جاري التوصيل 🚚",
+    label: "في الطريق",
     next: "delivered",
     color: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
   },
   {
-    key: "preparing",
-    label: "قيد التجهيز ⏳",
-    next: "shipped",
-    color: "bg-violet-500/10 text-violet-500 border-violet-500/20",
-  },
-  {
-    key: "partially_delivered",
-    label: "تم التسليم جزئيًا 📦",
-    next: null,
-    color: "bg-orange-500/10 text-orange-500 border-orange-500/20",
-  },
-  {
-    key: "delivery_failed",
-    label: "فشل التسليم ⚠️",
-    next: null,
-    color: "bg-red-500/10 text-red-500 border-red-500/20",
-  },
-  {
     key: "delivered",
-    label: "مكتمل ✅",
+    label: "تم التسليم",
     next: null,
     color: "bg-green-500/10 text-green-500 border-green-500/20",
   },
@@ -152,6 +114,38 @@ const STATUSES = [
     color: "bg-red-500/10 text-red-500 border-red-500/20",
   },
 ] as const;
+
+const LEGACY_STATUS_MAP: Record<string, string> = {
+  new: "pending",
+  preparing: "confirmed",
+  ready: "ready_for_delivery",
+  partially_delivered: "shipped",
+};
+
+function canonicalStatus(status: string | null | undefined) {
+  return LEGACY_STATUS_MAP[status ?? ""] ?? status ?? "pending";
+}
+
+function normalizeOrder(order: Order): Order {
+  return { ...order, status: canonicalStatus(order.status) };
+}
+
+function statusLabel(status: string) {
+  return STATUSES.find((item) => item.key === canonicalStatus(status))?.label ?? status;
+}
+
+function customerKey(order: Order) {
+  return (
+    order.user_id || order.phone?.replace(/\D/g, "") || order.customer_name?.trim() || order.id
+  );
+}
+
+function loyaltyTier(orderCount: number) {
+  if (orderCount >= 15) return "Platinum";
+  if (orderCount >= 7) return "Gold";
+  if (orderCount >= 3) return "Silver";
+  return "Bronze";
+}
 
 const PAYMENT_LABELS: Record<string, string> = {
   cod: "الدفع عند الاستلام",
@@ -179,12 +173,6 @@ function playNewOrderSound() {
   }
 }
 
-declare global {
-  interface Window {
-    L?: any;
-  }
-}
-
 export const Route = createFileRoute("/admin/orders")({
   head: () => ({
     meta: [
@@ -197,6 +185,7 @@ export const Route = createFileRoute("/admin/orders")({
 
 function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [storeSettings, setStoreSettings] = useState<StoreSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -210,16 +199,15 @@ function OrdersPage() {
 
   // حوار تعيين السائق
   const [assigningOrder, setAssigningOrder] = useState<Order | null>(null);
-  const [selectedDriver, setSelectedDriver] = useState<Driver | null>(DRIVERS_LIST[0]);
 
-  // حوار محاكي تتبع التوصيل اللحظي
+  // لا نعرض تتبعاً حياً قبل ربط مصدر GPS حقيقي.
   const [trackingOrder, setTrackingOrder] = useState<Order | null>(null);
 
   const load = async () => {
     setLoading(true);
     try {
       const combined = await fetchOrdersWithItems();
-      setOrders(combined as unknown as Order[]);
+      setOrders((combined as unknown as Order[]).map(normalizeOrder));
     } catch (err: any) {
       toast.error(`تعذر جلب الطلبات: ${err.message}`);
     } finally {
@@ -227,8 +215,23 @@ function OrdersPage() {
     }
   };
 
+  const loadStoreSettings = async () => {
+    const { data, error } = await supabase
+      .from("store_settings")
+      .select("site_name,logo_url")
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (error) {
+      toast.error(`تعذر جلب إعدادات المتجر: ${error.message}`);
+      return;
+    }
+    setStoreSettings(data);
+  };
+
   useEffect(() => {
     load();
+    loadStoreSettings();
 
     // الاشتراك اللحظي الفوري لجدول الطلبات (Supabase Realtime)
     const channel = supabase
@@ -246,7 +249,7 @@ function OrdersPage() {
         );
       })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "orders" }, (payload) => {
-        const updated = payload.new as Order;
+        const updated = normalizeOrder(payload.new as Order);
         setOrders((prev) => prev.map((o) => (o.id === updated.id ? { ...o, ...updated } : o)));
       })
       .subscribe();
@@ -263,15 +266,18 @@ function OrdersPage() {
     driverInfo?: { driver_name: string; driver_phone: string },
   ) => {
     const prev = orders;
+    const canonicalNewStatus = canonicalStatus(newStatus);
     setOrders((p) =>
-      p.map((o) => (o.id === id ? { ...o, status: newStatus, ...(driverInfo || {}) } : o)),
+      p.map((o) => (o.id === id ? { ...o, status: canonicalNewStatus, ...(driverInfo || {}) } : o)),
     );
     setPreview((current) =>
-      current?.id === id ? { ...current, status: newStatus, ...(driverInfo || {}) } : current,
+      current?.id === id
+        ? { ...current, status: canonicalNewStatus, ...(driverInfo || {}) }
+        : current,
     );
 
     try {
-      const payload: any = { status: newStatus };
+      const payload: { status: string; notes?: string } = { status: canonicalNewStatus };
       if (driverInfo) {
         payload.notes = `الموصل: ${driverInfo.driver_name} (${driverInfo.driver_phone})`;
       }
@@ -279,7 +285,7 @@ function OrdersPage() {
       const { error } = await supabase.from("orders").update(payload).eq("id", id);
       if (error) throw error;
 
-      toast.success(`تم تحديث حالة الطلب إلى: ${STATUSES.find((s) => s.key === newStatus)?.label}`);
+      toast.success(`تم تحديث حالة الطلب إلى: ${statusLabel(canonicalNewStatus)}`);
     } catch (err: any) {
       toast.error(`فشل تحديث الحالة: ${err.message}`);
       setOrders(prev);
@@ -292,18 +298,17 @@ function OrdersPage() {
   };
 
   const confirmDeliveryAssignment = () => {
-    if (!assigningOrder || !selectedDriver) return;
-    setStatus(assigningOrder.id, "shipped", {
-      driver_name: selectedDriver.name,
-      driver_phone: selectedDriver.phone,
-    });
-    setAssigningOrder(null);
+    toast.error("لا يوجد مصدر سائقين متاح. أضف دور driver وتعييناته في قاعدة البيانات أولًا.");
   };
 
   // طباعة الفاتورة الفورية
   const printReceipt = (o: Order) => {
     const w = window.open("", "_blank");
     if (!w) return;
+    const storeName = storeSettings?.site_name?.trim() || "نظام إدارة المتجر";
+    const logo = storeSettings?.logo_url
+      ? `<img src="${storeSettings.logo_url}" alt="${storeName}" style="display:block;max-width:120px;max-height:60px;margin:0 auto 8px;object-fit:contain;" />`
+      : "";
     w.document.write(`
       <html dir="rtl">
         <head>
@@ -319,7 +324,8 @@ function OrdersPage() {
           </style>
         </head>
         <body>
-          <h2>🛒 المتجر التمويني الفاخر</h2>
+          ${logo}
+          <h2>${storeName}</h2>
           <p style="text-align: center;">إيصال تجميع وتوصيل الطلب</p>
           <div class="line"></div>
           <p><b>رقم الطلب:</b> #${o.id.slice(0, 8)}</p>
@@ -404,13 +410,49 @@ function OrdersPage() {
   const grouped = useMemo(() => {
     const m: Record<string, Order[]> = {};
     for (const s of STATUSES) m[s.key] = [];
-    for (const o of filteredOrders) (m[o.status] ?? (m[o.status] = [])).push(o);
+    for (const o of filteredOrders) {
+      const key = canonicalStatus(o.status);
+      (m[key] ?? (m[key] = [])).push(o);
+    }
     return m;
   }, [filteredOrders]);
 
   const visibleOrders = tab === "all" ? filteredOrders : (grouped[tab] ?? []);
   const pageCount = Math.max(1, Math.ceil(visibleOrders.length / pageSize));
   const pagedOrders = visibleOrders.slice((page - 1) * pageSize, page * pageSize);
+  const operationalKpis = useMemo(() => {
+    const today = new Date();
+    return {
+      pending: orders.filter((o) => canonicalStatus(o.status) === "pending").length,
+      confirmed: orders.filter((o) => canonicalStatus(o.status) === "confirmed").length,
+      ready: orders.filter((o) => canonicalStatus(o.status) === "ready_for_delivery").length,
+      shipped: orders.filter((o) => canonicalStatus(o.status) === "shipped").length,
+      deliveredToday: orders.filter(
+        (o) =>
+          canonicalStatus(o.status) === "delivered" &&
+          new Date(o.created_at).toDateString() === today.toDateString(),
+      ).length,
+    };
+  }, [orders]);
+  const customerSummary = useMemo(() => {
+    if (!preview) return null;
+    const key = customerKey(preview);
+    const customerOrders = orders.filter((order) => customerKey(order) === key);
+    const completedOrders = customerOrders.filter(
+      (order) => canonicalStatus(order.status) === "delivered",
+    );
+    const latest = customerOrders.reduce<string | null>(
+      (latestDate, order) =>
+        !latestDate || order.created_at > latestDate ? order.created_at : latestDate,
+      null,
+    );
+    return {
+      orderCount: customerOrders.length,
+      totalSpend: completedOrders.reduce((sum, order) => sum + Number(order.total_amount || 0), 0),
+      lastOrderAt: latest,
+      loyaltyTier: loyaltyTier(completedOrders.length),
+    } satisfies CustomerSummary;
+  }, [orders, preview]);
   useEffect(() => setPage(1), [tab, searchQuery, dateFilter, paymentFilter, driverFilter]);
 
   return (
@@ -429,6 +471,21 @@ function OrdersPage() {
         <span>
           <i /> تحديث مباشر
         </span>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+        {[
+          ["الطلبات الجديدة", operationalKpis.pending, "text-blue-600"],
+          ["قيد التجهيز", operationalKpis.confirmed, "text-amber-600"],
+          ["جاهزة للتوصيل", operationalKpis.ready, "text-cyan-600"],
+          ["في الطريق", operationalKpis.shipped, "text-emerald-600"],
+          ["المكتملة اليوم", operationalKpis.deliveredToday, "text-violet-600"],
+        ].map(([label, value, color]) => (
+          <div key={label} className="rounded-2xl border bg-card p-4 shadow-sm">
+            <p className="text-[13px] font-bold text-muted-foreground">{label}</p>
+            <strong className={`mt-1 block text-2xl font-black ${color}`}>{value}</strong>
+          </div>
+        ))}
       </div>
 
       {/* Control Bar: Search & Stats */}
@@ -458,17 +515,16 @@ function OrdersPage() {
               <TabsTrigger value="all">
                 الكل <span>{orders.length}</span>
               </TabsTrigger>
-              {STATUSES.filter((s) =>
-                ["pending", "confirmed", "shipped", "delivered", "cancelled"].includes(s.key),
-              ).map((s) => (
+              {STATUSES.map((s) => (
                 <TabsTrigger key={s.key} value={s.key}>
                   {
                     (
                       {
                         pending: "جديد",
                         confirmed: "قيد التجهيز",
-                        shipped: "جاري التوصيل",
-                        delivered: "مكتمل",
+                        ready_for_delivery: "جاهز للتوصيل",
+                        shipped: "في الطريق",
+                        delivered: "تم التسليم",
                         cancelled: "ملغي",
                       } as Record<string, string>
                     )[s.key]
@@ -531,7 +587,7 @@ function OrdersPage() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="ابحث برقم الطلب أو اسم العميل أو رقم الموبايل"
-                  className="h-10 rounded-xl font-bold text-xs bg-background"
+                  className="h-10 rounded-xl bg-background text-sm font-bold"
                 />
               </div>
             </div>
@@ -558,7 +614,7 @@ function OrdersPage() {
                       animate="show"
                       className="space-y-3"
                     >
-                      <div className="admin-orders-table-wrap">
+                      <div className="admin-orders-table-wrap hidden md:block">
                         <table className="admin-orders-table">
                           <thead>
                             <tr>
@@ -568,6 +624,7 @@ function OrdersPage() {
                               <th>الحالة</th>
                               <th>الدفع</th>
                               <th>المنطقة</th>
+                              <th>موعد التوصيل</th>
                               <th>الموصل</th>
                               <th>الإجمالي</th>
                               <th>الوقت</th>
@@ -576,7 +633,11 @@ function OrdersPage() {
                           </thead>
                           <tbody>
                             {pagedOrders
-                              .filter((order) => statusKey === "all" || order.status === statusKey)
+                              .filter(
+                                (order) =>
+                                  statusKey === "all" ||
+                                  canonicalStatus(order.status) === statusKey,
+                              )
                               .map((order) => (
                                 <tr key={order.id}>
                                   <td>□</td>
@@ -591,11 +652,9 @@ function OrdersPage() {
                                   </td>
                                   <td>
                                     <span
-                                      className={`admin-orders__status-pill status-${order.status}`}
+                                      className={`admin-orders__status-pill status-${canonicalStatus(order.status)}`}
                                     >
-                                      {STATUSES.find((status) => status.key === order.status)
-                                        ?.label.replace(/[^\u0600-\u06FF\s]/g, "")
-                                        .trim() ?? order.status}
+                                      {statusLabel(order.status)}
                                     </span>
                                   </td>
                                   <td>
@@ -603,6 +662,7 @@ function OrdersPage() {
                                       order.payment_method}
                                   </td>
                                   <td>{order.address || "—"}</td>
+                                  <td>{deliverySlotFromNotes(order.notes) || "أقرب وقت"}</td>
                                   <td>{order.driver_name || "بدون موصل"}</td>
                                   <td className="admin-orders-table__total">
                                     {Number(order.total_amount || 0).toFixed(2)} ج.م
@@ -638,7 +698,7 @@ function OrdersPage() {
                                       >
                                         <Printer className="h-4 w-4" />
                                       </Button>
-                                      {order.status === "confirmed" && (
+                                      {canonicalStatus(order.status) === "confirmed" && (
                                         <Button
                                           size="icon"
                                           variant="ghost"
@@ -648,7 +708,7 @@ function OrdersPage() {
                                           <Truck className="h-4 w-4" />
                                         </Button>
                                       )}
-                                      {order.status === "shipped" && (
+                                      {canonicalStatus(order.status) === "shipped" && (
                                         <Button
                                           size="icon"
                                           variant="ghost"
@@ -673,6 +733,101 @@ function OrdersPage() {
                             )}
                           </tbody>
                         </table>
+                      </div>
+                      <div className="grid gap-3 md:hidden">
+                        {pagedOrders
+                          .filter(
+                            (order) =>
+                              statusKey === "all" || canonicalStatus(order.status) === statusKey,
+                          )
+                          .map((order) => (
+                            <article
+                              key={order.id}
+                              className="rounded-2xl border bg-card p-4 shadow-sm"
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div>
+                                  <bdi className="text-base font-black">
+                                    #{order.id.slice(0, 8)}
+                                  </bdi>
+                                  <p className="mt-1 text-sm font-bold">
+                                    {order.customer_name || "عميل"}
+                                  </p>
+                                  <p className="text-[13px] text-muted-foreground">
+                                    {new Date(order.created_at).toLocaleString("ar-EG")}
+                                  </p>
+                                </div>
+                                <span
+                                  className={`admin-orders__status-pill status-${canonicalStatus(order.status)}`}
+                                >
+                                  {statusLabel(order.status)}
+                                </span>
+                              </div>
+                              <div className="mt-3 flex items-center justify-between border-y py-3">
+                                <span className="text-sm font-bold text-muted-foreground">
+                                  الإجمالي
+                                </span>
+                                <strong className="text-base">
+                                  {Number(order.total_amount || 0).toFixed(2)} ج.م
+                                </strong>
+                              </div>
+                              <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-5">
+                                <Button
+                                  variant="outline"
+                                  className="h-11 text-sm font-bold"
+                                  onClick={() => {
+                                    setPreview(order);
+                                    setActiveOrderTab("details");
+                                  }}
+                                >
+                                  <Eye className="h-4 w-4" /> تفاصيل
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  className="h-11 text-sm font-bold"
+                                  disabled={!order.phone}
+                                  asChild
+                                >
+                                  <a href={order.phone ? `tel:${order.phone}` : undefined}>
+                                    <Phone className="h-4 w-4" /> اتصال
+                                  </a>
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  className="h-11 text-sm font-bold"
+                                  disabled={!order.phone}
+                                  asChild
+                                >
+                                  <a
+                                    href={
+                                      order.phone
+                                        ? `https://wa.me/${order.phone.replace(/\D/g, "")}`
+                                        : undefined
+                                    }
+                                    target="_blank"
+                                    rel="noreferrer"
+                                  >
+                                    <MessageCircle className="h-4 w-4" /> واتساب
+                                  </a>
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  className="h-11 text-sm font-bold"
+                                  disabled={canonicalStatus(order.status) !== "confirmed"}
+                                  onClick={() => handleStartDelivery(order)}
+                                >
+                                  <Truck className="h-4 w-4" /> إسناد
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  className="h-11 text-sm font-bold"
+                                  onClick={() => printReceipt(order)}
+                                >
+                                  <Printer className="h-4 w-4" /> طباعة
+                                </Button>
+                              </div>
+                            </article>
+                          ))}
                       </div>
                       <div className="admin-orders__pagination">
                         <span>
@@ -712,6 +867,7 @@ function OrdersPage() {
       {activeOrderTab === "details" && (
         <OrderDetailsTab
           order={preview}
+          customerSummary={customerSummary}
           onBack={() => setActiveOrderTab("list")}
           onPrint={() => preview && printReceipt(preview)}
           onCancel={() => preview && setStatus(preview.id, "cancelled")}
@@ -732,35 +888,11 @@ function OrdersPage() {
           </DialogHeader>
 
           <div className="space-y-4 pt-2">
-            <p className="text-xs text-muted-foreground font-bold">
-              اختر أحد كباتن التوصيل المتاحين فوراً لإرسال الطلب وإطلاق الخريطة اللحظية:
-            </p>
-
-            <div className="space-y-2">
-              {DRIVERS_LIST.map((driver) => (
-                <div
-                  key={driver.id}
-                  onClick={() => setSelectedDriver(driver)}
-                  className={`p-3 rounded-2xl border cursor-pointer transition-all flex items-center justify-between ${
-                    selectedDriver?.id === driver.id
-                      ? "border-emerald-500 bg-emerald-500/10"
-                      : "border-border hover:border-border/80 bg-background"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">{driver.avatar}</span>
-                    <div>
-                      <h4 className="font-black text-xs text-foreground">{driver.name}</h4>
-                      <p className="text-[10px] text-muted-foreground font-bold">
-                        {driver.vehicle} • {driver.phone}
-                      </p>
-                    </div>
-                  </div>
-                  {selectedDriver?.id === driver.id && (
-                    <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-                  )}
-                </div>
-              ))}
+            <div className="rounded-2xl border border-dashed border-amber-300 bg-amber-50 p-4 text-center">
+              <p className="text-sm font-black text-amber-800">لا يوجد سائقون متاحون</p>
+              <p className="mt-1 text-[13px] leading-relaxed text-amber-700">
+                ستظهر قائمة السائقين بعد إنشاء مصدر السائقين وربط الإسناد بقاعدة البيانات.
+              </p>
             </div>
           </div>
 
@@ -768,13 +900,14 @@ function OrdersPage() {
             <Button
               variant="ghost"
               onClick={() => setAssigningOrder(null)}
-              className="rounded-xl text-xs font-bold"
+              className="rounded-xl text-sm font-bold"
             >
               إلغاء
             </Button>
             <Button
               onClick={confirmDeliveryAssignment}
-              className="rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-black text-xs gap-1.5 px-5"
+              disabled
+              className="rounded-xl bg-emerald-500 px-5 text-sm font-black text-white hover:bg-emerald-600"
             >
               تأكيد وإرسال الموصل 🚚
             </Button>
@@ -782,9 +915,9 @@ function OrdersPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Modal 3: GPS Live Tracking Simulator Dialog */}
+      {/* Modal 3: Live tracking availability */}
       {trackingOrder && (
-        <GPSTrackingSimulatorModal order={trackingOrder} onClose={() => setTrackingOrder(null)} />
+        <TrackingUnavailableModal order={trackingOrder} onClose={() => setTrackingOrder(null)} />
       )}
     </motion.div>
   );
@@ -792,34 +925,34 @@ function OrdersPage() {
 
 function OrderDetailsTab({
   order,
+  customerSummary,
   onBack,
   onPrint,
   onCancel,
   onStartDelivery,
 }: {
   order: Order | null;
+  customerSummary: CustomerSummary | null;
   onBack: () => void;
   onPrint: () => void;
   onCancel: () => void;
   onStartDelivery: () => void;
 }) {
-  const statusLabel = order
-    ? STATUSES.find((status) => status.key === order.status)
-        ?.label.replace(/[^\u0600-\u06FF\s]/g, "")
-        .trim()
-    : "جديد";
-  const steps = ["جديد", "قيد التجهيز", "جاهز للتوصيل", "جاري التوصيل", "مكتمل"];
+  const currentStatusLabel = order ? statusLabel(order.status) : "جديد";
+  const steps = ["جديد", "قيد التجهيز", "جاهز للتوصيل", "في الطريق", "تم التسليم"];
   const statusIndex = !order
     ? -1
-    : order.status === "pending"
+    : canonicalStatus(order.status) === "pending"
       ? 0
-      : ["confirmed", "preparing"].includes(order.status)
+      : canonicalStatus(order.status) === "confirmed"
         ? 1
-        : order.status === "shipped"
-          ? 3
-          : order.status === "delivered"
-            ? 4
-            : -1;
+        : canonicalStatus(order.status) === "ready_for_delivery"
+          ? 2
+          : canonicalStatus(order.status) === "shipped"
+            ? 3
+            : canonicalStatus(order.status) === "delivered"
+              ? 4
+              : -1;
   const itemSubtotal =
     order?.items?.reduce((sum, item) => sum + Number(item.subtotal || 0), 0) ?? 0;
   const deliveryFee = Number(order?.delivery_fee ?? 0);
@@ -835,7 +968,7 @@ function OrderDetailsTab({
           </button>
           <h2>تفاصيل الطلب {order ? `#${order.id.slice(0, 8)}` : ""}</h2>
         </div>
-        <span className="admin-orders__status-pill">{statusLabel}</span>
+        <span className="admin-orders__status-pill">{currentStatusLabel}</span>
       </div>
       <div className="admin-order-details-layout">
         <aside className="admin-order-details-sidebar">
@@ -845,11 +978,25 @@ function OrderDetailsTab({
             <small>{order?.phone || "رقم الهاتف يظهر هنا"}</small>
             <div className="admin-order-detail-pair">
               <span>عدد الطلبات</span>
-              <strong>—</strong>
+              <strong>{customerSummary?.orderCount ?? "—"}</strong>
             </div>
             <div className="admin-order-detail-pair">
               <span>إجمالي الإنفاق</span>
-              <strong>— ج.م</strong>
+              <strong>
+                {customerSummary ? `${customerSummary.totalSpend.toFixed(2)} ج.م` : "— ج.م"}
+              </strong>
+            </div>
+            <div className="admin-order-detail-pair">
+              <span>آخر طلب</span>
+              <strong>
+                {customerSummary?.lastOrderAt
+                  ? new Date(customerSummary.lastOrderAt).toLocaleDateString("ar-EG")
+                  : "—"}
+              </strong>
+            </div>
+            <div className="admin-order-detail-pair">
+              <span>مستوى الولاء</span>
+              <strong>{customerSummary?.loyaltyTier ?? "—"}</strong>
             </div>
             <div className="admin-order-detail-actions">
               <a href={order?.phone ? `tel:${order.phone}` : undefined}>اتصال</a>
@@ -876,7 +1023,7 @@ function OrderDetailsTab({
             <hr />
             <small>المندوب</small>
             <b>{order?.driver_name || "لم يتم تعيين مندوب"}</b>
-            {order && order.status === "confirmed" && (
+            {order && canonicalStatus(order.status) === "confirmed" && (
               <Button className="w-full mt-3" variant="outline" onClick={onStartDelivery}>
                 تغيير المندوب
               </Button>
@@ -906,9 +1053,11 @@ function OrderDetailsTab({
             <div>
               <bdi>#{order?.id.slice(0, 8) ?? "—"}</bdi>
               <span
-                className={`admin-orders__status-pill ${order ? `status-${order.status}` : ""}`}
+                className={`admin-orders__status-pill ${
+                  order ? `status-${canonicalStatus(order.status)}` : ""
+                }`}
               >
-                {statusLabel}
+                {currentStatusLabel}
               </span>
               <small>
                 وقت الإنشاء:{" "}
@@ -917,7 +1066,7 @@ function OrderDetailsTab({
               </small>
             </div>
             <div className="admin-order-detail-actions">
-              {order?.status === "confirmed" && (
+              {order && canonicalStatus(order.status) === "confirmed" && (
                 <Button onClick={onStartDelivery}>جاهز للتوصيل</Button>
               )}
               <Button variant="outline" onClick={onPrint} disabled={!order}>
@@ -926,14 +1075,16 @@ function OrderDetailsTab({
               <Button
                 variant="outline"
                 onClick={onCancel}
-                disabled={!order || ["cancelled", "delivered"].includes(order.status)}
+                disabled={
+                  !order || ["cancelled", "delivered"].includes(canonicalStatus(order.status))
+                }
               >
                 إلغاء الطلب
               </Button>
             </div>
           </section>
           <section
-            className={`admin-order-progress ${order?.status === "cancelled" ? "is-cancelled" : ""}`}
+            className={`admin-order-progress ${canonicalStatus(order?.status) === "cancelled" ? "is-cancelled" : ""}`}
           >
             <div className="admin-order-progress__heading">
               <b>مسار الطلب</b>
@@ -1058,194 +1209,30 @@ function OrderDetailsTab({
     </section>
   );
 }
-// مكون محاكي الخريطة التفاعلية اللحظية لتتبع الموصل
-const DEFAULT_STORE_POS: [number, number] = [30.0444, 31.2357];
-const DEFAULT_TARGET_POS: [number, number] = [30.052, 31.248];
-
-function GPSTrackingSimulatorModal({ order, onClose }: { order: Order; onClose: () => void }) {
-  const mapContainerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<any>(null);
-  const driverMarkerRef = useRef<any>(null);
-
-  const [eta, setEta] = useState(12); // minutes
-  const [speed, setSpeed] = useState(26); // km/h
-  const [moving, setMoving] = useState(true);
-
-  const [currentPos, setCurrentPos] = useState<[number, number]>([
-    DEFAULT_STORE_POS[0] + 0.002,
-    DEFAULT_STORE_POS[1] + 0.003,
-  ]);
-
-  const initialPosRef = useRef<[number, number]>([
-    DEFAULT_STORE_POS[0] + 0.002,
-    DEFAULT_STORE_POS[1] + 0.003,
-  ]);
-
-  useEffect(() => {
-    let active = true;
-
-    const initMap = async () => {
-      // Load Leaflet map
-      if (!window.L) {
-        if (!document.getElementById("leaflet-css")) {
-          const link = document.createElement("link");
-          link.id = "leaflet-css";
-          link.rel = "stylesheet";
-          link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
-          document.head.appendChild(link);
-        }
-
-        await new Promise<void>((resolve) => {
-          const s = document.createElement("script");
-          s.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-          s.onload = () => resolve();
-          document.head.appendChild(s);
-        });
-      }
-
-      if (!active || !mapContainerRef.current) return;
-      const L = window.L;
-
-      const map = L.map(mapContainerRef.current, {
-        center: initialPosRef.current,
-        zoom: 15,
-        zoomControl: false,
-      });
-
-      // Dark Mode Tiles
-      L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-        attribution: "OpenStreetMap & CARTO",
-        maxZoom: 19,
-      }).addTo(map);
-
-      // Store Marker (Green)
-      const storeIcon = L.divIcon({
-        className: "custom-store-pin",
-        html: `<div style="background-color: #10b981; color: white; border-radius: 50%; padding: 4px; font-size: 14px; text-align: center; border: 2px solid white; box-shadow: 0 0 10px rgba(16,185,129,0.8);">🏪</div>`,
-        iconSize: [28, 28],
-      });
-      L.marker(DEFAULT_STORE_POS, { icon: storeIcon }).addTo(map).bindPopup("المتجر الرئيسي");
-
-      // Customer Marker (Red/Amber)
-      const customerIcon = L.divIcon({
-        className: "custom-customer-pin",
-        html: `<div style="background-color: #f59e0b; color: white; border-radius: 50%; padding: 4px; font-size: 14px; text-align: center; border: 2px solid white; box-shadow: 0 0 10px rgba(245,158,11,0.8);">🏠</div>`,
-        iconSize: [28, 28],
-      });
-      L.marker(DEFAULT_TARGET_POS, { icon: customerIcon }).addTo(map).bindPopup("عنوان العميل");
-
-      // Driver Bike Marker (Moving)
-      const driverIcon = L.divIcon({
-        className: "custom-driver-pin",
-        html: `<div style="background-color: #3b82f6; color: white; border-radius: 50%; padding: 6px; font-size: 16px; text-align: center; border: 3px solid white; box-shadow: 0 0 15px rgba(59,130,246,0.9);">🛵</div>`,
-        iconSize: [36, 36],
-      });
-      const driverMarker = L.marker(initialPosRef.current, { icon: driverIcon }).addTo(map);
-
-      // Draw Polyline route
-      L.polyline([DEFAULT_STORE_POS, initialPosRef.current, DEFAULT_TARGET_POS], {
-        color: "#3b82f6",
-        weight: 4,
-        dashArray: "8, 8",
-      }).addTo(map);
-
-      mapRef.current = map;
-      driverMarkerRef.current = driverMarker;
-    };
-
-    initMap();
-
-    return () => {
-      active = false;
-      if (mapRef.current) {
-        try {
-          mapRef.current.remove();
-        } catch (_) {
-          // Audio cleanup is best effort when the browser context is closing.
-        }
-      }
-    };
-  }, []);
-
-  // Simulation Interval moving driver towards destination
-  useEffect(() => {
-    if (!moving) return;
-
-    const interval = setInterval(() => {
-      setCurrentPos((prev) => {
-        const nextLat = prev[0] + (DEFAULT_TARGET_POS[0] - prev[0]) * 0.08;
-        const nextLng = prev[1] + (DEFAULT_TARGET_POS[1] - prev[1]) * 0.08;
-
-        if (driverMarkerRef.current) {
-          driverMarkerRef.current.setLatLng([nextLat, nextLng]);
-          if (mapRef.current) mapRef.current.panTo([nextLat, nextLng]);
-        }
-
-        setEta((prevEta) => Math.max(1, prevEta - 0.2));
-        setSpeed(20 + Math.floor(Math.random() * 12));
-
-        return [nextLat, nextLng];
-      });
-    }, 4000);
-
-    return () => clearInterval(interval);
-  }, [moving]);
-
+function TrackingUnavailableModal({ order, onClose }: { order: Order; onClose: () => void }) {
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent
         dir="rtl"
-        className="max-w-2xl rounded-3xl p-6 bg-card border-border shadow-2xl space-y-4"
+        className="max-w-md rounded-3xl border-border bg-card p-6 shadow-2xl"
       >
         <DialogHeader>
-          <DialogTitle className="font-display text-lg font-black flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Navigation className="h-5 w-5 text-blue-500 animate-spin" />
-              <span>تتبع الموصل اللحظي — طلب #{order.id.slice(0, 8)}</span>
-            </div>
-            <span className="text-xs font-bold bg-blue-500/10 text-blue-500 px-2.5 py-1 rounded-full border border-blue-500/20">
-              بَث حي GPS 📡
-            </span>
+          <DialogTitle className="flex items-center gap-2 text-lg font-black">
+            <Truck className="h-5 w-5 text-amber-500" />
+            تتبع الطلب #{order.id.slice(0, 8)}
           </DialogTitle>
         </DialogHeader>
-
-        {/* Status Stats Bar */}
-        <div className="grid grid-cols-3 gap-3 bg-secondary/50 p-3 rounded-2xl border border-border/60 text-center text-xs">
-          <div>
-            <span className="text-muted-foreground font-bold block">الوقت المتبقي (ETA)</span>
-            <strong className="text-base text-emerald-500 font-mono font-black">
-              {Math.ceil(eta)} دقائق
-            </strong>
-          </div>
-          <div>
-            <span className="text-muted-foreground font-bold block">السرعة الحالية</span>
-            <strong className="text-base text-blue-500 font-mono font-black">{speed} كم/س</strong>
-          </div>
-          <div>
-            <span className="text-muted-foreground font-bold block">حالة الطريق</span>
-            <strong className="text-base text-amber-500 font-bold">سلس وسريع ⚡</strong>
-          </div>
+        <div className="rounded-2xl border border-dashed border-amber-300 bg-amber-50 p-5 text-center">
+          <p className="text-base font-black text-amber-900">
+            ميزة التتبع الحي ستُفعّل بعد ربط تطبيق السائق
+          </p>
+          <p className="mt-2 text-sm leading-6 text-amber-800">
+            لا توجد حالياً بيانات موقع موثوقة لهذا الطلب، لذلك لن يتم عرض خريطة أو موقع تقديري.
+          </p>
         </div>
-
-        {/* Map Container */}
-        <div className="relative h-72 w-full rounded-2xl overflow-hidden border border-border bg-black">
-          <div ref={mapContainerRef} className="h-full w-full z-0" />
-          <div className="absolute top-3 start-3 bg-background/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-border/60 text-xs font-bold text-foreground flex items-center gap-2 z-10 shadow-md">
-            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
-            <span>الكابتن في الطريق للعميل</span>
-          </div>
-        </div>
-
-        <DialogFooter className="flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="text-xs font-bold text-muted-foreground flex items-center gap-2">
-            <User className="h-4 w-4 text-primary" />
-            <span>الموصل: {order.notes?.replace("الموصل: ", "") || "الكابتن أحمد علي"}</span>
-          </div>
-          <Button
-            onClick={onClose}
-            className="rounded-xl hero-gradient text-primary-foreground font-bold text-xs px-6"
-          >
-            إغلاق الخريطة
+        <DialogFooter>
+          <Button onClick={onClose} className="rounded-xl text-sm font-bold">
+            إغلاق
           </Button>
         </DialogFooter>
       </DialogContent>

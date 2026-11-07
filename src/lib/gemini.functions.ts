@@ -200,7 +200,7 @@ export const generateGeminiContent = createServerFn({ method: "POST" })
         const res = await callOpenAICompatible(
           settings ?? { provider: "groq", api_key: null, base_url: null, model: null },
           data.contents,
-          data.config ?? {},
+          { ...(data.config ?? {}), chatModel: "llama-3.3-70b-versatile" },
         );
         return JSON.parse(JSON.stringify(res)) as GeminiClientResponse;
       } catch (error) {
@@ -238,20 +238,7 @@ export const generateGeminiContent = createServerFn({ method: "POST" })
     const model = data.purpose === "chat" && chatModelOverride ? chatModelOverride : data.model;
     let response: Awaited<ReturnType<GoogleGenAI["models"]["generateContent"]>> | undefined;
     let lastError: unknown;
-    const chain =
-      data.purpose === "image"
-        ? [model, model]
-        : [
-            ...new Set([
-              model,
-              "gemini-3.8-flash",
-              "gemini-3.7-flash",
-              "gemini-3.5-flash",
-              "gemini-3.5-flash-lite",
-              "gemini-3.1-flash-lite",
-              "gemini-flash-lite-latest",
-            ]),
-          ];
+    const chain = data.purpose === "image" ? [model, model] : [model];
     // تدوير المفاتيح: إذا نفدت حصة مفتاح أو كان غير صالح ننتقل للمفتاح التالي تلقائيًا.
     keyLoop: for (let k = 0; k < keys.length; k++) {
       const ai = new GoogleGenAI({

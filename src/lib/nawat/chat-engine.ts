@@ -38,7 +38,7 @@ export interface NawatMessage {
   createdAt: string;
 }
 
-const SYSTEM = `أنت «نواة»، مساعد ذكي ودود من سوبرماركت الوادي الأخضر. تتكلم بالعامية المصرية الطبيعية.
+const SYSTEM = `أنت «نواة»، مساعد ذكي ودود من سوبرماركت الوادي الأخضر. كل تفكيرك وردّك بالعامية المصرية فقط، ممنوع أي كلمة إنجليزي.
 - تقدر تدردش في أي موضوع زي أي مساعد ذكي: أسئلة عامة، وصفات، نصايح، شرح، هزار خفيف. رد بشكل طبيعي وبطول مناسب للسؤال، واستخدم Markdown عند الحاجة.
 - افتكر كل اللي اتقال في المحادثة وابنِ عليه (لو العميل عدّل طلب سابق، عدّل على نفس الاقتراح).
 - لما الكلام يكون عن مشتريات أو وجبة أو منتجات أو أسعار أو توفر، استخدم أداة searchProducts (كلمة بحث قصيرة لكل مكوّن، ممكن أكتر من بحث). متستخدمهاش في الدردشة العادية.
@@ -79,18 +79,29 @@ async function callModel(contents: unknown[]) {
 
 /** يحوّل المحادثة السابقة إلى سياق للنموذج (مع أسماء المنتجات المقترحة سابقًا). */
 function toContents(history: NawatMessage[]) {
-  return history
-    .filter((m) => !m.error && m.content.trim())
-    .slice(-40)
-    .map((m) => {
-      let text = m.content;
-      if (m.products?.length) {
-        text += `\n[منتجات اقترحتها: ${m.products
-          .map((p) => `${p.product.name_ar || p.product.name} ×${p.quantity} (id: ${p.product.id})`)
-          .join("، ")}]`;
-      }
-      return { role: m.role === "assistant" ? "model" : "user", parts: [{ text }] };
+  const valid = history.filter((m) => !m.error && m.content.trim());
+  const earlier = valid.slice(0, -40);
+  const recent = valid.slice(-40);
+  const contents = recent.map((m) => {
+    let text = m.content;
+    if (m.products?.length) {
+      text += `\n[منتجات اقترحتها: ${m.products
+        .map((p) => `${p.product.name_ar || p.product.name} ×${p.quantity} (id: ${p.product.id})`)
+        .join("، ")}]`;
+    }
+    return { role: m.role === "assistant" ? "model" : "user", parts: [{ text }] };
+  });
+  if (earlier.length) {
+    const summary = earlier
+      .slice(-12)
+      .map((m) => `${m.role === "user" ? "العميل" : "نواة"}: ${m.content.slice(0, 180)}`)
+      .join(" | ");
+    contents.unshift({
+      role: "user",
+      parts: [{ text: `[ملخص بداية المحادثة للحفاظ على السياق]: ${summary}` }],
     });
+  }
+  return contents;
 }
 
 export async function runNawatTurn(
@@ -105,7 +116,13 @@ export async function runNawatTurn(
   let finalText = "";
 
   for (let step = 0; step < MAX_STEPS; step++) {
-    onActivity(step === 0 ? "" : "بيراجع نتايج المتجر ويكتب الرد");
+    onActivity(
+      step === 0
+        ? "بيقرأ طلبك ويفهم احتياجك"
+        : step === 1
+          ? "بيحسب الكميات والبدائل المناسبة"
+          : "بيراجع نتايج المتجر ويكتب الرد",
+    );
     const res: any = await callModel(contents);
     const parts: any[] = res?.candidates?.[0]?.content?.parts ?? [];
     for (const p of parts) if (p?.thought && typeof p.text === "string") thoughts.push(p.text);
@@ -158,8 +175,16 @@ export async function runNawatTurn(
   visible = cleaned.text;
   onThought?.(thoughts.join("\n\n"));
   const { text, picks } = extractProductPicks(visible);
+  const mentioned = [...catalog.values()]
+    .filter((product) => {
+      const name = product.name_ar || product.name;
+      return name.length > 1 && visible.includes(name);
+    })
+    .slice(0, 8)
+    .map((product) => ({ id: product.id, quantity: 1, reason: "مذكور في اقتراح نواة" }));
+  const resolvedPicks = picks.length ? picks : mentioned;
   const products: NawatPick[] = [];
-  for (const pick of picks) {
+  for (const pick of resolvedPicks) {
     const product = catalog.get(pick.id);
     if (product && Number(product.stock_quantity) > 0)
       products.push({ product, quantity: pick.quantity, reason: pick.reason });

@@ -54,18 +54,8 @@ function estimateEtaMinutes(distKm: number): number {
 
 export function DualStageLiveMap({
   currentDriverCoords,
-  storeCoords = {
-    lat: 30.0444,
-    lng: 31.2357,
-    name: "المركز الرئيسي — سوبرماركت الوادي الأخضر",
-    address: "القاهرة، وسط البلد",
-  },
-  customerCoords = {
-    lat: 30.0626,
-    lng: 31.2497,
-    name: "موقع العميل",
-    address: "شارع التحرير، الدقي، الجيزة",
-  },
+  storeCoords,
+  customerCoords,
   initialStage = "to_store",
   onStageChange,
   orderId,
@@ -76,6 +66,14 @@ export function DualStageLiveMap({
   useEffect(() => {
     setStage(initialStage);
   }, [initialStage]);
+
+  if (!storeCoords || !customerCoords) {
+    return (
+      <div className="rounded-3xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+        لا يمكن عرض المسار قبل توفر إحداثيات الفرع والعميل من قاعدة البيانات.
+      </div>
+    );
+  }
 
   const handleSetStage = (newStage: DeliveryStage) => {
     setStage(newStage);

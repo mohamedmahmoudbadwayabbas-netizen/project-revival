@@ -58,7 +58,7 @@ export function AdminAiImageGeneratorModal({
   onImageSelected,
   initialPrompt = "",
   initialImageUrl,
-  title = "توليد صورة بالذكاء الاصطناعي (Google Gemini 3.1 Flash Image)",
+  title = "توليد صورة بالذكاء الاصطناعي (النموذج المضبوط في الإعدادات)",
   categoryHint,
 }: AdminAiImageGeneratorModalProps) {
   const [prompt, setPrompt] = useState(
@@ -86,12 +86,12 @@ export function AdminAiImageGeneratorModal({
         aspectRatio,
         imageSize,
         sourceImageBase64: isEditingExisting && initialImageUrl ? initialImageUrl : undefined,
-        model: "gemini-3.1-flash-image",
+        model: "gemini-2.0-flash-exp",
       });
 
       if (result.success && result.imageUrl) {
         setGeneratedImage(result.imageUrl);
-        setModelUsed(result.modelUsed || "gemini-3.1-flash-image");
+        setModelUsed(result.modelUsed || "نموذج الصور المضبوط في الإعدادات");
         toast.success("تم توليد الصورة بنجاح بواسطة Google Gemini AI ✨");
       } else {
         toast.error(result.error || "تعذر توليد الصورة، يرجى المحاولة بوصف آخر");
@@ -261,7 +261,7 @@ export function AdminAiImageGeneratorModal({
               <Loader2 className="h-8 w-8 animate-spin text-emerald-600 dark:text-emerald-400" />
               <div className="text-center">
                 <div className="text-xs font-black text-foreground">
-                  جاري توليد الصورة الفائقة عبر Google Gemini 3.1 Flash Image...
+                  جاري توليد الصورة عبر نموذج الصور المضبوط في الإعدادات...
                 </div>
                 <div className="text-[10px] text-muted-foreground font-semibold mt-0.5">
                   معالجة الإضاءة، العمق والظلال الاستوديو الاحترافية

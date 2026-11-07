@@ -271,6 +271,13 @@ export function Header() {
           </div>
         </Link>
 
+        <div className="hidden items-center gap-1.5 rounded-full border border-sky-100 bg-sky-50 px-3 py-1.5 text-xs font-bold text-sky-700 lg:flex">
+          <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
+          <span>التوصيل إلى: موقعك</span>
+          <Clock className="ms-1 h-3.5 w-3.5" aria-hidden="true" />
+          <span dir="ltr">35 دقيقة</span>
+        </div>
+
         <Link to="/assistant" className="header-assistant-cta" aria-label="نواة — مساعد التسوّق">
           <Sparkles aria-hidden="true" />
           <span>نواة</span>

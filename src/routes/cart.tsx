@@ -17,6 +17,7 @@ import {
   Smartphone,
   Building2,
   Copy,
+  Clock3,
   Truck,
   Store,
   MapPin,
@@ -46,6 +47,7 @@ import {
 import { ItemSubstitutionSelector } from "@/components/storefront/ItemSubstitutionSelector";
 import { StoreGoogleMapsWidget } from "@/components/storefront/StoreGoogleMapsWidget";
 import { useStoreProducts } from "@/lib/store-data-hooks";
+import { getBundleEligibility, type ActiveBundle } from "@/lib/bundle-pricing";
 
 export const Route = createFileRoute("/cart")({
   head: () => ({
@@ -72,6 +74,14 @@ export const Route = createFileRoute("/cart")({
 
 type PaymentMethod = "cod" | "instapay" | "bank";
 type DeliveryMethod = "delivery" | "pickup";
+type DeliverySlotId = "within_2h" | "today_18_20" | "today_20_22" | "tomorrow_10_12";
+
+const DELIVERY_SLOTS: Array<{ id: DeliverySlotId; label: string; hint: string }> = [
+  { id: "within_2h", label: "خلال ساعتين", hint: "الأسرع" },
+  { id: "today_18_20", label: "اليوم، 6–8 مساءً", hint: "اليوم" },
+  { id: "today_20_22", label: "اليوم، 8–10 مساءً", hint: "اليوم" },
+  { id: "tomorrow_10_12", label: "غدًا، 10–12 صباحًا", hint: "غدًا" },
+];
 
 type Zone = {
   id: string;
@@ -127,6 +137,7 @@ function CartPage() {
     useCart();
 
   const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>("delivery");
+  const [deliverySlot, setDeliverySlot] = useState<DeliverySlotId>("within_2h");
   const [zones, setZones] = useState<Zone[]>([]);
   const [zoneId, setZoneId] = useState<string>("");
   const [userAddresses, setUserAddresses] = useState<any[]>([]);
@@ -179,6 +190,7 @@ function CartPage() {
     discount_value: number;
   } | null>(null);
   const [couponLoading, setCouponLoading] = useState(false);
+  const [bundles, setBundles] = useState<ActiveBundle[]>([]);
 
   const applyCoupon = async () => {
     const code = couponInput.trim().toUpperCase();
@@ -216,6 +228,9 @@ function CartPage() {
     setCouponInput("");
   };
 
+  const bundleOffers = useMemo(() => getBundleEligibility(bundles, items), [bundles, items]);
+  const bestBundle = bundleOffers[0] ?? null;
+
   const [country, setCountry] = useState<string>("");
   const [governorate, setGovernorate] = useState<string>("");
   const [city, setCity] = useState<string>("");
@@ -242,6 +257,17 @@ function CartPage() {
           .limit(1)
           .maybeSingle(),
       ]);
+      const { data: bundleRows, error: bundleError } = await supabase
+        .from("product_bundles")
+        .select("id,name,description,buy_quantity,pay_quantity,product_ids")
+        .eq("is_active", true)
+        .or("starts_at.is.null,starts_at.lte." + new Date().toISOString())
+        .or("ends_at.is.null,ends_at.gte." + new Date().toISOString());
+      if (bundleError) {
+        console.error("[Cart] تعذر تحميل الباقات", bundleError);
+      } else {
+        setBundles((bundleRows ?? []) as ActiveBundle[]);
+      }
       const pay0 = Array.isArray(rpc) ? rpc[0] : rpc;
       if (pay0)
         setPay({
@@ -399,6 +425,11 @@ function CartPage() {
       toast.error("أدخل عنوان واضح للتوصيل");
       return;
     }
+    const selectedSlot = DELIVERY_SLOTS.find((slot) => slot.id === deliverySlot);
+    if (deliveryMethod === "delivery" && !selectedSlot) {
+      toast.error("اختر موعد التوصيل");
+      return;
+    }
     if (
       (parsed.data.payment_method === "instapay" || parsed.data.payment_method === "bank") &&
       !parsed.data.payment_reference?.trim()
@@ -423,7 +454,18 @@ function CartPage() {
           ? "[تفضيل البديل: اختيار أفضل بديل تلقائياً]"
           : "[تفضيل البديل: عدم الاستبدال وحذف الصنف]";
 
-    const combinedNotes = [substitutionLabel, parsed.data.notes?.trim()].filter(Boolean).join("\n");
+    const combinedNotes = [
+      deliveryMethod === "delivery" && selectedSlot
+        ? `[موعد التوصيل: ${selectedSlot.label}]`
+        : null,
+      substitutionLabel,
+      parsed.data.notes?.trim(),
+      bestBundle
+        ? `[الباقة المؤهلة: ${bestBundle.name} — ${bestBundle.buy_quantity} مقابل ${bestBundle.pay_quantity}]`
+        : null,
+    ]
+      .filter(Boolean)
+      .join("\n");
 
     let createdOrderId: string | null = null;
 
@@ -849,6 +891,32 @@ function CartPage() {
                           اختر منطقتك لعرض رسوم التوصيل تلقائياً
                         </div>
                       )}
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
+                          <Clock3 className="h-3.5 w-3.5 text-primary" />
+                          اختر موعد التوصيل
+                        </div>
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          {DELIVERY_SLOTS.map((slot) => (
+                            <button
+                              key={slot.id}
+                              type="button"
+                              onClick={() => setDeliverySlot(slot.id)}
+                              aria-pressed={deliverySlot === slot.id}
+                              className={`rounded-2xl border p-3 text-start transition-colors ${
+                                deliverySlot === slot.id
+                                  ? "border-primary bg-primary/10 text-primary"
+                                  : "border-border bg-card hover:border-primary/40"
+                              }`}
+                            >
+                              <span className="block text-xs font-black">{slot.label}</span>
+                              <span className="mt-1 block text-[10px] text-muted-foreground">
+                                {slot.hint}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   )}
 
@@ -1070,6 +1138,24 @@ function CartPage() {
                   <h3 className="mb-3 font-display text-base font-bold">ملخص الطلب</h3>
 
                   {/* كوبون الخصم */}
+                  {bestBundle && (
+                    <div className="mb-4 rounded-2xl border border-accent/40 bg-accent/10 p-3">
+                      <div className="text-xs font-black text-accent-foreground">
+                        🎁 أنت مؤهل لعرض «{bestBundle.name}»
+                      </div>
+                      <p className="mt-1 text-[11px] text-muted-foreground">
+                        {bestBundle.missingQuantity > 0
+                          ? `أضف ${bestBundle.missingQuantity} منتجات من المجموعة للاستفادة من العرض.`
+                          : `اخترت ${bestBundle.matchingQuantity} منتجات من المجموعة.`}
+                      </p>
+                      {bestBundle.estimatedSaving > 0 && (
+                        <p className="mt-1 text-[11px] font-bold text-primary">
+                          التوفير التقديري: {bestBundle.estimatedSaving.toFixed(2)} ج.م — يُؤكد عند
+                          إرسال الطلب
+                        </p>
+                      )}
+                    </div>
+                  )}
                   <div className="mb-4 rounded-2xl border border-dashed border-primary/40 bg-primary/5 p-3">
                     <div className="mb-2 flex items-center gap-1.5 text-xs font-bold text-primary">
                       <TicketPercent className="h-4 w-4" />

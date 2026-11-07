@@ -8,7 +8,7 @@ describe("Groq tuning", () => {
   it("uses low reasoning for gpt-oss so replies are not empty", () => {
     expect(groqTune({ model: "openai/gpt-oss-120b" }).reasoning_effort).toBe("low");
   });
-  it("tries gpt-oss-120b first on Groq", () => {
-    expect(fallbackModelsFor("https://api.groq.com/openai/v1")[0]).toBe("openai/gpt-oss-120b");
+  it("uses the Arabic chat fallback on Groq", () => {
+    expect(fallbackModelsFor("https://api.groq.com/openai/v1")[0]).toBe("llama-3.1-8b-instant");
   });
 });

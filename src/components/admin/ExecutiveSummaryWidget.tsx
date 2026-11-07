@@ -57,7 +57,7 @@ export function ExecutiveSummaryWidget({ kpis, onExecuteCommand }: ExecutiveSumm
                   التقرير الاستشاري والتحليلي
                 </CardTitle>
                 <span className="rounded px-1.5 py-0.2 text-[10px] font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                  Gemini 3.6 Flash
+                  النموذج المضبوط في إعدادات الذكاء الاصطناعي
                 </span>
               </div>
               <CardDescription className="text-xs text-zinc-500 mt-0.5">

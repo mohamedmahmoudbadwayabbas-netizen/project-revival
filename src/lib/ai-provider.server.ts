@@ -224,11 +224,30 @@ export function openAIToGemini(json: any): AdapterResponse {
   if (reasoning.trim()) parts.push({ text: reasoning.trim(), thought: true });
   // بعض النماذج (MiniMax…) تكتب تفكيرها داخل <think> في نص الرد نفسه.
   let visible = text;
-  const thinkRe = /<think(?:ing)?>([\s\S]*?)(?:<\/think(?:ing)?>|$)/gi;
-  visible = visible.replace(thinkRe, (_m: string, inner: string) => {
-    if (inner.trim()) parts.push({ text: inner.trim(), thought: true });
-    return "";
-  });
+  const open = /<think(?:ing)?>/i.exec(visible);
+  if (open) {
+    const afterOpen = visible.slice(open.index + open[0].length);
+    const close = /<\/think(?:ing)?>/i.exec(afterOpen);
+    if (close) {
+      const inner = afterOpen.slice(0, close.index);
+      if (inner.trim()) parts.push({ text: inner.trim(), thought: true });
+      visible = `${visible.slice(0, open.index)}${afterOpen.slice(close.index + close[0].length)}`;
+    } else {
+      // لا نعتبر الرد كله تفكيرًا إذا سقط وسم الإغلاق؛ أول فقرة/جملة عربية
+      // هي أقرب حد موثوق لبداية الإجابة التي يجب أن يراها العميل.
+      const blankLine = /\n\s*\n/.exec(afterOpen);
+      const sentence = /[؟!]|\.(?=\s)|[،؛](?=\s)/.exec(afterOpen);
+      const boundary = blankLine
+        ? blankLine.index
+        : sentence
+          ? sentence.index + sentence[0].length
+          : afterOpen.length;
+      const inner = afterOpen.slice(0, boundary);
+      const answer = afterOpen.slice(blankLine ? boundary + blankLine[0].length : boundary);
+      if (inner.trim()) parts.push({ text: inner.trim(), thought: true });
+      visible = `${visible.slice(0, open.index)}${answer}`;
+    }
+  }
   const closeOnly = /^([\s\S]*?)<\/think(?:ing)?>/i.exec(visible);
   if (closeOnly) {
     if (closeOnly[1].trim()) parts.push({ text: closeOnly[1].trim(), thought: true });
@@ -312,6 +331,12 @@ export async function callOpenAICompatible(
       model: settings.model || "openai/gpt-oss-120b",
     };
   }
+  if (
+    config.chatModel &&
+    (settings.provider === "groq" || /groq\.com/i.test(settings.base_url || ""))
+  ) {
+    settings = { ...settings, model: String(config.chatModel) };
+  }
   if (groqKey && !/groq\.com/i.test(settings.base_url || "") && settings.provider !== "groq") {
     let groqError: unknown;
     try {
@@ -320,7 +345,7 @@ export async function callOpenAICompatible(
           provider: "groq",
           api_key: groqKey,
           base_url: "https://api.groq.com/openai/v1",
-          model: "openai/gpt-oss-120b",
+          model: "llama-3.3-70b-versatile",
         },
         contents,
         { ...config, deadlineMs: 20000, hedgeMs: 0 },
@@ -476,9 +501,7 @@ export function isModelConcurrency(status: number | null, raw: string): boolean 
 
 /** نماذج احتياطية معروفة لكل بوابة. */
 export function fallbackModelsFor(baseUrl: string): string[] {
-  // MiniMax هو الأقل ازدحامًا على خطة Dahl المجانية، لذا يأتي أولًا.
-  if (/groq\.com/i.test(baseUrl))
-    return ["openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.8-27b"];
+  if (/groq\.com/i.test(baseUrl)) return ["llama-3.1-8b-instant"];
   if (/dahl\.global/i.test(baseUrl))
     return [
       "MiniMaxAI/MiniMax-M2.7",

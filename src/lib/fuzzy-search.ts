@@ -24,6 +24,15 @@ export function normalizeArabic(text: string): string {
   );
 }
 
+const SEARCH_SYNONYMS: Record<string, string[]> = {
+  لبن: ["حليب", "لبن"],
+  حليب: ["لبن", "حليب"],
+  جهينه: ["جهينة", "جيهنه"],
+  جيهنه: ["جهينة", "جيهنه"],
+  بطاطس: ["بطاطا", "بطاطس"],
+  طماطم: ["بندورة", "طماطم"],
+};
+
 /**
  * Calculates Levenshtein Distance between two strings for typo tolerance.
  */
@@ -64,6 +73,10 @@ export function getFuzzyMatchScore(query: string, targetText: string): number {
   if (normTarget === normQuery) return 1.0;
   if (normTarget.includes(normQuery)) return 0.9;
   if (normQuery.includes(normTarget)) return 0.85;
+  const synonymHit = (SEARCH_SYNONYMS[normQuery] ?? []).some((term) =>
+    normalizeArabic(targetText).includes(normalizeArabic(term)),
+  );
+  if (synonymHit) return 0.88;
 
   // Split target words and check token-level match
   const targetWords = normTarget.split(/\s+/);

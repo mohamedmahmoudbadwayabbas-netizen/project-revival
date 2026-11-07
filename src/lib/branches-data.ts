@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase-loose";
 
 export interface BranchStats {
   todayRevenue: number;
@@ -99,53 +99,50 @@ export function calculateLiveStats(orders: any[], products: any[], branchId?: st
 }
 
 /**
- * Fetches real supermarket branches directly from Supabase delivery_zones & store_settings
+ * Fetches only persisted branches. Delivery zones describe coverage and must
+ * not be presented as physical stores.
  */
 export async function fetchLiveBranches(): Promise<LiveBranch[]> {
   try {
     const [
-      { data: zonesData },
-      { data: settingsData },
+      { data: branchesData, error: branchesError },
       { data: ordersData },
       { data: productsData },
     ] = await Promise.all([
-      supabase.from("delivery_zones").select("*").order("sort_order", { ascending: true }),
-      supabase.from("store_settings").select("site_name,store_address,whatsapp_number").limit(1),
+      supabase
+        .from("branches")
+        .select(
+          "id,name,name_en,city,governorate,address,phone,status,is_main,delivery_zones,estimated_minutes,fee,min_order_amount,is_active",
+        )
+        .eq("is_active", true)
+        .order("name", { ascending: true }),
       supabase.from("orders").select("id,delivery_zone_id,total_price,status,created_at,address"),
       supabase.from("products").select("id,stock"),
     ]);
 
-    const orders = ordersData || [];
-    const products = productsData || [];
-    const mainStoreAddress = settingsData?.[0]?.store_address || "الفرع الرئيسي";
-    const mainStorePhone = settingsData?.[0]?.whatsapp_number || "+201000000000";
-
-    const zones = zonesData || [];
-
-    if (zones.length > 0) {
-      return zones.map((z: any, idx: number) => {
-        const branchStats = calculateLiveStats(orders, products, z.id);
-        const areaList = [z.area, z.city, z.governorate].filter(Boolean) as string[];
-
-        return {
-          id: z.id,
-          name: z.name || `فرع ${z.city || z.governorate || idx + 1}`,
-          city: z.city || z.governorate || "القاهرة الكبرى",
-          governorate: z.governorate || "القاهرة",
-          address: z.area ? `${z.area}، ${z.city || ""}` : mainStoreAddress,
-          phone: mainStorePhone,
-          status: z.is_active !== false ? "open" : "closed",
-          isMain: idx === 0 || z.sort_order === 1,
-          deliveryZones: areaList.length > 0 ? areaList : [z.name],
-          estimatedMinutes: z.estimated_minutes || 35,
-          fee: z.fee || 0,
-          minOrderAmount: z.min_order_amount || 0,
-          stats: branchStats,
-        };
-      });
+    if (branchesError) {
+      console.error("[Branches] Failed to load persisted branches:", branchesError.message);
+      return [];
     }
 
-    return [];
+    const orders = ordersData || [];
+    const products = productsData || [];
+    return (branchesData ?? []).map((branch) => ({
+      id: branch.id,
+      name: branch.name,
+      nameEn: branch.name_en ?? undefined,
+      city: branch.city ?? "",
+      governorate: branch.governorate ?? undefined,
+      address: branch.address ?? "",
+      phone: branch.phone ?? "",
+      status: branch.status ?? "closed",
+      isMain: Boolean(branch.is_main),
+      deliveryZones: Array.isArray(branch.delivery_zones) ? branch.delivery_zones : [],
+      estimatedMinutes: branch.estimated_minutes ?? undefined,
+      fee: branch.fee ?? undefined,
+      minOrderAmount: branch.min_order_amount ?? undefined,
+      stats: calculateLiveStats(orders, products, branch.id),
+    }));
   } catch (err) {
     console.error("Error fetching live branches from Supabase:", err);
     return [];

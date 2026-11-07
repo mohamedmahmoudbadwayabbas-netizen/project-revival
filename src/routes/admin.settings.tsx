@@ -88,26 +88,23 @@ type Settings = {
 };
 
 const DEFAULT_SETTINGS: Settings = {
-  whatsapp_number: "+201234567890",
-  hero_title: "الوادي الأخضر — سوبرماركت عائلتك 🛒",
-  hero_subtitle:
-    "أجود السلع التموينية والبقالة واللحوم الطازجة والألبان بأفضل الأسعار وتوصيل فوري لباب المنزل.",
-  hero_image_url:
-    "https://images.unsplash.com/photo-1578916171728-46686eac8d58?auto=format&fit=crop&w=1600&q=85",
-  hero_cta_text: "تسوّق الآن 🛒",
-  store_address: "القاهرة، مصر — سوبرماركت الوادي الأخضر",
-  store_lat: 30.0444,
-  store_lng: 31.2357,
-  site_name: "الوادي الأخضر",
+  whatsapp_number: null,
+  hero_title: "",
+  hero_subtitle: "",
+  hero_image_url: null,
+  hero_cta_text: "",
+  store_address: null,
+  store_lat: null,
+  store_lng: null,
+  site_name: null,
   logo_url: null,
   favicon_url: null,
   primary_color: STORE_IDENTITY.greenHsl,
   accent_color: STORE_IDENTITY.rustHsl,
   background_color: STORE_IDENTITY.creamHsl,
   foreground_color: STORE_IDENTITY.inkHsl,
-  announcement_text:
-    "🛒 سوبرماركت الوادي الأخضر — كل احتياجات بيتك وتموينك بتوصيل فوري لباب بيتك ⚡",
-  announcement_enabled: true,
+  announcement_text: null,
+  announcement_enabled: false,
   announcement_bg_color: STORE_IDENTITY.greenHsl,
   ga4_id: null,
   meta_pixel_id: null,
@@ -192,7 +189,7 @@ function SettingsPage() {
     }
     const payload = {
       ...(s.id ? { id: s.id } : {}),
-      site_name: s.site_name ?? "الوادي الأخضر",
+      site_name: s.site_name ?? null,
       hero_title: s.hero_title,
       hero_subtitle: s.hero_subtitle,
       hero_cta_text: s.hero_cta_text,
@@ -286,7 +283,7 @@ function SettingsPage() {
       `https://wa.me/${numOnly}?text=${encodeURIComponent("مرحباً، هذه رسالة تجربة من إعدادات المتجر 🛒")}`,
       "_blank",
     );
-    toast.success("تم فتح محادثة واتساب التجريبية بنجاح 💬");
+    toast.success("تم فتح رابط واتساب المحفوظ.");
   };
 
   if (loading) return <SettingsPageSkeleton />;
@@ -390,7 +387,7 @@ function SettingsPage() {
                   <Input
                     value={s.site_name ?? ""}
                     onChange={(e) => updateSetting("site_name", e.target.value)}
-                    placeholder="سوبرماركت الوادي الأخضر"
+                    placeholder="اسم المتجر من إعدادات النظام"
                     className="h-10 rounded-xl font-bold text-xs"
                   />
                 </Field>
@@ -402,7 +399,7 @@ function SettingsPage() {
                     <Input
                       value={s.whatsapp_number ?? ""}
                       onChange={(e) => updateSetting("whatsapp_number", e.target.value)}
-                      placeholder="+201234567890"
+                      placeholder="+20..."
                       className="h-10 rounded-xl font-bold text-xs dir-ltr text-right flex-1"
                     />
                     <Button
@@ -427,7 +424,7 @@ function SettingsPage() {
                     <Input
                       value={s.store_address ?? ""}
                       onChange={(e) => updateSetting("store_address", e.target.value)}
-                      placeholder="القاهرة، مصر — شارع التحرير"
+                      placeholder="عنوان المتجر"
                       className="h-10 rounded-xl font-bold text-xs"
                     />
                   </Field>
@@ -514,7 +511,7 @@ function SettingsPage() {
                   <Input
                     value={s.hero_title ?? ""}
                     onChange={(e) => updateSetting("hero_title", e.target.value)}
-                    placeholder="سوبرماركت الوادي الأخضر — هايبر ماركت"
+                    placeholder="نص العنوان الرئيسي"
                     className="h-10 rounded-xl font-bold text-xs"
                   />
                 </Field>
@@ -548,7 +545,7 @@ function SettingsPage() {
                     updateSetting("hero_image_url", v);
                   }}
                   label="خلفية البانر الرئيسي (رفع أو توليد بالذكاء الاصطناعي)"
-                  promptHint={`خلفية بانر تسويقية فائقة الجمال لمتجر سوبرماركت حديث باسم "${s.site_name || "الوادي الأخضر"}" تعرض أرفف سوبرماركت منظمة، سلع تموينية، ألبان ولحوم مع إضاءة سينمائية`}
+                  promptHint={`خلفية بانر تسويقية لمتجر سوبرماركت حديث باسم "${s.site_name || "المتجر"}" تعرض أرفف سوبرماركت منظمة، سلع تموينية، ألبان ولحوم مع إضاءة سينمائية`}
                   folder="hero"
                 />
               </div>
@@ -588,7 +585,7 @@ function SettingsPage() {
                         rows={2}
                         value={s.announcement_text ?? ""}
                         onChange={(e) => updateSetting("announcement_text", e.target.value)}
-                        placeholder="🛒 سوبرماركت الوادي الأخضر — توصيل فورى..."
+                        placeholder="نص الإعلان من إعدادات المتجر..."
                         className="rounded-xl font-bold text-xs"
                       />
                     </Field>

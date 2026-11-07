@@ -41,6 +41,12 @@ import {
   Pencil,
   Check,
   ListOrdered,
+  Crown,
+  Gift,
+  Copy,
+  WalletCards,
+  ArrowDownToLine,
+  CircleDollarSign,
 } from "lucide-react";
 import { formatWeightLabel } from "@/lib/cart-context";
 import { toast } from "sonner";
@@ -160,7 +166,7 @@ function AccountPage() {
         </div>
 
         <Tabs defaultValue="orders" className="w-full">
-          <TabsList className="grid h-auto w-full grid-cols-4 rounded-2xl bg-secondary/60 p-1.5 shadow-inner">
+          <TabsList className="grid h-auto w-full grid-cols-5 rounded-2xl bg-secondary/60 p-1.5 shadow-inner">
             <TabsTrigger
               value="orders"
               className="flex items-center justify-center gap-1.5 rounded-xl py-3 text-xs font-bold data-[state=active]:bg-card data-[state=active]:shadow-sm"
@@ -186,6 +192,14 @@ function AccountPage() {
             </TabsTrigger>
 
             <TabsTrigger
+              value="loyalty"
+              className="flex items-center justify-center gap-1.5 rounded-xl py-3 text-xs font-bold data-[state=active]:bg-card data-[state=active]:shadow-sm"
+            >
+              <Crown className="h-4 w-4 text-amber-500" />
+              <span>الولاء</span>
+            </TabsTrigger>
+
+            <TabsTrigger
               value="profile"
               className="flex items-center justify-center gap-1.5 rounded-xl py-3 text-xs font-bold data-[state=active]:bg-card data-[state=active]:shadow-sm"
             >
@@ -206,11 +220,155 @@ function AccountPage() {
             <AddressesTab userId={user.id} />
           </TabsContent>
 
+          <TabsContent value="loyalty" className="mt-6">
+            <LoyaltyTab userId={user.id} />
+          </TabsContent>
+
           <TabsContent value="profile" className="mt-6">
             <ProfileTab userId={user.id} />
           </TabsContent>
         </Tabs>
       </main>
+    </div>
+  );
+}
+
+/* ---------- Loyalty ---------- */
+function LoyaltyTab({ userId }: { userId: string }) {
+  const { data: orders = [], isLoading } = useQuery({
+    queryKey: ["loyalty-orders", userId],
+    queryFn: () => fetchOrdersWithItems({ userId, limit: 500 }),
+    staleTime: 1000 * 60 * 5,
+  });
+  const completed = orders.filter((order) => order.status === "delivered");
+  const totalSpend = completed.reduce((sum, order) => sum + Number(order.total_amount || 0), 0);
+  const tiers = [
+    { name: "Bronze", label: "برونزي", min: 0, color: "text-orange-700", bg: "bg-orange-500/10" },
+    { name: "Silver", label: "فضي", min: 3, color: "text-slate-600", bg: "bg-slate-500/10" },
+    { name: "Gold", label: "ذهبي", min: 7, color: "text-amber-600", bg: "bg-amber-500/10" },
+    {
+      name: "Platinum",
+      label: "بلاتيني",
+      min: 15,
+      color: "text-violet-600",
+      bg: "bg-violet-500/10",
+    },
+  ];
+  const tierIndex = tiers.reduce(
+    (index, tier, indexValue) => (completed.length >= tier.min ? indexValue : index),
+    0,
+  );
+  const tier = tiers[tierIndex];
+  const nextTier = tiers[tierIndex + 1];
+  const progress = nextTier
+    ? Math.min(100, ((completed.length - tier.min) / (nextTier.min - tier.min)) * 100)
+    : 100;
+  const referralCode = `ELWADI-${userId.slice(0, 6).toUpperCase()}`;
+
+  const copyReferral = async () => {
+    const link = `${window.location.origin}/?ref=${encodeURIComponent(referralCode)}`;
+    await navigator.clipboard.writeText(link);
+    toast.success("تم نسخ رابط الدعوة");
+  };
+
+  if (isLoading)
+    return (
+      <div className="rounded-3xl border p-8 text-center text-muted-foreground">
+        جارٍ تحميل برنامج الولاء…
+      </div>
+    );
+
+  return (
+    <div className="space-y-4">
+      <Card className="overflow-hidden rounded-3xl border-amber-200 bg-gradient-to-br from-amber-50 to-card p-6 dark:from-amber-950/30">
+        <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
+          <div className="flex items-center gap-4">
+            <div className={`grid size-14 place-items-center rounded-2xl ${tier.bg}`}>
+              <Crown className={`size-7 ${tier.color}`} />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">مستواك الحالي</p>
+              <h2 className={`text-2xl font-black ${tier.color}`}>{tier.label}</h2>
+              <p className="mt-1 text-xs text-muted-foreground">{completed.length} طلبات مكتملة</p>
+            </div>
+          </div>
+          <div className="text-start sm:text-end">
+            <p className="text-xs text-muted-foreground">إجمالي مشترياتك</p>
+            <p className="text-2xl font-black text-primary">{totalSpend.toFixed(2)} ج.م</p>
+          </div>
+        </div>
+        {nextTier && (
+          <div className="mt-6">
+            <div className="mb-2 flex justify-between text-xs font-bold">
+              <span>التقدم نحو {nextTier.label}</span>
+              <span>{nextTier.min - completed.length} طلبات متبقية</span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-amber-100 dark:bg-amber-950">
+              <div
+                className="h-full rounded-full bg-amber-500 transition-all"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          </div>
+        )}
+      </Card>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Card className="rounded-3xl p-5">
+          <Gift className="mb-3 size-6 text-primary" />
+          <h3 className="font-black">مزايا الولاء</h3>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            كل طلب مكتمل يقربك من المستوى التالي. ستظهر العروض والمزايا المفعلة لحسابك هنا.
+          </p>
+        </Card>
+        <Card className="rounded-3xl p-5">
+          <h3 className="font-black">ادعُ أصحابك</h3>
+          <p className="mt-2 text-sm text-muted-foreground">
+            شارك رابطك مع أصدقائك واستخدمه عند زيارتهم للمتجر.
+          </p>
+          <Button
+            variant="outline"
+            className="mt-4 gap-2 rounded-xl"
+            onClick={() => void copyReferral()}
+          >
+            <Copy className="size-4" /> نسخ رابط الدعوة
+          </Button>
+        </Card>
+      </div>
+      <Card className="rounded-3xl border-primary/20 bg-primary/[0.03] p-5">
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+          <div className="flex items-start gap-3">
+            <div className="grid size-11 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary">
+              <WalletCards className="size-5" />
+            </div>
+            <div>
+              <h3 className="font-black">المحفظة وCashback</h3>
+              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                سيظهر رصيدك النقدي وسجل الحركات هنا بعد تفعيل المحفظة من إدارة المتجر.
+              </p>
+            </div>
+          </div>
+          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-muted px-3 py-1.5 text-xs font-bold text-muted-foreground">
+            <CircleDollarSign className="size-3.5" />
+            قيد التفعيل
+          </span>
+        </div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          <div className="rounded-2xl border border-border/70 bg-card p-4">
+            <p className="text-xs text-muted-foreground">الرصيد المتاح</p>
+            <p className="mt-1 text-xl font-black text-muted-foreground">— ج.م</p>
+          </div>
+          <div className="rounded-2xl border border-border/70 bg-card p-4">
+            <p className="text-xs text-muted-foreground">Cashback مكتسب</p>
+            <p className="mt-1 text-xl font-black text-muted-foreground">— ج.م</p>
+          </div>
+          <div className="rounded-2xl border border-border/70 bg-card p-4">
+            <p className="text-xs text-muted-foreground">آخر حركة</p>
+            <p className="mt-1 flex items-center gap-1 text-sm font-bold text-muted-foreground">
+              <ArrowDownToLine className="size-4" /> لا توجد حركات
+            </p>
+          </div>
+        </div>
+      </Card>
     </div>
   );
 }

@@ -19,6 +19,7 @@ import { Route as CategoriesRouteImport } from './routes/categories'
 import { Route as DriverRouteImport } from './routes/driver'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as McpRouteImport } from './routes/mcp'
+import { Route as PickerRouteImport } from './routes/picker'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
@@ -26,17 +27,21 @@ import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticate
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminActivityRouteImport } from './routes/admin.activity'
 import { Route as AdminBannersRouteImport } from './routes/admin.banners'
+import { Route as AdminBranchesRouteImport } from './routes/admin.branches'
+import { Route as AdminBundlesRouteImport } from './routes/admin.bundles'
 import { Route as AdminCategoriesRouteImport } from './routes/admin.categories'
 import { Route as AdminCopilotRouteImport } from './routes/admin.copilot'
 import { Route as AdminCouponsRouteImport } from './routes/admin.coupons'
 import { Route as AdminCustomersRouteImport } from './routes/admin.customers'
 import { Route as AdminDatabaseRouteImport } from './routes/admin.database'
 import { Route as AdminDeliveryZonesRouteImport } from './routes/admin.delivery-zones'
+import { Route as AdminForecastingRouteImport } from './routes/admin.forecasting'
 import { Route as AdminGovernanceRouteImport } from './routes/admin.governance'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AdminOrdersRouteImport } from './routes/admin.orders'
 import { Route as AdminProductsRouteImport } from './routes/admin.products'
 import { Route as AdminProfileRouteImport } from './routes/admin.profile'
+import { Route as AdminReplenishmentRouteImport } from './routes/admin.replenishment'
 import { Route as AdminReviewsRouteImport } from './routes/admin.reviews'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
@@ -95,6 +100,11 @@ const McpRoute = McpRouteImport.update({
   path: '/mcp',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PickerRoute = PickerRouteImport.update({
+  id: '/picker',
+  path: '/picker',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
@@ -132,6 +142,16 @@ const AdminBannersRoute = AdminBannersRouteImport.update({
   path: '/banners',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminBranchesRoute = AdminBranchesRouteImport.update({
+  id: '/branches',
+  path: '/branches',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminBundlesRoute = AdminBundlesRouteImport.update({
+  id: '/bundles',
+  path: '/bundles',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminCategoriesRoute = AdminCategoriesRouteImport.update({
   id: '/categories',
   path: '/categories',
@@ -162,6 +182,11 @@ const AdminDeliveryZonesRoute = AdminDeliveryZonesRouteImport.update({
   path: '/delivery-zones',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminForecastingRoute = AdminForecastingRouteImport.update({
+  id: '/forecasting',
+  path: '/forecasting',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminGovernanceRoute = AdminGovernanceRouteImport.update({
   id: '/governance',
   path: '/governance',
@@ -185,6 +210,11 @@ const AdminProductsRoute = AdminProductsRouteImport.update({
 const AdminProfileRoute = AdminProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminReplenishmentRoute = AdminReplenishmentRouteImport.update({
+  id: '/replenishment',
+  path: '/replenishment',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminReviewsRoute = AdminReviewsRouteImport.update({
@@ -239,23 +269,28 @@ export interface FileRoutesByFullPath {
   '/driver': typeof DriverRoute
   '/login': typeof LoginRoute
   '/mcp': typeof McpRoute
+  '/picker': typeof PickerRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/account': typeof AuthenticatedAccountRoute
   '/admin/activity': typeof AdminActivityRoute
   '/admin/banners': typeof AdminBannersRoute
+  '/admin/branches': typeof AdminBranchesRoute
+  '/admin/bundles': typeof AdminBundlesRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/copilot': typeof AdminCopilotRoute
   '/admin/coupons': typeof AdminCouponsRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/database': typeof AdminDatabaseRoute
   '/admin/delivery-zones': typeof AdminDeliveryZonesRoute
+  '/admin/forecasting': typeof AdminForecastingRoute
   '/admin/governance': typeof AdminGovernanceRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/products': typeof AdminProductsRoute
   '/admin/profile': typeof AdminProfileRoute
+  '/admin/replenishment': typeof AdminReplenishmentRoute
   '/admin/reviews': typeof AdminReviewsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
@@ -274,23 +309,28 @@ export interface FileRoutesByTo {
   '/driver': typeof DriverRoute
   '/login': typeof LoginRoute
   '/mcp': typeof McpRoute
+  '/picker': typeof PickerRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/account': typeof AuthenticatedAccountRoute
   '/admin/activity': typeof AdminActivityRoute
   '/admin/banners': typeof AdminBannersRoute
+  '/admin/branches': typeof AdminBranchesRoute
+  '/admin/bundles': typeof AdminBundlesRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/copilot': typeof AdminCopilotRoute
   '/admin/coupons': typeof AdminCouponsRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/database': typeof AdminDatabaseRoute
   '/admin/delivery-zones': typeof AdminDeliveryZonesRoute
+  '/admin/forecasting': typeof AdminForecastingRoute
   '/admin/governance': typeof AdminGovernanceRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/products': typeof AdminProductsRoute
   '/admin/profile': typeof AdminProfileRoute
+  '/admin/replenishment': typeof AdminReplenishmentRoute
   '/admin/reviews': typeof AdminReviewsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
@@ -313,23 +353,28 @@ export interface FileRoutesById {
   '/driver': typeof DriverRoute
   '/login': typeof LoginRoute
   '/mcp': typeof McpRoute
+  '/picker': typeof PickerRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_authenticated/account': typeof AuthenticatedAccountRoute
   '/admin/activity': typeof AdminActivityRoute
   '/admin/banners': typeof AdminBannersRoute
+  '/admin/branches': typeof AdminBranchesRoute
+  '/admin/bundles': typeof AdminBundlesRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/copilot': typeof AdminCopilotRoute
   '/admin/coupons': typeof AdminCouponsRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/database': typeof AdminDatabaseRoute
   '/admin/delivery-zones': typeof AdminDeliveryZonesRoute
+  '/admin/forecasting': typeof AdminForecastingRoute
   '/admin/governance': typeof AdminGovernanceRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/products': typeof AdminProductsRoute
   '/admin/profile': typeof AdminProfileRoute
+  '/admin/replenishment': typeof AdminReplenishmentRoute
   '/admin/reviews': typeof AdminReviewsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
@@ -352,23 +397,28 @@ export interface FileRouteTypes {
     | '/driver'
     | '/login'
     | '/mcp'
+    | '/picker'
     | '/sitemap.xml'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/account'
     | '/admin/activity'
     | '/admin/banners'
+    | '/admin/branches'
+    | '/admin/bundles'
     | '/admin/categories'
     | '/admin/copilot'
     | '/admin/coupons'
     | '/admin/customers'
     | '/admin/database'
     | '/admin/delivery-zones'
+    | '/admin/forecasting'
     | '/admin/governance'
     | '/admin/login'
     | '/admin/orders'
     | '/admin/products'
     | '/admin/profile'
+    | '/admin/replenishment'
     | '/admin/reviews'
     | '/admin/settings'
     | '/admin/users'
@@ -387,23 +437,28 @@ export interface FileRouteTypes {
     | '/driver'
     | '/login'
     | '/mcp'
+    | '/picker'
     | '/sitemap.xml'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/account'
     | '/admin/activity'
     | '/admin/banners'
+    | '/admin/branches'
+    | '/admin/bundles'
     | '/admin/categories'
     | '/admin/copilot'
     | '/admin/coupons'
     | '/admin/customers'
     | '/admin/database'
     | '/admin/delivery-zones'
+    | '/admin/forecasting'
     | '/admin/governance'
     | '/admin/login'
     | '/admin/orders'
     | '/admin/products'
     | '/admin/profile'
+    | '/admin/replenishment'
     | '/admin/reviews'
     | '/admin/settings'
     | '/admin/users'
@@ -425,23 +480,28 @@ export interface FileRouteTypes {
     | '/driver'
     | '/login'
     | '/mcp'
+    | '/picker'
     | '/sitemap.xml'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/_authenticated/account'
     | '/admin/activity'
     | '/admin/banners'
+    | '/admin/branches'
+    | '/admin/bundles'
     | '/admin/categories'
     | '/admin/copilot'
     | '/admin/coupons'
     | '/admin/customers'
     | '/admin/database'
     | '/admin/delivery-zones'
+    | '/admin/forecasting'
     | '/admin/governance'
     | '/admin/login'
     | '/admin/orders'
     | '/admin/products'
     | '/admin/profile'
+    | '/admin/replenishment'
     | '/admin/reviews'
     | '/admin/settings'
     | '/admin/users'
@@ -464,6 +524,7 @@ export interface RootRouteChildren {
   DriverRoute: typeof DriverRoute
   LoginRoute: typeof LoginRoute
   McpRoute: typeof McpRoute
+  PickerRoute: typeof PickerRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -544,6 +605,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof McpRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/picker': {
+      id: '/picker'
+      path: '/picker'
+      fullPath: '/picker'
+      preLoaderRoute: typeof PickerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sitemap.xml': {
       id: '/sitemap.xml'
       path: '/sitemap.xml'
@@ -593,6 +661,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminBannersRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/branches': {
+      id: '/admin/branches'
+      path: '/branches'
+      fullPath: '/admin/branches'
+      preLoaderRoute: typeof AdminBranchesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/bundles': {
+      id: '/admin/bundles'
+      path: '/bundles'
+      fullPath: '/admin/bundles'
+      preLoaderRoute: typeof AdminBundlesRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/categories': {
       id: '/admin/categories'
       path: '/categories'
@@ -635,6 +717,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDeliveryZonesRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/forecasting': {
+      id: '/admin/forecasting'
+      path: '/forecasting'
+      fullPath: '/admin/forecasting'
+      preLoaderRoute: typeof AdminForecastingRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/governance': {
       id: '/admin/governance'
       path: '/governance'
@@ -668,6 +757,13 @@ declare module '@tanstack/react-router' {
       path: '/profile'
       fullPath: '/admin/profile'
       preLoaderRoute: typeof AdminProfileRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/replenishment': {
+      id: '/admin/replenishment'
+      path: '/replenishment'
+      fullPath: '/admin/replenishment'
+      preLoaderRoute: typeof AdminReplenishmentRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/reviews': {
@@ -743,17 +839,21 @@ const AuthenticatedRouteRouteWithChildren =
 interface AdminRouteChildren {
   AdminActivityRoute: typeof AdminActivityRoute
   AdminBannersRoute: typeof AdminBannersRoute
+  AdminBranchesRoute: typeof AdminBranchesRoute
+  AdminBundlesRoute: typeof AdminBundlesRoute
   AdminCategoriesRoute: typeof AdminCategoriesRoute
   AdminCopilotRoute: typeof AdminCopilotRoute
   AdminCouponsRoute: typeof AdminCouponsRoute
   AdminCustomersRoute: typeof AdminCustomersRoute
   AdminDatabaseRoute: typeof AdminDatabaseRoute
   AdminDeliveryZonesRoute: typeof AdminDeliveryZonesRoute
+  AdminForecastingRoute: typeof AdminForecastingRoute
   AdminGovernanceRoute: typeof AdminGovernanceRoute
   AdminLoginRoute: typeof AdminLoginRoute
   AdminOrdersRoute: typeof AdminOrdersRoute
   AdminProductsRoute: typeof AdminProductsRoute
   AdminProfileRoute: typeof AdminProfileRoute
+  AdminReplenishmentRoute: typeof AdminReplenishmentRoute
   AdminReviewsRoute: typeof AdminReviewsRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminUsersRoute: typeof AdminUsersRoute
@@ -763,17 +863,21 @@ interface AdminRouteChildren {
 const AdminRouteChildren: AdminRouteChildren = {
   AdminActivityRoute: AdminActivityRoute,
   AdminBannersRoute: AdminBannersRoute,
+  AdminBranchesRoute: AdminBranchesRoute,
+  AdminBundlesRoute: AdminBundlesRoute,
   AdminCategoriesRoute: AdminCategoriesRoute,
   AdminCopilotRoute: AdminCopilotRoute,
   AdminCouponsRoute: AdminCouponsRoute,
   AdminCustomersRoute: AdminCustomersRoute,
   AdminDatabaseRoute: AdminDatabaseRoute,
   AdminDeliveryZonesRoute: AdminDeliveryZonesRoute,
+  AdminForecastingRoute: AdminForecastingRoute,
   AdminGovernanceRoute: AdminGovernanceRoute,
   AdminLoginRoute: AdminLoginRoute,
   AdminOrdersRoute: AdminOrdersRoute,
   AdminProductsRoute: AdminProductsRoute,
   AdminProfileRoute: AdminProfileRoute,
+  AdminReplenishmentRoute: AdminReplenishmentRoute,
   AdminReviewsRoute: AdminReviewsRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminUsersRoute: AdminUsersRoute,
@@ -807,6 +911,7 @@ const rootRouteChildren: RootRouteChildren = {
   DriverRoute: DriverRoute,
   LoginRoute: LoginRoute,
   McpRoute: McpRoute,
+  PickerRoute: PickerRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:

@@ -20,7 +20,6 @@ import { ThemeProvider } from "@/lib/theme-context";
 import { ColorModeProvider } from "@/lib/color-mode-context";
 import { I18nProvider } from "@/lib/i18n-context";
 import { SearchProvider } from "@/lib/search-context";
-import { autoSeedDatabaseIfNeeded } from "@/lib/auto-seed";
 import { AnnouncementBar } from "@/components/storefront/AnnouncementBar";
 import { BottomNav } from "@/components/storefront/BottomNav";
 import { StickyCartBar } from "@/components/storefront/StickyCartBar";
@@ -95,26 +94,23 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { property: "og:site_name", content: "الوادي الأخضر" },
+      { property: "og:site_name", content: "متجر إلكتروني" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { title: "سوبرماركت الوادي الأخضر — سوبرماركت عائلتك 🛒" },
-      { property: "og:title", content: "سوبرماركت الوادي الأخضر — سوبرماركت عائلتك 🛒" },
-      { name: "twitter:title", content: "سوبرماركت الوادي الأخضر — سوبرماركت عائلتك 🛒" },
+      { title: "متجر إلكتروني" },
+      { property: "og:title", content: "متجر إلكتروني" },
+      { name: "twitter:title", content: "متجر إلكتروني" },
       {
         name: "description",
-        content:
-          "تسوّق جميع سلع البقالة والتموين، الألبان والأجبان، اللحوم البلدية والمنظفات من سوبرماركت الوادي الأخضر بأفضل الأسعار وتوصيل فوري لباب بيتك.",
+        content: "تسوّق من المتجر الإلكتروني واختر المنتجات المتاحة للتوصيل.",
       },
       {
         property: "og:description",
-        content:
-          "تسوّق جميع سلع البقالة والتموين، الألبان والأجبان، اللحوم البلدية والمنظفات من سوبرماركت الوادي الأخضر بأفضل الأسعار وتوصيل فوري لباب بيتك.",
+        content: "تسوّق من المتجر الإلكتروني واختر المنتجات المتاحة للتوصيل.",
       },
       {
         name: "twitter:description",
-        content:
-          "تسوّق جميع سلع البقالة والتموين، الألبان والأجبان، اللحوم البلدية والمنظفات من سوبرماركت الوادي الأخضر بأفضل الأسعار وتوصيل فوري لباب بيتك.",
+        content: "تسوّق من المتجر الإلكتروني واختر المنتجات المتاحة للتوصيل.",
       },
       {
         property: "og:image",
@@ -142,11 +138,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         children: JSON.stringify({
           "@context": "https://schema.org",
           "@type": "Organization",
-          name: "الوادي الأخضر",
+          name: "المتجر الإلكتروني",
           url: `${SITE_URL}/`,
           logo: `${SITE_URL}/favicon.svg`,
-          description:
-            "سوبرماركت الوادي الأخضر أونلاين: سلع تموينية، لحوم بلدية، أجبان، منظفات وبقالة مع توصيل سريع.",
+          description: "متجر إلكتروني للمنتجات المتاحة للتوصيل.",
         }),
       },
     ],
@@ -175,10 +170,7 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
-  useEffect(() => {
-    // Attempt auto-seed ONLY IF Supabase products are empty (as requested)
-    autoSeedDatabaseIfNeeded().catch(console.error);
-  }, []);
+  useEffect(() => {}, []);
 
   return (
     <QueryClientProvider client={queryClient}>
