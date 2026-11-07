@@ -137,10 +137,10 @@ export function Header() {
                 <Link
                   to="/assistant"
                   onClick={() => setDrawerOpen(false)}
-                  className="flex items-center justify-between p-3 rounded-2xl bg-[#2f5d4b]/8 hover:bg-[#2f5d4b]/12 border border-[#2f5d4b]/15 text-xs font-bold transition-colors"
+                  className="flex items-center justify-between p-3 rounded-2xl bg-[#15803d]/8 hover:bg-[#15803d]/12 border border-[#15803d]/15 text-xs font-bold transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <Sparkles className="h-4 w-4 text-[#2f5d4b]" />
+                    <Sparkles className="h-4 w-4 text-[#15803d]" />
                     <span>نواة — مساعد التسوّق</span>
                   </div>
                   <ChevronLeft className="h-4 w-4 text-muted-foreground" />

@@ -11,67 +11,53 @@ export function BottomNav() {
 
   if (pathname.startsWith("/admin") || pathname.startsWith("/auth") || pathname.startsWith("/assistant")) return null;
 
-  const isHome = pathname === "/";
-  const isCats = pathname.startsWith("/categories");
-  const isAccount = pathname.startsWith("/account");
   const accountTo = user ? "/account" : "/auth";
+  const isCart = pathname.startsWith("/cart");
 
   return (
     <nav
       dir="rtl"
-      className="fixed inset-x-0 md:hidden bottom-0 z-50 border-t border-border/60 bg-background pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_20px_-6px_rgba(0,0,0,0.08)]"
+      className="fixed inset-x-0 bottom-0 z-50 px-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] md:hidden"
     >
-      <ul className="mx-auto grid max-w-xl grid-cols-5 gap-1 px-2 py-1.5">
-        <NavItem to="/" icon={Home} label="الرئيسية" active={isHome} />
-        <NavItem to="/categories" icon={LayoutGrid} label="الفئات" active={isCats} />
-        <NavItem to="/assistant" icon={Sparkles} label="مساعد التسوق" active={pathname.startsWith("/assistant")} />
-
-        <li>
+      <ul className="mx-auto grid max-w-md grid-cols-5 items-end rounded-3xl border border-border/70 bg-card/95 px-1.5 py-1.5 shadow-elegant backdrop-blur-xl">
+        <NavItem to="/" icon={Home} label="الرئيسية" active={pathname === "/"} />
+        <NavItem to="/categories" icon={LayoutGrid} label="الأقسام" active={pathname.startsWith("/categories")} />
+        <li className="flex justify-center">
           <Link
             to="/cart"
-            className="relative flex w-full flex-col items-center gap-0.5 rounded-xl px-1 py-1.5 text-muted-foreground transition-colors hover:text-primary"
             aria-label="السلة"
+            className={cn(
+              "relative -mt-7 grid h-16 w-16 place-items-center rounded-full border-4 border-background text-primary-foreground shadow-elegant transition-transform active:scale-95",
+              isCart ? "bg-accent" : "bg-fresh",
+            )}
           >
-            <span className="relative">
-              <ShoppingBag className="h-5 w-5" />
-              {totalCount > 0 && (
-                <span className="absolute -end-2 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-accent px-1 text-[9px] font-black text-accent-foreground">
-                  <bdi dir="ltr" className="tabular-nums">{totalCount}</bdi>
-                </span>
-              )}
-            </span>
-            <span className="text-[10px] font-bold">السلة</span>
+            <ShoppingBag className="h-6 w-6" />
+            {totalCount > 0 && (
+              <span className="absolute -top-1 -end-1 grid h-6 min-w-6 place-items-center rounded-full border-2 border-background bg-accent px-1 text-[11px] font-black text-accent-foreground">
+                <bdi dir="ltr" className="tabular-nums">{totalCount}</bdi>
+              </span>
+            )}
           </Link>
         </li>
-
-        <NavItem to={accountTo} icon={User} label="حسابي" active={isAccount} />
+        <NavItem to="/assistant" icon={Sparkles} label="نواة" active={false} />
+        <NavItem to={accountTo} icon={User} label="حسابي" active={pathname.startsWith("/account")} />
       </ul>
     </nav>
   );
 }
 
-function NavItem({
-  to,
-  icon: Icon,
-  label,
-  active,
-}: {
-  to: string;
-  icon: typeof Home;
-  label: string;
-  active: boolean;
-}) {
+function NavItem({ to, icon: Icon, label, active }: { to: string; icon: typeof Home; label: string; active: boolean }) {
   return (
     <li>
       <Link
         to={to}
         className={cn(
-          "flex flex-col items-center gap-0.5 rounded-xl px-1 py-1.5 transition-colors",
-          active ? "text-primary" : "text-muted-foreground hover:text-primary",
+          "flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-2xl px-1 py-1.5 transition-colors active:scale-95",
+          active ? "bg-secondary text-primary" : "text-muted-foreground hover:text-primary",
         )}
       >
         <Icon className={cn("h-5 w-5", active && "stroke-[2.4]")} />
-        <span className="text-[10px] font-bold">{label}</span>
+        <span className="text-[11px] font-bold">{label}</span>
       </Link>
     </li>
   );
