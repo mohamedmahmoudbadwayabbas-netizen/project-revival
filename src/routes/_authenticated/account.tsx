@@ -12,7 +12,11 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
+import { FavoritesList } from "@/components/storefront/FavoritesList";
+import { reorderFromLines } from "@/lib/buy-again";
+import { track } from "@/lib/analytics";
 import {
+  Heart,
   User,
   MapPin,
   Package,
@@ -153,13 +157,21 @@ function AccountPage() {
         </div>
 
         <Tabs defaultValue="orders" className="w-full">
-          <TabsList className="grid h-auto w-full grid-cols-3 rounded-2xl bg-secondary/60 p-1.5 shadow-inner">
+          <TabsList className="grid h-auto w-full grid-cols-4 rounded-2xl bg-secondary/60 p-1.5 shadow-inner">
             <TabsTrigger
               value="orders"
               className="flex items-center justify-center gap-1.5 rounded-xl py-3 text-xs font-bold data-[state=active]:bg-card data-[state=active]:shadow-sm"
             >
               <Package className="h-4 w-4 text-emerald-600" />
               <span>طلباتي</span>
+            </TabsTrigger>
+
+            <TabsTrigger
+              value="favorites"
+              className="flex items-center justify-center gap-1.5 rounded-xl py-3 text-xs font-bold data-[state=active]:bg-card data-[state=active]:shadow-sm"
+            >
+              <Heart className="h-4 w-4 text-emerald-600" />
+              <span>المفضلة</span>
             </TabsTrigger>
 
             <TabsTrigger
@@ -181,6 +193,10 @@ function AccountPage() {
 
           <TabsContent value="orders" className="mt-6">
             <OrdersTab userId={user.id} />
+          </TabsContent>
+
+          <TabsContent value="favorites" className="mt-6">
+            <FavoritesList />
           </TabsContent>
 
           <TabsContent value="addresses" className="mt-6">
@@ -244,35 +260,22 @@ function OrdersTab({ userId }: { userId: string }) {
       unit_label?: string;
     }>,
   ) => {
-    let count = 0;
-    for (const item of items) {
-      const prodId = item.id || `reorder-${item.name.replace(/\s+/g, "-")}`;
-      addItem(
-        {
-          id: prodId,
-          name: item.name,
-          price_per_unit: item.price ?? 0,
-          is_by_weight: item.is_by_weight ?? false,
-          unit_label: item.unit_label ?? (item.is_by_weight ? "كجم" : "قطعة"),
-          category_id: "",
-          description: null,
-          old_price: null,
-          image_url: null,
-          stock_quantity: 100,
-        } as any,
-        item.quantity || 1,
-      );
-      count++;
-    }
-    if (count > 0) {
-      toast.success(`تمت إضافة ${count} منتجات من هذا الطلب إلى سلة المشتريات 🛒`, {
-        action: {
-          label: "فتح السلة والطلب 🛍️",
-          onClick: () => router.history.push("/cart"),
-        },
-      });
-    } else {
-      toast.error("لا توجد منتجات صالحة في هذا الطلب");
+    try {
+      // نجلب المنتجات الحقيقية الحالية (سعر ومخزون محدثين) بدل إعادة بناء منتج من بيانات الطلب القديمة.
+      const { added, skipped } = await reorderFromLines(items, addItem);
+      track("buy_again_clicked", { source: "account_reorder", added, skipped });
+      if (added > 0) {
+        toast.success(
+          skipped > 0
+            ? `تمت إضافة ${added} منتجات للسلة، و${skipped} غير متاحة حالياً`
+            : `تمت إضافة ${added} منتجات من هذا الطلب إلى سلة المشتريات 🛒`,
+          { action: { label: "فتح السلة", onClick: () => router.history.push("/cart") } },
+        );
+      } else {
+        toast.error("منتجات هذا الطلب غير متاحة حالياً");
+      }
+    } catch {
+      toast.error("تعذر إعادة الطلب، حاول مرة أخرى");
     }
   };
 

@@ -23,6 +23,7 @@ import { SearchProvider } from "@/lib/search-context";
 import { autoSeedDatabaseIfNeeded } from "@/lib/auto-seed";
 import { AnnouncementBar } from "@/components/storefront/AnnouncementBar";
 import { BottomNav } from "@/components/storefront/BottomNav";
+import { StickyCartBar } from "@/components/storefront/StickyCartBar";
 import { Header } from "@/components/storefront/Header";
 import { useRouterState } from "@tanstack/react-router";
 
@@ -131,7 +132,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Tajawal:wght@400;500;700;800;900&family=El+Messiri:wght@500;600;700&family=Readex+Pro:wght@300;400;500;600;700&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Tajawal:wght@400;500;700;800;900&family=Readex+Pro:wght@300;400;500;600;700&display=swap",
       },
       { rel: "stylesheet", href: appCss },
     ],
@@ -192,10 +193,11 @@ function RootComponent() {
                       <StorefrontAnnouncement />
                       <StorefrontHeader />
                       <RouteFade>
-                        <div className="pb-20 md:pb-0">
+                        <div className="pb-36 md:pb-0">
                           <Outlet />
                         </div>
                       </RouteFade>
+                      <StickyCartBar />
                       <BottomNav />
                       <Toaster position="top-center" dir="rtl" richColors />
                     </SearchProvider>

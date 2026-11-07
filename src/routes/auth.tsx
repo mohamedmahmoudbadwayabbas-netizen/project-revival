@@ -189,7 +189,7 @@ export function AuthPage() {
           className="rounded-3xl p-6 sm:p-8"
           style={{
             background: "linear-gradient(180deg, #FFFFFF 0%, #FAF9F6 100%)",
-            border: "2px solid #C9A86B",
+            border: "2px solid #059669",
             boxShadow:
               "0 18px 50px -18px rgba(3,98,51,0.25), inset 0 0 0 1px rgba(201,168,107,0.25)",
           }}

@@ -94,7 +94,7 @@ function Consent() {
 
   return (
     <main dir="rtl" className="grid min-h-screen place-items-center bg-background px-4">
-      <div className="w-full max-w-md rounded-3xl border-2 border-[#C9A86B] bg-card p-7 shadow-elegant">
+      <div className="w-full max-w-md rounded-3xl border-2 border-primary bg-card p-7 shadow-elegant">
         <h1 className="text-center font-display text-xl font-bold">
           ربط <span className="text-primary">{clientName}</span> بحسابك
         </h1>

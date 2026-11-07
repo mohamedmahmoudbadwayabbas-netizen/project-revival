@@ -453,7 +453,7 @@ function AdminCoPilotPage() {
 
   return (
     <div
-      className="relative h-[calc(100dvh-3.5rem)] flex flex-col overflow-hidden bg-[#F8F5EB] dark:bg-zinc-950 font-sans"
+      className="relative h-[calc(100dvh-3.5rem)] flex flex-col overflow-hidden bg-slate-100 dark:bg-zinc-950 font-sans"
       dir="rtl"
     >
       {/* ─── 1. TOP HEADER & NAVIGATION ─── */}
@@ -853,7 +853,7 @@ function AdminCoPilotPage() {
                           هذا الإجراء يحتاج موافقة خادمية مسجلة غير متاحة حاليًا؛ سيبقى مقفولًا ولن يُرسل إلى قاعدة البيانات.
                         </p>
                       )}
-                      <dl className="mt-3 space-y-2 rounded-xl bg-[#F8F5EB] p-3 dark:bg-zinc-800">
+                      <dl className="mt-3 space-y-2 rounded-xl bg-slate-100 p-3 dark:bg-zinc-800">
                         {Object.entries(pendingAction.args)
                           .filter(([key]) => !/(token|secret|password|api.?key)/i.test(key))
                           .slice(0, 10)

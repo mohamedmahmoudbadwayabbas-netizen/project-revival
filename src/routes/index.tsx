@@ -28,7 +28,7 @@ import {
 import { ProductCard } from "@/components/storefront/ProductCard";
 import { ProductModal } from "@/components/storefront/ProductModal";
 import { CategoryGrid } from "@/components/storefront/CategoryGrid";
-import { StickyCartBar } from "@/components/storefront/StickyCartBar";
+import { BuyAgainRail } from "@/components/storefront/BuyAgainRail";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -261,6 +261,8 @@ export function HomePage() {
         </ul>
       </section>
 
+      <BuyAgainRail onOpenProduct={setSelectedProductForModal} />
+
       <div className="mx-auto max-w-[1320px] px-3 sm:px-6">
         <section id="home-departments" className="mt-6 sm:mt-10">
           <CategoryGrid
@@ -357,7 +359,6 @@ export function HomePage() {
         </div>
       </footer>
 
-      <StickyCartBar />
       <ProductModal product={selectedProductForModal} onClose={() => setSelectedProductForModal(null)} />
     </main>
   );

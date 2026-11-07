@@ -19,7 +19,7 @@ const ICON_RULES: [RegExp, LucideIcon][] = [
   [/مشروب|عصير|drink/i, CupSoda],
 ];
 const FALLBACK_ICONS: LucideIcon[] = [Layers, Wheat, Leaf, Apple, Coffee, Candy];
-const TILE_TONES = ["tile-green", "tile-orange", "tile-red", "tile-blue", "tile-yellow", "tile-teal"];
+const TILE_TONES = ["tile-green", "tile-red", "tile-blue", "tile-orange", "tile-lime", "tile-teal", "tile-purple"];
 function categoryIcon(name: string, index: number): LucideIcon {
   return ICON_RULES.find(([re]) => re.test(name))?.[1] ?? FALLBACK_ICONS[index % FALLBACK_ICONS.length];
 }

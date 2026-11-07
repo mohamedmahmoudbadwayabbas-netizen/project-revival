@@ -1,6 +1,10 @@
 # Roadmap — اقرأ IMPORT_PROTOCOL.md أولاً (خصوصًا القسم 6: ممنوع التوقف)
 > Import is not complete until every open box here is done and tested.
 
+## Phase 0 — تطبيق أرشيف المشروع
+- [x] نسخ ملفات `project-revival-main-v2.zip` إلى مساحة العمل مع استثناء `.env` المحلي.
+- [x] تشغيل الاختبارات والبناء والتحقق من نتيجة الاستبدال (الاختبارات والبناء ناجحان؛ ESLint يفشل بمشكلات قائمة واسعة).
+
 ## Phase N — Nawat + product page + AI self-test (NEXT MODEL, do in one run)
 Full details and pre-solved blockers: IMPORT_PROTOCOL.md section 6.
 - [ ] Nawat thinks/replies in Egyptian Arabic only (Groq chat model → llama-3.3-70b-versatile).
