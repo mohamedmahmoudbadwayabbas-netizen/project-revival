@@ -317,6 +317,24 @@ export async function callOpenAICompatible(
   contents: unknown,
   config: Record<string, any>,
 ): Promise<AdapterResponse> {
+  // 1) خزانة المفاتيح: كل مزود بمفاتيحه بالترتيب، وعند فشل الكل ننتقل للمزود التالي ثم للمسار القديم.
+  if (!config.skipVault) {
+    const vault = await import("@/lib/ai-key-vault.server");
+    const groups = vault.groupByProvider(vault.usableKeys(await vault.listVaultKeys()));
+    for (const g of groups) {
+      try {
+        const res = await callProviderChain(
+          { provider: g.provider, api_key: g.keys.join(","), base_url: g.baseUrl, model: g.model },
+          contents,
+          { ...config, deadlineMs: 30000, hedgeMs: 0 },
+        );
+        if (res.text.trim() || res.candidates[0]?.content.parts.some((p) => p.functionCall))
+          return res;
+      } catch (error) {
+        console.warn(`[ai] vault provider ${g.provider} failed, next…`, String((error as Error)?.message ?? error).slice(0, 120));
+      }
+    }
+  }
   const groqKey = groqKeys().join(",") || undefined;
   // إعدادات Groq بلا مفتاح محفوظ (أو بلا إعدادات أصلًا): نستخدم مفتاح المشروع.
   if (
@@ -345,7 +363,7 @@ export async function callOpenAICompatible(
           provider: "groq",
           api_key: groqKey,
           base_url: "https://api.groq.com/openai/v1",
-          model: "llama-3.3-70b-versatile",
+          model: "openai/gpt-oss-120b",
         },
         contents,
         { ...config, deadlineMs: 20000, hedgeMs: 0 },
@@ -501,7 +519,8 @@ export function isModelConcurrency(status: number | null, raw: string): boolean 
 
 /** نماذج احتياطية معروفة لكل بوابة. */
 export function fallbackModelsFor(baseUrl: string): string[] {
-  if (/groq\.com/i.test(baseUrl)) return ["llama-3.1-8b-instant"];
+  if (/groq\.com/i.test(baseUrl)) return ["openai/gpt-oss-20b", "qwen/qwen3-32b"];
+  if (/xkiro\.com/i.test(baseUrl)) return ["cohere/command-a-plus", "mistralai/mistral-large-2512"];
   if (/dahl\.global/i.test(baseUrl))
     return [
       "MiniMaxAI/MiniMax-M2.7",
