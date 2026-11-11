@@ -232,6 +232,57 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_key_vault: {
+        Row: {
+          api_key: string
+          base_url: string | null
+          cooldown_until: string | null
+          created_at: string
+          id: string
+          label: string | null
+          last_error: string | null
+          last_used_at: string | null
+          model: string | null
+          priority: number
+          provider: string
+          status: string
+          total_requests: number
+          updated_at: string
+        }
+        Insert: {
+          api_key: string
+          base_url?: string | null
+          cooldown_until?: string | null
+          created_at?: string
+          id?: string
+          label?: string | null
+          last_error?: string | null
+          last_used_at?: string | null
+          model?: string | null
+          priority?: number
+          provider: string
+          status?: string
+          total_requests?: number
+          updated_at?: string
+        }
+        Update: {
+          api_key?: string
+          base_url?: string | null
+          cooldown_until?: string | null
+          created_at?: string
+          id?: string
+          label?: string | null
+          last_error?: string | null
+          last_used_at?: string | null
+          model?: string | null
+          priority?: number
+          provider?: string
+          status?: string
+          total_requests?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ai_proposals: {
         Row: {
           agent_type: string
