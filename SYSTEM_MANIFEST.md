@@ -196,3 +196,32 @@ Required invariants: all stock changes happen server-side, received quantity can
 - 2026-11-07: added admin Mix & Match bundle CRUD using the existing `product_bundles` table; checkout pricing remains intentionally pending server-side RPC support.
 - 2026-11-07: added active bundle eligibility and estimated-saving calculations to checkout with unit tests; client totals remain unchanged until server-side pricing is available.
 - 2026-11-07: added the account loyalty tier dashboard and referral-link preview; wallet/cashback/referral accounting remains server-side backlog.
+
+## ai_key_vault — خزانة مفاتيح الذكاء الاصطناعي (ترحيل 0017_ai_key_vault.sql)
+
+**الغرض:** تخزين عدد غير محدود من مفاتيح المزودين (dahl, xkiro, groq, openai, …) مع تبديل فوري عند فشل أي مفتاح.
+
+| العمود | النوع | الوصف |
+|---|---|---|
+| id | uuid PK | |
+| provider | text NOT NULL | معرّف من `AI_PROVIDER_PRESETS` في `src/lib/ai-providers.ts` |
+| label | text | اسم وصفي |
+| api_key | text NOT NULL | المفتاح؛ UNIQUE(provider, api_key) يمنع التكرار |
+| base_url / model | text | اختياري؛ الافتراضي من الـ preset |
+| priority | int default 100 | الأصغر يُجرب أولًا |
+| status | text | active / cooling_down / exhausted / invalid / disabled (CHECK) |
+| cooldown_until | timestamptz | المفتاح يُتخطى حتى هذا الوقت |
+| last_error, last_used_at, total_requests | | إحصاءات |
+
+**الأمان:** RLS مفعّل بلا أي سياسة، و GRANT ALL لـ service_role فقط → لا يصل المتصفح للمفاتيح أبدًا. الوصول فقط عبر server functions في `src/lib/ai-vault.functions.ts` بعد فحص `has_role(admin)`، والعرض مقنّع.
+**عدم الحذف:** لا يوجد أي كود يحذف صفوفًا؛ الفشل يغيّر status/cooldown_until فقط.
+
+**آلية العمل (src/lib/ai-key-vault.server.ts + ai-provider.server.ts → callOpenAICompatible):**
+1. تُقرأ المفاتيح الصالحة (`usableKeys`) وتُجمع حسب (base_url, model) بترتيب الأولوية (`groupByProvider`).
+2. كل مجموعة تمر على `callOneModel`: عند 429 يُبرَّد المفتاح (retry-after أو 60 ث)، عند 402 يُعلَّم exhausted لمدة ساعة، وينتقل للمفتاح التالي فورًا دون انتظار. النجاح يعيد المفتاح active.
+3. لو فشلت كل مفاتيح المزود ينتقل للمزود التالي في الخزانة، ثم لمسار Groq البيئي (GROQ_API_KEY*) ثم إعداد ai_provider_settings.
+4. `checkVaultKeys` (زر «فحص الكل») يختبر كل مفتاح ويحدّث حالته.
+
+**الواجهة:** الإدارة ← الإعدادات ← قسم الذكاء ← «خزانة المفاتيح» (`src/components/admin/AiKeyVault.tsx`): لصق جماعي، أولوية، إيقاف/تشغيل، حالة ملوّنة.
+**إعادة البناء في حساب جديد:** طبّق الترحيل 0017، ثم أضف المفاتيح من الواجهة (المفاتيح لا تُنقل في الكود).
+**المزودات الجاهزة:** Dahl `https://inference.dahl.global/v1` (MiniMaxAI/MiniMax-M2.7)، xKiro `https://api.xkiro.com/v1` (cohere/command-a-plus)، Groq (openai/gpt-oss-120b — llama غير متاح للحساب).

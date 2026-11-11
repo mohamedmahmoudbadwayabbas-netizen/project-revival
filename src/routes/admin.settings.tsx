@@ -39,6 +39,7 @@ import {
 import { ImageUploader } from "@/components/admin/ImageUploader";
 import { RealStorePreview } from "@/components/admin/RealStorePreview";
 import { AiProviderSettings } from "@/components/admin/AiProviderSettings";
+import { AiKeyVault } from "@/components/admin/AiKeyVault";
 import { SettingsHistory } from "@/components/admin/SettingsHistory";
 
 // Lazy Load Map Component
@@ -311,6 +312,7 @@ function SettingsPage() {
 
       <div id="ai-settings">
         <AiProviderSettings />
+        <AiKeyVault />
       </div>
 
       {/* Header & Action Controls */}

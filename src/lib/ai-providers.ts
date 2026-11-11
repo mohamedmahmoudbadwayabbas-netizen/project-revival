@@ -20,8 +20,15 @@ export const AI_PROVIDER_PRESETS: AiProviderPreset[] = [
     id: "dahl",
     label: "Dahl Inference (GLM / MiniMax / DeepSeek — تبديل تلقائي)",
     baseUrl: "https://inference.dahl.global/v1",
-    modelHint: "zai-org/GLM-5.3-Flash",
+    modelHint: "MiniMaxAI/MiniMax-M2.7",
     keyUrl: "https://inference.dahl.global",
+  },
+  {
+    id: "xkiro",
+    label: "xKiro (Command A+ / Mistral / SenseNova)",
+    baseUrl: "https://api.xkiro.com/v1",
+    modelHint: "cohere/command-a-plus",
+    keyUrl: "https://xkiro.com",
   },
   {
     id: "openai",
@@ -55,7 +62,7 @@ export const AI_PROVIDER_PRESETS: AiProviderPreset[] = [
     id: "groq",
     label: "Groq",
     baseUrl: "https://api.groq.com/openai/v1",
-    modelHint: "llama-3.3-70b-versatile",
+    modelHint: "openai/gpt-oss-120b",
     keyUrl: "https://console.groq.com/keys",
   },
   {

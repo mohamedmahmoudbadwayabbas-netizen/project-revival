@@ -317,6 +317,24 @@ export async function callOpenAICompatible(
   contents: unknown,
   config: Record<string, any>,
 ): Promise<AdapterResponse> {
+  // 1) خزانة المفاتيح: كل مزود بمفاتيحه بالترتيب، وعند فشل الكل ننتقل للمزود التالي ثم للمسار القديم.
+  if (!config.skipVault) {
+    const vault = await import("@/lib/ai-key-vault.server");
+    const groups = vault.groupByProvider(vault.usableKeys(await vault.listVaultKeys()));
+    for (const g of groups) {
+      try {
+        const res = await callProviderChain(
+          { provider: g.provider, api_key: g.keys.join(","), base_url: g.baseUrl, model: g.model },
+          contents,
+          { ...config, deadlineMs: 30000, hedgeMs: 0 },
+        );
+        if (res.text.trim() || res.candidates[0]?.content.parts.some((p) => p.functionCall))
+          return res;
+      } catch (error) {
+        console.warn(`[ai] vault provider ${g.provider} failed, next…`, String((error as Error)?.message ?? error).slice(0, 120));
+      }
+    }
+  }
   const groqKey = groqKeys().join(",") || undefined;
   // إعدادات Groq بلا مفتاح محفوظ (أو بلا إعدادات أصلًا): نستخدم مفتاح المشروع.
   if (
@@ -345,7 +363,7 @@ export async function callOpenAICompatible(
           provider: "groq",
           api_key: groqKey,
           base_url: "https://api.groq.com/openai/v1",
-          model: "llama-3.3-70b-versatile",
+          model: "openai/gpt-oss-120b",
         },
         contents,
         { ...config, deadlineMs: 20000, hedgeMs: 0 },
@@ -501,7 +519,8 @@ export function isModelConcurrency(status: number | null, raw: string): boolean 
 
 /** نماذج احتياطية معروفة لكل بوابة. */
 export function fallbackModelsFor(baseUrl: string): string[] {
-  if (/groq\.com/i.test(baseUrl)) return ["llama-3.1-8b-instant"];
+  if (/groq\.com/i.test(baseUrl)) return ["openai/gpt-oss-20b", "qwen/qwen3-32b"];
+  if (/xkiro\.com/i.test(baseUrl)) return ["cohere/command-a-plus", "mistralai/mistral-large-2512"];
   if (/dahl\.global/i.test(baseUrl))
     return [
       "MiniMaxAI/MiniMax-M2.7",
@@ -559,7 +578,7 @@ async function callOneModel(
   let res: Response | undefined;
   let raw = "";
   if (/groq\.com/i.test(baseUrl)) body = groqTune(body);
-  for (const key of /groq\.com/i.test(baseUrl) ? orderKeys(keys) : keys) {
+  for (const key of orderKeys(keys)) {
     // إعادة محاولة قصيرة عند ازدحام خوادم المزود المؤقت فقط.
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
@@ -579,15 +598,27 @@ async function callOneModel(
     // ازدحام النموذج نفسه: ننتقل فورًا للنموذج التالي بدل تجربة مفتاح آخر على نفس النموذج.
     if (res && isModelConcurrency(res.status, raw)) break;
     // حد المفتاح خلص: نبرّده ونقفز للمفتاح التالي فورًا بلا انتظار.
-    if (res && res.status === 429 && keys.length > 1 && /groq\.com/i.test(baseUrl)) {
+    if (res && (res.status === 429 || res.status === 402) && keys.length > 1) {
       const after = Number(res.headers.get("retry-after"));
-      markKeyCooldown(key, after > 0 ? Math.min(after * 1000, 600000) : 60000);
+      const ms = res.status === 402 ? 3600000 : after > 0 ? Math.min(after * 1000, 600000) : 60000;
+      markKeyCooldown(key, ms);
+      void import("@/lib/ai-key-vault.server").then((v) =>
+        v.markVaultKey(key, {
+          status: res!.status === 402 ? "exhausted" : "cooling_down",
+          cooldown_until: new Date(Date.now() + ms).toISOString(),
+          last_error: `${res!.status}`,
+        }),
+      );
       continue;
     }
     // عند نفاذ الحصة أو رفض المفتاح ننتقل للمفتاح التالي.
     if (!res || res.ok || !classifyProviderError(res.status, raw)) break;
   }
   if (!res) throw new ProviderError("تعذر الاتصال بمزود الذكاء الاصطناعي.", null);
+  if (res.ok) {
+    const used = keys.find((k) => (keyCooldown.get(k) ?? 0) <= Date.now());
+    if (used) void import("@/lib/ai-key-vault.server").then((v) => v.markVaultKey(used, { status: "active", cooldown_until: null, last_used_at: new Date().toISOString() }));
+  }
   if (!res.ok) {
     console.error(`[ai] ${provider} ${body.model} ${res.status}:`, raw.slice(0, 300));
     throw new ProviderError(`${res.status} ${raw.slice(0, 600)}`, res.status);
@@ -611,7 +642,7 @@ export async function generatePlainText(
   };
   if (opts.system) config.systemInstruction = opts.system;
   try {
-    if ((provider !== "gemini" && settings) || process.env.GROQ_API_KEY) {
+    if ((provider !== "gemini" && settings) || process.env.GROQ_API_KEY || (await import("@/lib/ai-key-vault.server").then(async (v) => v.usableKeys(await v.listVaultKeys()).length > 0))) {
       const res = await callOpenAICompatible(
         settings ?? { provider: "groq", api_key: null, base_url: null, model: null },
         prompt,
