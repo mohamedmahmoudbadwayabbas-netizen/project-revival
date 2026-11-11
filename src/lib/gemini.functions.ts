@@ -194,13 +194,15 @@ export const generateGeminiContent = createServerFn({ method: "POST" })
     const provider = settings?.provider || "gemini";
 
     // أي مزود غير Gemini يُستدعى عبر المعيار الموحد المتوافق مع OpenAI.
-    const groqAvailable = !!process.env.GROQ_API_KEY;
+    const vaultMod = await import("@/lib/ai-key-vault.server");
+    const groqAvailable =
+      !!process.env.GROQ_API_KEY || vaultMod.usableKeys(await vaultMod.listVaultKeys()).length > 0;
     if (data.purpose === "chat" && ((provider !== "gemini" && settings) || groqAvailable)) {
       try {
         const res = await callOpenAICompatible(
           settings ?? { provider: "groq", api_key: null, base_url: null, model: null },
           data.contents,
-          { ...(data.config ?? {}), chatModel: "llama-3.3-70b-versatile" },
+          { ...(data.config ?? {}), chatModel: "openai/gpt-oss-120b" },
         );
         return JSON.parse(JSON.stringify(res)) as GeminiClientResponse;
       } catch (error) {
