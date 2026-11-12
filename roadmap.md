@@ -76,3 +76,8 @@ Full details and pre-solved blockers: IMPORT_PROTOCOL.md section 6.
 - [x] جدول ai_key_vault + محرك تبديل فوري + لوحة إدارة + توثيق
 - [ ] إضافة مفاتيح Dahl (ينتظر المستخدم يلصقها في اللوحة)
 - [ ] إظهار سلسلة تفكير نبراس + تعريب تفكير نواة
+
+## دستور الأدوات (19)
+- [x] Intent Router + Tool Cluster Router
+- [ ] أدوات نواة: manageCart, smartReorder, smartListManager, deliveryAndTracking, walletAndLoyalty
+- [ ] أدوات نبراس: supplierManager, customerManager, inventoryManager كامل, fulfillmentManager (سائقين/تجهيز), mediaManager بـ gemini-3.1-flash-image

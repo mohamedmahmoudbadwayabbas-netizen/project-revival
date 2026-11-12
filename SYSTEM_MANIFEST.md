@@ -225,3 +225,6 @@ Required invariants: all stock changes happen server-side, received quantity can
 **الواجهة:** الإدارة ← الإعدادات ← قسم الذكاء ← «خزانة المفاتيح» (`src/components/admin/AiKeyVault.tsx`): لصق جماعي، أولوية، إيقاف/تشغيل، حالة ملوّنة.
 **إعادة البناء في حساب جديد:** طبّق الترحيل 0017، ثم أضف المفاتيح من الواجهة (المفاتيح لا تُنقل في الكود).
 **المزودات الجاهزة:** Dahl `https://inference.dahl.global/v1` (MiniMaxAI/MiniMax-M2.7)، xKiro `https://api.xkiro.com/v1` (cohere/command-a-plus)، Groq (openai/gpt-oss-120b — llama غير متاح للحساب).
+
+## Intent Router (AI tool routing)
+src/services/aiTools/intentRouter.ts maps every message to ≤2 clusters / ≤5 tools out of the 19-tool constitution. To add a tool: implement it in AI_TOOL_SUITE, add its name to the cluster's `tools`, set status to live. No DB tables involved.
