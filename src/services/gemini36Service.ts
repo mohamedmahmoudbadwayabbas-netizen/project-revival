@@ -27,6 +27,7 @@ import {
   getActiveTools,
 } from "./aiTools/toolDefinitions";
 import { executeAiTool } from "./aiTools/toolRouter";
+import { filterDeclarationsByIntent } from "./aiTools/intentRouter";
 import {
   createRollbackPoint,
   getLastRollbackPoint,
@@ -550,12 +551,18 @@ Only report a change as completed after its tool returns a confirmed and verifie
         });
 
         // Execute Gemini call with dynamic tool routing
-        const activeTools = getActiveTools({ page, userRole }).filter((declaration) => {
+        const permittedTools = getActiveTools({ page, userRole }).filter((declaration) => {
           if (executionMode !== "suggest") return true;
           return (
             AI_TOOL_SUITE.find((tool) => tool.name === declaration.name)?.mutatesState !== true
           );
         });
+        // Intent Router: النموذج يرى فقط أدوات العنقود المناسب (≤5) لتوفير التوكنز ومنع التردد.
+        const activeTools = filterDeclarationsByIntent(
+          permittedTools,
+          message,
+          customerExperience ? "nawat" : "nebras",
+        );
 
         // تجربة العميل لا تستخدم أدوات جوجل المدمجة، لذلك لا نرسل أعلام الدمج
         // (includeServerSideToolInvocations) التي تخص خلط الأدوات المدمجة مع الدوال.
