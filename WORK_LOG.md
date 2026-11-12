@@ -355,3 +355,11 @@
 - **الحالة:** مفتاح xKiro محفوظ في الخزانة واختُبر (يعمل). اختبارات الخزانة تمر.
 - **المتبقي:** إضافة مفاتيح Dahl من اللوحة؛ إظهار التفكير لنبراس وتعريب تفكير نواة؛ باقي المهام في roadmap.md.
 - **التوثيق:** SYSTEM_MANIFEST.md قسم ai_key_vault يشرح الأعمدة والأمان وآلية التبديل وطريقة إعادة البناء.
+
+## محرك التوجيه الذكي (دستور الـ 19 أداة)
+- الملف: src/services/aiTools/intentRouter.ts — يقرأ رسالة المستخدم محلياً (بدون ذكاء اصطناعي = صفر توكنز)، يحدد النية بكلمات عربية مطبّعة، ويختار عنقوداً أو اثنين فقط، ويمرر للنموذج 5 أدوات كحد أقصى.
+- العناقيد: نواة 9 (searchProducts, manageCart, mealAndRecipePlanner, smartReorder, smartListManager, dealsAndAlternatives, deliveryAndTracking, walletAndLoyalty, budgetShopper) — نبراس 10 (manageCatalog, pricingManager, inventoryManager, supplierManager, fulfillmentManager, promotionsManager, customerManager, businessIntelligence, systemManager, mediaManager).
+- كل عنقود حالته live/partial/planned؛ العناقيد planned (السلة، إعادة الطلب، القوائم، التتبع، المحفظة، الموردين، العملاء) لا تُرسل للنموذج حتى تُبنى أدواتها.
+- الربط: gemini36Service.ts يقاطع صلاحيات getActiveTools مع نتيجة الموجّه. لا تغيير في قاعدة البيانات.
+- الاختبارات: intentRouter.test.ts (5 اختبارات) — الإجمالي 58/58.
+- المتبقي: بناء أدوات العناقيد planned ثم تحويل حالتها إلى live.
