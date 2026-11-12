@@ -1,11 +1,17 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+vi.mock("./ai-key-vault.server", () => ({
+  listVaultKeys: async () => [],
+  usableKeys: () => [],
+  groupByProvider: () => [],
+  markVaultKey: async () => {},
+}));
 import {
   callOpenAICompatible,
   modelQueue,
   openAIToGemini,
   suggestedModels,
 } from "./ai-provider.server";
-delete process.env.GROQ_API_KEY; // Dahl fallback tests must not hit the real Groq key
+for (const k of Object.keys(process.env)) if (/^GROQ_API_KEY/.test(k)) delete process.env[k]; // Dahl fallback tests must not hit the real Groq key
 
 describe("provider fallback & thinking", () => {
   it("reads the models the gateway says are available now", () => {
@@ -92,7 +98,7 @@ describe("provider fallback & thinking", () => {
       const r = await callOpenAICompatible(
         {
           provider: "dahl",
-          api_key: "key-one,key-two",
+          api_key: "key-three,key-four",
           base_url: "https://other-dahl.dahl.global/v1",
           model: "zai-org/GLM-5.3-Flash",
         },
@@ -100,7 +106,7 @@ describe("provider fallback & thinking", () => {
         {},
       );
       expect(r.text).toBe("تمام");
-      expect(calls).toEqual(["zai-org/GLM-5.3-Flash|key-one", "MiniMaxAI/MiniMax-M2.7|key-one"]);
+      expect(calls).toEqual(["zai-org/GLM-5.3-Flash|key-three", "MiniMaxAI/MiniMax-M2.7|key-three"]);
     } finally {
       globalThis.fetch = orig;
     }

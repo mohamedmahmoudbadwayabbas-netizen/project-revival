@@ -9,6 +9,6 @@ describe("Groq tuning", () => {
     expect(groqTune({ model: "openai/gpt-oss-120b" }).reasoning_effort).toBe("low");
   });
   it("uses the Arabic chat fallback on Groq", () => {
-    expect(fallbackModelsFor("https://api.groq.com/openai/v1")[0]).toBe("llama-3.1-8b-instant");
+    expect(fallbackModelsFor("https://api.groq.com/openai/v1")[0]).toBe("openai/gpt-oss-20b");
   });
 });
