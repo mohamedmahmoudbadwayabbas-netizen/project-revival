@@ -796,4 +796,468 @@ export function hexToHslString(hex: string): string | null {
         h = (g - b) / d + (g < b ? 6 : 0);
         break;
       case g:
-        h = (b - r) /
+        h = (b - r) / d + 2;
+        break;
+      case b:
+        h = (r - g) / d + 4;
+        break;
+    }
+    h /= 6;
+  }
+
+  return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
+}
+
+export async function toolUpdateThemeColors(
+  args: { primary?: string; accent?: string; mode?: string; palette?: string },
+  ctx?: ToolExecutionContext,
+): Promise<ToolExecutionResult> {
+  const primary = args.primary || "#2F5D4B";
+  const accent = args.accent || "#B6502E";
+  const mode = args.mode === "dark" ? "dark" : args.mode === "light" ? "light" : undefined;
+  const pointId = createRollbackPoint(
+    "updateThemeColors",
+    `تحديث الألوان: ${primary}`,
+    ctx?.layout || null,
+  );
+
+  if (typeof document !== "undefined") {
+    const root = document.documentElement;
+    const primHsl = hexToHslString(primary);
+    const accHsl = hexToHslString(accent);
+
+    if (primHsl) {
+      root.style.setProperty("--primary", primHsl);
+      root.style.setProperty("--ring", primHsl);
+    }
+    if (accHsl) {
+      root.style.setProperty("--accent", accHsl);
+      root.style.setProperty("--sale", accHsl);
+    }
+    if (mode === "dark") root.classList.add("dark");
+    else if (mode === "light") root.classList.remove("dark");
+  }
+
+  if (ctx) {
+    const next: StoreLayoutConfig = JSON.parse(JSON.stringify(ctx.layout));
+    next.theme.primaryColor = primary;
+    next.theme.accentColor = accent;
+    if (mode) next.theme.mode = mode;
+    if (args.palette) next.theme.palette = args.palette as ThemeColorPalette;
+    ctx.updateLayout(next);
+  }
+
+  if (isSupabaseConfigured()) {
+    try {
+      const { data: storeRow, error: selectError } = await supabase
+        .from("store_settings")
+        .select("id")
+        .limit(1)
+        .maybeSingle();
+      if (selectError) throw selectError;
+      if (!storeRow?.id) throw new Error("لم يتم العثور على سجل إعدادات المتجر لتحديث الألوان.");
+      const { error } = await supabase
+        .from("store_settings")
+        .update({
+          primary_color: primary,
+          accent_color: accent,
+          updated_at: new Date().toISOString(),
+        } as never)
+        .eq("id", storeRow.id);
+      if (error) throw error;
+    } catch (e) {
+      return {
+        tool: "updateThemeColors",
+        ok: false,
+        messageAr: `تم تطبيق اللون محليًا لكن تعذر حفظه في إعدادات المتجر: ${(e as Error).message}`,
+      };
+    }
+  }
+
+  return {
+    tool: "updateThemeColors",
+    ok: true,
+    rollbackPointId: pointId,
+    messageAr: `تم تحديث هوية وألوان المتجر (الأساسي: ${primary}، الثانوي: ${accent}) بنجاح.`,
+    data: { primary, accent, mode, palette: args.palette },
+  };
+}
+
+/* ───────────────────────── 8. createCouponCampaign ───────────────────────── */
+
+export async function toolCreateDiscountBundle(
+  args: {
+    code?: string;
+    discountValue?: number;
+    discountType?: string;
+    title?: string;
+    hours?: number;
+    minOrderAmount?: number;
+  },
+  ctx?: ToolExecutionContext,
+): Promise<ToolExecutionResult> {
+  const code = (args.code || `SAVE${Math.floor(Math.random() * 90 + 10)}`).toUpperCase();
+  const value = Number(args.discountValue ?? 15);
+  const type = args.discountType === "fixed" ? "fixed" : "percentage";
+  const hours = Number(args.hours ?? 6);
+  const expiresAt = new Date(Date.now() + hours * 3600 * 1000).toISOString();
+  const pointId = createRollbackPoint(
+    "createCouponCampaign",
+    `إنشاء كوبون: ${code}`,
+    ctx?.layout || null,
+  );
+
+  if (isSupabaseConfigured()) {
+    try {
+      const { data: inserted, error } = await supabase
+        .from("coupons")
+        .insert({
+          code,
+          discount_type: type,
+          discount_value: value,
+          expires_at: expiresAt,
+          is_active: true,
+          min_order_amount: args.minOrderAmount ? Number(args.minOrderAmount) : null,
+        } as never)
+        .select("id")
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!inserted?.id) throw new Error("لم تُرجع قاعدة البيانات معرّف الكوبون بعد الإنشاء.");
+
+      const { data: confirmed, error: readBackError } = await supabase
+        .from("coupons")
+        .select("id, code, discount_type, discount_value, expires_at, is_active")
+        .eq("id", inserted.id)
+        .maybeSingle();
+      if (readBackError) throw readBackError;
+      if (!confirmed) throw new Error("تعذر التحقق من وجود الكوبون بعد الإنشاء.");
+
+      attachDbUndo(pointId, { table: "coupons", kind: "delete-row", id: inserted.id });
+    } catch (e) {
+      return {
+        tool: "createCouponCampaign",
+        ok: false,
+        messageAr: `تعذر إنشاء الكوبون في قاعدة البيانات: ${(e as Error).message}`,
+      };
+    }
+  } else {
+    return {
+      tool: "createCouponCampaign",
+      ok: false,
+      messageAr: "تعذر إنشاء الكوبون لأن اتصال قاعدة البيانات غير مهيأ.",
+    };
+  }
+
+  if (ctx) {
+    const next: StoreLayoutConfig = JSON.parse(JSON.stringify(ctx.layout));
+    next.flashSaleTimer.enabled = true;
+    next.flashSaleTimer.title = args.title || `عروض الساعات الذهبية — استخدم كود ${code}`;
+    next.flashSaleTimer.couponCode = code;
+    next.flashSaleTimer.discountTag = type === "percentage" ? `خصم ${value}%` : `خصم ${value} ج.م`;
+    next.flashSaleTimer.endTime = expiresAt;
+    ctx.updateLayout(next);
+  }
+
+  return {
+    tool: "createCouponCampaign",
+    ok: true,
+    rollbackPointId: pointId,
+    messageAr: `تم إنشاء باقة الخصم وتفعيل كود «${code}» (${type === "percentage" ? `${value}%` : `${value} ج.م`}) لمدة ${hours} ساعات.`,
+    data: { code, discountValue: value, discountType: type, expiresAt },
+  };
+}
+
+/* ───────────────────────── 9. sendAbandonedCartRecovery ───────────────────────── */
+
+export async function toolSendAbandonedCartRecovery(args: {
+  cartId?: string;
+  customerName?: string;
+  phone?: string;
+  totalPrice?: number;
+}): Promise<ToolExecutionResult> {
+  try {
+    if (!isSupabaseConfigured())
+      throw new Error("Supabase غير متصل؛ لم أستخدم بيانات محلية أو تجريبية.");
+    if (!args.cartId) throw new Error("معرّف السلة مطلوب للتحقق منها في Supabase.");
+
+    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const cartId = args.cartId;
+    const userId = cartId.startsWith("cart-") ? cartId.slice("cart-".length) : "";
+    let cartQuery = supabase
+      .from("cart_items")
+      .select("id,user_id,product_id,quantity,created_at")
+      .lt("created_at", cutoff);
+    cartQuery = userId ? cartQuery.eq("user_id", userId) : cartQuery.eq("id", cartId);
+    const { data: cartRows, error: cartError } = await cartQuery;
+    if (cartError) throw cartError;
+    if (!cartRows?.length) throw new Error("لم أجد سلة متروكة مطابقة في Supabase.");
+
+    const verifiedUserId = cartRows[0].user_id;
+    if (!verifiedUserId || cartRows.some((row) => row.user_id !== verifiedUserId))
+      throw new Error("تعذر التحقق من مالك السلة.");
+    const lastActivity = Math.max(
+      ...cartRows.map((row) => new Date(row.created_at ?? 0).getTime()),
+    );
+    const [
+      { data: profile, error: profileError },
+      { data: products, error: productsError },
+      { data: orders, error: ordersError },
+    ] = await Promise.all([
+      supabase.from("profiles").select("id,full_name,phone").eq("id", verifiedUserId).maybeSingle(),
+      supabase
+        .from("products")
+        .select("id,name,name_ar,price,is_active")
+        .in("id", cartRows.map((row) => row.product_id).filter(Boolean))
+        .eq("is_active", true),
+      supabase
+        .from("orders")
+        .select("id,created_at")
+        .eq("user_id", verifiedUserId)
+        .gte("created_at", new Date(lastActivity).toISOString())
+        .limit(1),
+    ]);
+    if (profileError) throw profileError;
+    if (productsError) throw productsError;
+    if (ordersError) throw ordersError;
+    if (orders?.length) throw new Error("السلة مرتبطة بطلب أحدث؛ لم أفتح رسالة استرداد.");
+    if (!profile?.phone) throw new Error("لا يوجد رقم هاتف موثق للعميل في Supabase.");
+
+    const productMap = new Map((products ?? []).map((product) => [product.id, product]));
+    if (cartRows.some((row) => !row.product_id || !productMap.has(row.product_id)))
+      throw new Error("بعض منتجات السلة لم تُتحقق في Supabase.");
+    const items = cartRows.map((row) => {
+      const product = productMap.get(row.product_id!)!;
+      return {
+        name: product.name_ar || product.name,
+        lineTotal: Number(product.price || 0) * Number(row.quantity || 0),
+      };
+    });
+    const total = items.reduce((sum, item) => sum + item.lineTotal, 0);
+    const name = profile.full_name || "عميل المتجر";
+    const message = `أهلاً بك يا ${name} من سوبرماركت الوادي الأخضر.\n\nوجدنا في قاعدة المتجر أن سلتك ما زالت تحتوي على: ${items.map((item) => item.name).join("، ")}، بإجمالي حالي ${total.toFixed(2)} ج.م.\n\nيمكنك مراجعة السلة وإكمال طلبك من صفحة المتجر: ${typeof window !== "undefined" ? `${window.location.origin}/cart` : "صفحة السلة"}`;
+    const cleanPhone = profile.phone.replace(/[^0-9]/g, "");
+    const formattedPhone = cleanPhone.startsWith("0") ? `2${cleanPhone}` : cleanPhone;
+    const whatsappUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`;
+
+    if (typeof window !== "undefined") window.open(whatsappUrl, "_blank");
+
+    return {
+      tool: "sendAbandonedCartRecovery",
+      ok: true,
+      messageAr: `تم إعداد مسودة استرداد مبنية على السلة والعميل والمنتجات التي تحققت منها Supabase، دون ادعاء وجود خصم غير متحقق.`,
+      data: { whatsappUrl, messageText: message, total },
+    };
+  } catch (error) {
+    return {
+      tool: "sendAbandonedCartRecovery",
+      ok: false,
+      messageAr: `لم أفتح الرسالة لأن بيانات السلة لم تُتحقق في Supabase: ${(error as Error).message}`,
+    };
+  }
+}
+
+/* ───────────────────────── 10. searchProducts (HYBRID SYNONYM + KEYWORD) ───────────────────────── */
+
+export async function toolSearchProducts(
+  args: { query?: string; categoryId?: string; limit?: number },
+  ctx?: ToolExecutionContext,
+): Promise<ToolExecutionResult> {
+  const query = (args.query || "").trim();
+  const GENERIC =
+    /^(\*|all|any|products?|catalog|items?|كل|الكل|جميع|منتج|منتجات|المنتجات|كل المنتجات|جميع المنتجات|السلع|الكتالوج|متوفر|المتوفر|المتاح|عدد المنتجات|عشاء|عشا|غدا|غداء|فطار|إفطار|اكل|أكل|وجبة|وجبات)$/i;
+  const listAll =
+    !query ||
+    GENERIC.test(query) ||
+    query.split(/[\s،,]+/).every((w) => GENERIC.test(w) || w.length <= 1);
+
+  const limit = Math.max(1, Math.min(25, Number(args.limit ?? 10) || 10));
+
+  if (!isSupabaseConfigured()) {
+    return {
+      tool: "searchProducts",
+      ok: false,
+      messageAr: "قاعدة بيانات Supabase غير متصلة حالياً، تعذر البحث في المنتجات.",
+    };
+  }
+
+  try {
+    let dbQuery = supabase
+      .from("products")
+      .select(
+        "id, name, name_ar, description, description_ar, search_keywords, dietary_tags, price, original_price, stock, stock_quantity, image_url, category_id, is_featured, is_active",
+      )
+      .eq("is_active", true)
+      .limit(500);
+
+    if (args.categoryId) {
+      dbQuery = dbQuery.eq("category_id", args.categoryId);
+    }
+
+    const [{ data, error }, { data: synonymsData }] = await Promise.all([
+      dbQuery,
+      supabase
+        .from("product_search_synonyms" as never)
+        .select("term, mapped_terms, product_ids")
+        .limit(500),
+    ]);
+
+    if (error) throw error;
+
+    const fold = (text: string) => normalizeArabic(text.normalize("NFKC"));
+    const rawTerms = fold(query)
+      .split(/[\s،,]+/)
+      .filter((term) => term.length > 1);
+
+    // توسيع مصطلحات البحث تلقائياً من جدول المرادفات product_search_synonyms
+    const expandedTerms = new Set<string>(rawTerms);
+    const directProductIds = new Set<string>();
+
+    for (const syn of (synonymsData as any[]) ?? []) {
+      const foldedTerm = fold(syn.term || "");
+      if (
+        foldedTerm &&
+        rawTerms.some((t) => foldedTerm.includes(t) || t.includes(foldedTerm))
+      ) {
+        for (const mapped of syn.mapped_terms ?? []) {
+          for (const word of fold(String(mapped)).split(/[\s،,]+/)) {
+            if (word.length > 1) expandedTerms.add(word);
+          }
+        }
+        for (const pid of syn.product_ids ?? []) {
+          directProductIds.add(String(pid));
+        }
+      }
+    }
+
+    const terms = [...expandedTerms];
+    const allActive = data || [];
+    const total = allActive.length;
+
+    const rows = (
+      listAll
+        ? allActive
+        : allActive.filter((row: any) => {
+            if (directProductIds.has(String(row.id))) return true;
+            const keywordsStr = Array.isArray(row.search_keywords)
+              ? row.search_keywords.join(" ")
+              : "";
+            const dietaryStr = Array.isArray(row.dietary_tags) ? row.dietary_tags.join(" ") : "";
+            const searchable = fold(
+              `${row.name || ""} ${row.name_ar || ""} ${row.description || ""} ${row.description_ar || ""} ${keywordsStr} ${dietaryStr}`,
+            );
+            return terms.some((term) => searchable.includes(term));
+          })
+    ).slice(0, listAll ? Math.max(limit, 25) : limit);
+
+    if (listAll) {
+      const summary = rows
+        .map(
+          (r: any) =>
+            `«${r.name_ar || r.name}» — ${r.price} ج.م (المخزون: ${r.stock ?? r.stock_quantity ?? "؟"})`,
+        )
+        .join("، ");
+      return {
+        tool: "searchProducts",
+        ok: true,
+        messageAr: `عدد المنتجات النشطة في المتجر: ${total}. ${summary}`,
+        data: { query: query || "*", total, results: rows },
+      };
+    }
+
+    if (rows.length === 0) {
+      return {
+        tool: "searchProducts",
+        ok: true,
+        messageAr: `لا توجد نتائج مطابقة لـ «${query}» في الكتالوج الحالي.`,
+        data: { query, results: [] },
+      };
+    }
+
+    const summary = rows
+      .map(
+        (r: any) =>
+          `«${r.name_ar || r.name}» — ${r.price} ج.م${(r.stock ?? r.stock_quantity) != null ? ` (المخزون: ${r.stock ?? r.stock_quantity})` : ""}`,
+      )
+      .join("، ");
+
+    return {
+      tool: "searchProducts",
+      ok: true,
+      messageAr: `تم العثور على ${rows.length} نتيجة مطابقة لـ «${query}»: ${summary}.`,
+      data: { query, results: rows },
+    };
+  } catch (e) {
+    return {
+      tool: "searchProducts",
+      ok: false,
+      messageAr: `تعذر البحث في المنتجات: ${(e as Error).message}`,
+    };
+  }
+}
+
+/* ───────────────────────── 11. getCategories (READ-ONLY) ───────────────────────── */
+
+export async function toolGetCategories(args: {
+  nameQuery?: string;
+}): Promise<ToolExecutionResult> {
+  if (!isSupabaseConfigured()) {
+    return {
+      tool: "getCategories",
+      ok: false,
+      messageAr: "قاعدة بيانات Supabase غير متصلة حالياً، تعذر جلب قائمة الأقسام.",
+    };
+  }
+
+  try {
+    const dbQuery = supabase
+      .from("categories")
+      .select("id, name, name_ar, slug, image_url, created_at")
+      .order("created_at", { ascending: true })
+      .limit(500);
+
+    const nameQuery = (args.nameQuery || "").trim();
+
+    const { data, error } = await dbQuery;
+    if (error) throw error;
+
+    const terms = nameQuery
+      .normalize("NFKC")
+      .toLocaleLowerCase("ar")
+      .split(/[\s،,]+/)
+      .filter((term) => term.length > 1);
+    const rows = (data || []).filter((row: any) => {
+      if (terms.length === 0) return true;
+      const searchable = `${row.name || ""} ${row.name_ar || ""}`
+        .normalize("NFKC")
+        .toLocaleLowerCase("ar");
+      return terms.some((term) => searchable.includes(term));
+    });
+
+    if (rows.length === 0) {
+      return {
+        tool: "getCategories",
+        ok: true,
+        messageAr: nameQuery
+          ? `لا يوجد قسم مطابق لـ «${nameQuery}» حالياً.`
+          : "لا توجد أقسام مسجلة في المتجر حالياً.",
+        data: { nameQuery: nameQuery || null, results: [] },
+      };
+    }
+
+    const summary = rows.map((r: any) => `${r.name_ar || r.name}`).join("، ");
+
+    return {
+      tool: "getCategories",
+      ok: true,
+      messageAr: `يوجد ${rows.length} قسم مطابق: ${summary}.`,
+      data: { nameQuery: nameQuery || null, results: rows },
+    };
+  } catch (e) {
+    return {
+      tool: "getCategories",
+      ok: false,
+      messageAr: `تعذر جلب قائمة الأقسام: ${(e as Error).message}`,
+    };
+  }
+}
