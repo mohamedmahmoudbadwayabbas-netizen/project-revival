@@ -1,7 +1,23 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { History, Plus, ShoppingCart, ThumbsDown, ThumbsUp } from "lucide-react";
+import {
+  History,
+  Plus,
+  ShoppingCart,
+  ThumbsDown,
+  ThumbsUp,
+  Sparkles,
+  Utensils,
+  Wallet,
+  Leaf,
+  MessageCircle,
+  PanelRight,
+  ChevronDown,
+  Check,
+  Search,
+} from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
 import { logNawatInteraction, submitNawatFeedback } from "@/lib/nawat/agent-log.functions";
 import { toast } from "sonner";
 import {
@@ -16,7 +32,6 @@ import {
   PromptInputSubmit,
   PromptInputTextarea,
 } from "@/components/ai-elements/prompt-input";
-import { Shimmer } from "@/components/ai-elements/shimmer";
 import { Tool, ToolHeader } from "@/components/ai-elements/tool";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -36,12 +51,34 @@ const BAD_REASONS = [
   "رد ناقص أو فاضي",
   "طويل زيادة",
 ];
-const SUGGESTIONS = [
-  "إزيك يا نواة؟",
-  "اعملي غدا لأربع أشخاص",
-  "إيه أفضل طريقة أحفظ بيها الخضار؟",
-  "مقاضي الأسبوع بميزانية ٥٠٠ جنيه",
+
+const STARTER_CARDS = [
+  {
+    title: "غدا لأربع أشخاص",
+    desc: "اقتراح أكلة متكاملة بمكوناتها من المتجر",
+    prompt: "اعملي غدا لأربع أشخاص",
+    icon: Utensils,
+  },
+  {
+    title: "مقاضي بميزانية ٥٠٠ جنيه",
+    desc: "تجميعة أساسية ذكية بأفضل قيمة",
+    prompt: "مقاضي الأسبوع بميزانية ٥٠٠ جنيه",
+    icon: Wallet,
+  },
+  {
+    title: "حفظ الخضار طازج",
+    desc: "نصائح عملية لتخزين الخضار والفاكهة",
+    prompt: "إيه أفضل طريقة أحفظ بيها الخضار؟",
+    icon: Leaf,
+  },
+  {
+    title: "ابدأ دردشة مع نواة",
+    desc: "اسأل عن أي منتج أو وصفة في بالك",
+    prompt: "إزيك يا نواة؟",
+    icon: MessageCircle,
+  },
 ];
+
 const now = () => new Date().toISOString();
 const uid = () => crypto.randomUUID();
 const money = (n: number) => `${n.toLocaleString("ar-EG", { maximumFractionDigits: 2 })} ج.م`;
@@ -49,80 +86,132 @@ const money = (n: number) => `${n.toLocaleString("ar-EG", { maximumFractionDigit
 function ThreadList({ activeId, onPick }: { activeId?: string; onPick?: () => void }) {
   const { data = [] } = useQuery({ queryKey: ["nawat-threads"], queryFn: listThreads });
   return (
-    <nav className="flex flex-col gap-1" aria-label="المحادثات السابقة">
-      <Button asChild className="mb-2 justify-start gap-2">
+    <nav className="flex flex-col gap-1.5" aria-label="المحادثات السابقة">
+      <Button
+        asChild
+        className="mb-3 justify-start gap-2 rounded-xl bg-primary font-bold shadow-xs"
+      >
         <Link to="/assistant" onClick={onPick}>
           <Plus className="size-4" />
           محادثة جديدة
         </Link>
       </Button>
+      <div className="px-2 pb-1 text-[11px] font-bold text-muted-foreground">
+        المحادثات السابقة
+      </div>
       {data.length === 0 && (
-        <p className="px-2 py-4 text-sm text-muted-foreground">لسه مفيش محادثات محفوظة.</p>
+        <div className="rounded-xl border border-dashed border-border p-4 text-center text-xs text-muted-foreground">
+          لسه مفيش محادثات محفوظة.
+        </div>
       )}
-      {data.map((thread) => (
-        <Link
-          key={thread.id}
-          to="/assistant/$threadId"
-          params={{ threadId: thread.id }}
-          onClick={onPick}
-          className={`truncate rounded-md px-3 py-2 text-sm transition-colors ${thread.id === activeId ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"}`}
-        >
-          {thread.title}
-        </Link>
-      ))}
+      {data.map((thread) => {
+        const isActive = thread.id === activeId;
+        return (
+          <Link
+            key={thread.id}
+            to="/assistant/$threadId"
+            params={{ threadId: thread.id }}
+            onClick={onPick}
+            className={`group flex items-center gap-2 truncate rounded-xl px-3 py-2.5 text-xs font-medium transition-all ${
+              isActive
+                ? "bg-primary/10 font-bold text-primary dark:bg-primary/20"
+                : "text-foreground/80 hover:bg-muted hover:text-foreground"
+            }`}
+          >
+            <MessageCircle
+              className={`size-3.5 shrink-0 ${isActive ? "text-primary" : "text-muted-foreground"}`}
+            />
+            <span className="truncate">{thread.title}</span>
+          </Link>
+        );
+      })}
     </nav>
   );
 }
 
 function ProductPicks({ picks }: { picks: NawatPick[] }) {
   const { addItem } = useCart();
+  const [addedIds, setAddedIds] = useState<Record<string, boolean>>({});
   const total = picks.reduce((sum, p) => sum + p.product.price_per_unit * p.quantity, 0);
+
+  const handleAddSingle = (product: NawatPick["product"], quantity: number) => {
+    addItem(product, quantity);
+    setAddedIds((prev) => ({ ...prev, [product.id]: true }));
+    toast.success("اتضاف للسلة");
+    window.setTimeout(() => {
+      setAddedIds((prev) => ({ ...prev, [product.id]: false }));
+    }, 1500);
+  };
+
   return (
-    <div className="mt-3 rounded-lg border border-border bg-card p-3 text-card-foreground">
-      <div className="grid gap-2 sm:grid-cols-2">
-        {picks.map(({ product, quantity, reason }) => (
-          <div
-            key={product.id}
-            className="flex gap-3 rounded-md border border-border bg-background p-2"
-          >
-            {product.image_url ? (
-              <img src={product.image_url} alt="" className="size-14 rounded object-cover" />
-            ) : (
-              <div className="size-14 rounded bg-muted" />
-            )}
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-semibold">{product.name_ar || product.name}</p>
-              <p className="text-xs text-muted-foreground">
-                {money(product.price_per_unit)} × {quantity.toLocaleString("ar-EG")}
-              </p>
-              {reason && <p className="line-clamp-2 text-xs text-muted-foreground">{reason}</p>}
-            </div>
-            <Button
-              size="icon"
-              variant="outline"
-              aria-label="أضف للسلة"
-              onClick={() => {
-                addItem(product, quantity);
-                toast.success("اتضاف للسلة");
-              }}
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25 }}
+      className="mt-4 overflow-hidden rounded-2xl border border-border/80 bg-card/70 shadow-2xs backdrop-blur-xs"
+    >
+      <div className="grid gap-2.5 p-3 sm:grid-cols-2">
+        {picks.map(({ product, quantity, reason }) => {
+          const isAdded = addedIds[product.id];
+          return (
+            <div
+              key={product.id}
+              className="flex items-center gap-3 rounded-xl border border-border/70 bg-background p-2.5 transition hover:border-primary/40"
             >
-              <ShoppingCart className="size-4" />
-            </Button>
-          </div>
-        ))}
+              {product.image_url ? (
+                <img
+                  src={product.image_url}
+                  alt=""
+                  className="size-14 shrink-0 rounded-lg object-cover bg-muted"
+                />
+              ) : (
+                <div className="grid size-14 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground">
+                  <Sparkles className="size-4" />
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-xs font-bold text-foreground sm:text-sm">
+                  {product.name_ar || product.name}
+                </p>
+                <p className="mt-0.5 text-xs font-semibold text-primary">
+                  {money(product.price_per_unit)} × {quantity.toLocaleString("ar-EG")}
+                </p>
+                {reason && (
+                  <p className="mt-0.5 line-clamp-1 text-[11px] text-muted-foreground">{reason}</p>
+                )}
+              </div>
+              <Button
+                size="icon"
+                variant={isAdded ? "default" : "outline"}
+                className="size-9 shrink-0 rounded-xl"
+                aria-label="أضف للسلة"
+                onClick={() => handleAddSingle(product, quantity)}
+              >
+                {isAdded ? <Check className="size-4" /> : <ShoppingCart className="size-4" />}
+              </Button>
+            </div>
+          );
+        })}
       </div>
-      <div className="mt-3 flex items-center justify-between gap-2">
-        <b>الإجمالي: {money(total)}</b>
+
+      <div className="flex items-center justify-between gap-3 border-t border-border/70 bg-muted/40 px-4 py-2.5">
+        <div className="text-xs sm:text-sm">
+          <span className="text-muted-foreground">الإجمالي: </span>
+          <b className="font-black text-foreground">{money(total)}</b>
+        </div>
         <Button
+          size="sm"
+          className="rounded-xl font-bold shadow-2xs"
           onClick={() => {
             picks.forEach((p) => addItem(p.product, p.quantity));
             toast.success("اتضافت كل الاقتراحات للسلة");
           }}
         >
+          <ShoppingCart className="me-1.5 size-3.5" />
           أضف الكل للسلة
         </Button>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -132,6 +221,7 @@ function RateReply({ message, onRated }: { message: NawatMessage; onRated: (r: 1
   const [reasons, setReasons] = useState<string[]>([]);
   const [comment, setComment] = useState("");
   if (!message.interactionId || message.error) return null;
+
   const submit = async (rating: 1 | -1, detailed: boolean) => {
     if (sending || message.rating) return;
     setSending(true);
@@ -151,14 +241,15 @@ function RateReply({ message, onRated }: { message: NawatMessage; onRated: (r: 1
     }
     setSending(false);
   };
+
   const options = pending === 1 ? GOOD_REASONS : BAD_REASONS;
   return (
-    <div className="mt-2 text-muted-foreground">
+    <div className="mt-2.5 text-muted-foreground">
       <div className="flex items-center gap-1">
         <Button
           size="icon"
           variant={(message.rating ?? pending) === 1 ? "secondary" : "ghost"}
-          className="size-7"
+          className="size-7 rounded-full"
           aria-label="رد مفيد"
           disabled={sending || !!message.rating}
           onClick={() => {
@@ -171,7 +262,7 @@ function RateReply({ message, onRated }: { message: NawatMessage; onRated: (r: 1
         <Button
           size="icon"
           variant={(message.rating ?? pending) === -1 ? "secondary" : "ghost"}
-          className="size-7"
+          className="size-7 rounded-full"
           aria-label="رد مش مفيد"
           disabled={sending || !!message.rating}
           onClick={() => {
@@ -182,72 +273,86 @@ function RateReply({ message, onRated }: { message: NawatMessage; onRated: (r: 1
           <ThumbsDown className="size-3.5" />
         </Button>
       </div>
-      {pending && !message.rating && (
-        <div className="mt-2 space-y-2 rounded-lg border border-border bg-card p-3 text-foreground">
-          <p className="text-sm font-medium">
-            {pending === 1 ? "إيه اللي عجبك؟" : "إيه اللي كان غلط؟"}
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            {options.map((o) => (
+
+      <AnimatePresence>
+        {pending && !message.rating && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="mt-2 overflow-hidden rounded-2xl border border-border bg-card p-3.5 text-foreground shadow-xs"
+          >
+            <p className="text-xs font-bold">
+              {pending === 1 ? "إيه اللي عجبك؟" : "إيه اللي كان غلط؟"}
+            </p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {options.map((o) => (
+                <Button
+                  key={o}
+                  size="sm"
+                  variant={reasons.includes(o) ? "default" : "outline"}
+                  className="h-7 rounded-full text-xs"
+                  onClick={() =>
+                    setReasons((r) => (r.includes(o) ? r.filter((x) => x !== o) : [...r, o]))
+                  }
+                >
+                  {o}
+                </Button>
+              ))}
+            </div>
+            <Textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              maxLength={500}
+              rows={2}
+              placeholder="وضّح أكتر (اختياري)…"
+              className="mt-2.5 rounded-xl text-xs"
+            />
+            <div className="mt-2.5 flex justify-end gap-2">
               <Button
-                key={o}
                 size="sm"
-                variant={reasons.includes(o) ? "default" : "outline"}
-                className="h-7 text-xs"
-                onClick={() =>
-                  setReasons((r) => (r.includes(o) ? r.filter((x) => x !== o) : [...r, o]))
-                }
+                variant="ghost"
+                className="rounded-xl text-xs"
+                disabled={sending}
+                onClick={() => void submit(pending, false)}
               >
-                {o}
+                تخطي
               </Button>
-            ))}
-          </div>
-          <Textarea
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            maxLength={500}
-            rows={2}
-            placeholder="وضّح أكتر (اختياري)…"
-            className="text-sm"
-          />
-          <div className="flex justify-end gap-2">
-            <Button
-              size="sm"
-              variant="ghost"
-              disabled={sending}
-              onClick={() => void submit(pending, false)}
-            >
-              تخطي
-            </Button>
-            <Button
-              size="sm"
-              disabled={sending || (!reasons.length && !comment.trim())}
-              onClick={() => void submit(pending, true)}
-            >
-              إرسال
-            </Button>
-          </div>
-        </div>
-      )}
+              <Button
+                size="sm"
+                className="rounded-xl text-xs font-bold"
+                disabled={sending || (!reasons.length && !comment.trim())}
+                onClick={() => void submit(pending, true)}
+              >
+                إرسال
+              </Button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
 function AssistantMessage({ message }: { message: NawatMessage }) {
   return (
-    <div className="w-full">
+    <div className="w-full space-y-2.5">
       {message.thinking && (
-        <details className="mb-2 rounded-md border border-border bg-muted px-3 py-2 text-sm">
-          <summary className="cursor-pointer select-none font-medium text-muted-foreground">
-            أفكار نواة
+        <details className="group rounded-2xl border border-border/70 bg-muted/40 px-3.5 py-2 text-xs">
+          <summary className="flex cursor-pointer list-none items-center justify-between select-none font-semibold text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <Sparkles className="size-3.5 text-primary" />
+              <span>أفكار نواة</span>
+            </span>
+            <ChevronDown className="size-3.5 transition-transform group-open:rotate-180" />
           </summary>
-          <p className="mt-2 whitespace-pre-wrap leading-relaxed text-muted-foreground">
+          <p className="mt-2 whitespace-pre-wrap border-t border-border/50 pt-2 leading-relaxed text-muted-foreground">
             {message.thinking}
           </p>
         </details>
       )}
       {message.tools?.map((tool, i) => (
-        <Tool key={i} defaultOpen={false} className="mb-2 bg-card">
+        <Tool key={i} defaultOpen={false} className="rounded-xl bg-card/80">
           <ToolHeader
             type="dynamic-tool"
             toolName="searchProducts"
@@ -256,9 +361,96 @@ function AssistantMessage({ message }: { message: NawatMessage }) {
           />
         </Tool>
       ))}
-      <MessageResponse>{message.content}</MessageResponse>
+      <div className="text-sm leading-7 sm:text-[15px]">
+        <MessageResponse>{message.content}</MessageResponse>
+      </div>
       {message.products && <ProductPicks picks={message.products} />}
     </div>
+  );
+}
+
+/**
+ * Gemini / Claude Style Live Thinking Block for Nawat
+ */
+function NawatLiveThinkingBlock({
+  activity,
+  liveThinking,
+}: {
+  activity: string;
+  liveThinking: string;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -6 }}
+      transition={{ duration: 0.25 }}
+      className="flex items-start gap-3 py-1"
+    >
+      {/* Glowing Nawat Mark */}
+      <div className="relative mt-0.5 grid size-8 shrink-0 place-items-center">
+        <motion.span
+          animate={{ scale: [1, 1.4, 1], opacity: [0.45, 0.12, 0.45] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute inset-0 rounded-full bg-primary/40 blur-xs"
+        />
+        <motion.div
+          animate={{ rotate: [0, 6, -6, 0] }}
+          transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+          className="relative"
+        >
+          <NawatMark size={28} />
+        </motion.div>
+      </div>
+
+      {/* Thinking Stream Card */}
+      <div className="min-w-0 flex-1 space-y-2">
+        <details
+          open
+          className="group overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-l from-primary/[0.06] via-muted/40 to-background px-3.5 py-2.5 text-xs shadow-2xs"
+        >
+          <summary className="flex cursor-pointer list-none items-center justify-between select-none font-bold text-primary">
+            <span className="flex items-center gap-2">
+              <span className="flex items-center gap-1" aria-hidden="true">
+                {[0, 1, 2].map((dot) => (
+                  <motion.span
+                    key={dot}
+                    animate={{ y: [0, -3.5, 0], opacity: [0.35, 1, 0.35] }}
+                    transition={{
+                      duration: 0.85,
+                      repeat: Infinity,
+                      delay: dot * 0.16,
+                      ease: "easeInOut",
+                    }}
+                    className="size-1.5 rounded-full bg-primary"
+                  />
+                ))}
+              </span>
+              <span>{activity || "نواة بيفكّر الآن…"}</span>
+            </span>
+            <ChevronDown className="size-3.5 text-muted-foreground transition-transform group-open:rotate-180" />
+          </summary>
+
+          <p className="mt-2 whitespace-pre-wrap border-t border-border/50 pt-2 leading-relaxed text-muted-foreground">
+            {liveThinking || "بيقرأ سؤالك ويدوّر في منتجات المتجر المتوفرة…"}
+            <motion.span
+              animate={{ opacity: [1, 0, 1] }}
+              transition={{ duration: 0.8, repeat: Infinity }}
+              className="ms-1 inline-block h-3.5 w-1.5 rounded-xs bg-primary align-middle"
+            />
+          </p>
+        </details>
+
+        {/* Subtle Shimmer Progress Bar */}
+        <div className="h-1 w-40 overflow-hidden rounded-full bg-primary/10">
+          <motion.div
+            animate={{ x: ["100%", "-100%"] }}
+            transition={{ duration: 1.4, repeat: Infinity, ease: "linear" }}
+            className="h-full w-1/2 rounded-full bg-gradient-to-r from-transparent via-primary/70 to-transparent"
+          />
+        </div>
+      </div>
+    </motion.div>
   );
 }
 
@@ -272,6 +464,7 @@ export function NawatChat({ threadId }: { threadId?: string }) {
   const [activity, setActivity] = useState("");
   const [liveThinking, setLiveThinking] = useState("");
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const respond = useCallback(
@@ -396,132 +589,247 @@ export function NawatChat({ threadId }: { threadId?: string }) {
 
   return (
     <div
-      className="mx-auto flex h-[calc(100dvh-var(--nw-topbar-h,72px))] w-full max-w-6xl gap-4 px-3 pb-3 pt-2"
+      className="relative flex h-[calc(100dvh-var(--nw-topbar-h,64px))] w-full overflow-hidden bg-background"
       dir="rtl"
     >
-      <aside className="hidden w-64 shrink-0 overflow-y-auto rounded-lg border border-border bg-card p-3 md:block">
-        <ThreadList activeId={threadId} />
-      </aside>
-      <section className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-border bg-background">
-        <div className="flex items-center gap-2 border-b border-border px-3 py-2 md:hidden">
-          <Sheet open={historyOpen} onOpenChange={setHistoryOpen}>
-            <SheetTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2">
-                <History className="size-4" />
-                المحادثات
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-72 overflow-y-auto bg-card" dir="rtl">
-              <SheetHeader>
-                <SheetTitle>محادثاتك</SheetTitle>
-              </SheetHeader>
-              <div className="mt-4">
-                <ThreadList activeId={threadId} onPick={() => setHistoryOpen(false)} />
-              </div>
-            </SheetContent>
-          </Sheet>
-          <span className="flex-1" />
-          <Button asChild size="sm" variant="secondary" className="gap-2">
+      {/* ─── DESKTOP COLLAPSIBLE SIDEBAR (Claude Style) ─── */}
+      <AnimatePresence initial={false}>
+        {desktopSidebarOpen && (
+          <motion.aside
+            initial={{ width: 0, opacity: 0 }}
+            animate={{ width: 268, opacity: 1 }}
+            exit={{ width: 0, opacity: 0 }}
+            transition={{ duration: 0.22, ease: "easeInOut" }}
+            className="hidden lg:flex shrink-0 flex-col overflow-hidden border-e border-border/70 bg-muted/25 p-3"
+          >
+            <div className="flex-1 overflow-y-auto">
+              <ThreadList activeId={threadId} />
+            </div>
+          </motion.aside>
+        )}
+      </AnimatePresence>
+
+      {/* ─── MAIN EDGE-TO-EDGE CHAT CANVAS ─── */}
+      <section className="relative flex min-w-0 flex-1 flex-col bg-background">
+        {/* Top Shimmer Line when Thinking */}
+        <AnimatePresence>
+          {busy && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="pointer-events-none absolute inset-x-0 top-0 z-30 h-[2px] overflow-hidden bg-primary/15"
+            >
+              <motion.div
+                animate={{ x: ["100%", "-100%"] }}
+                transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
+                className="h-full w-1/3 bg-gradient-to-r from-transparent via-primary to-transparent"
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Single Slim Sub-Header Bar */}
+        <header className="flex h-12 flex-none items-center justify-between gap-2 border-b border-border/60 bg-background/85 px-3 backdrop-blur-md sm:px-5">
+          <div className="flex items-center gap-2">
+            {/* Desktop Sidebar Toggle */}
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => setDesktopSidebarOpen((v) => !v)}
+              className="hidden lg:inline-flex size-8 rounded-full text-muted-foreground hover:text-foreground"
+              aria-label="القائمة الجانبية"
+            >
+              <PanelRight className="size-4" />
+            </Button>
+
+            {/* Mobile & Tablet History Drawer Trigger */}
+            <Sheet open={historyOpen} onOpenChange={setHistoryOpen}>
+              <SheetTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 gap-1.5 rounded-full px-2.5 text-xs font-semibold lg:hidden"
+                >
+                  <History className="size-3.5" />
+                  <span>المحادثات</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[82vw] max-w-xs overflow-y-auto bg-card" dir="rtl">
+                <SheetHeader>
+                  <SheetTitle className="text-right text-sm font-bold">محادثاتك مع نواة</SheetTitle>
+                </SheetHeader>
+                <div className="mt-4">
+                  <ThreadList activeId={threadId} onPick={() => setHistoryOpen(false)} />
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
+
+          {/* Right/End Quick Action: New Chat */}
+          <Button
+            asChild
+            size="sm"
+            variant="ghost"
+            className="h-8 gap-1.5 rounded-full px-3 text-xs font-bold text-primary hover:bg-primary/10"
+          >
             <Link to="/assistant">
-              <Plus className="size-4" />
-              جديدة
+              <Plus className="size-3.5" />
+              <span>محادثة جديدة</span>
             </Link>
           </Button>
-        </div>
+        </header>
 
-        <Conversation className="min-h-0">
-          <ConversationContent className="mx-auto w-full max-w-3xl gap-5">
+        {/* Scrollable Conversation Area */}
+        <Conversation className="min-h-0 flex-1">
+          <ConversationContent className="mx-auto w-full max-w-3xl gap-6 px-3 py-6 sm:px-6 md:py-10">
+            {/* Empty Welcome Hero State (Gemini / Claude Style) */}
             {loaded && messages.length === 0 && (
-              <div className="flex flex-col items-center gap-3 py-10 text-center">
-                <NawatMark size={56} />
-                <h1 className="text-2xl font-bold text-foreground">أهلاً، أنا نواة</h1>
-                <p className="max-w-md text-muted-foreground">
-                  اسألني عن أي حاجة، أو قولّي محتاج إيه من المتجر وأنا أرشحلك منتجات حقيقية متوفرة.
+              <motion.div
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.38, ease: "easeOut" }}
+                className="flex flex-col items-center pt-2 pb-4 text-center sm:pt-8"
+              >
+                <motion.div
+                  animate={{ y: [0, -4, 0] }}
+                  transition={{ duration: 3.4, repeat: Infinity, ease: "easeInOut" }}
+                  className="mb-4 rounded-3xl bg-primary/[0.06] p-3.5 ring-1 ring-primary/15"
+                >
+                  <NawatMark size={48} />
+                </motion.div>
+
+                <h1 className="text-2xl font-black tracking-tight text-foreground sm:text-3xl">
+                  أهلاً، أنا نواة
+                </h1>
+                <p className="mt-2 max-w-md text-xs leading-6 text-muted-foreground sm:text-sm">
+                  مساعدك الذكي في الوادي الأخضر. اسألني عن أي وصفة أو ميزانية، وهارشحلك منتجات
+                  حقيقية متوفرة في المتجر فوراً.
                 </p>
-                <div className="flex flex-wrap justify-center gap-2">
-                  {SUGGESTIONS.map((s) => (
-                    <Button key={s} variant="outline" size="sm" onClick={() => void send(s)}>
-                      {s}
-                    </Button>
-                  ))}
+
+                {/* Responsive Starter Cards Grid */}
+                <div className="mt-7 grid w-full grid-cols-1 gap-2.5 text-right sm:grid-cols-2">
+                  {STARTER_CARDS.map((card, i) => {
+                    const Icon = card.icon;
+                    return (
+                      <motion.button
+                        key={card.prompt}
+                        type="button"
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.28, delay: i * 0.05 }}
+                        whileHover={{ y: -2 }}
+                        whileTap={{ scale: 0.99 }}
+                        onClick={() => void send(card.prompt)}
+                        className="group flex items-start gap-3 rounded-2xl border border-border/80 bg-card/50 p-3.5 text-right transition-colors hover:border-primary/40 hover:bg-primary/[0.04]"
+                      >
+                        <div className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary transition group-hover:bg-primary group-hover:text-primary-foreground">
+                          <Icon className="size-4" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-xs font-bold text-foreground sm:text-sm">
+                            {card.title}
+                          </div>
+                          <div className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                            {card.desc}
+                          </div>
+                        </div>
+                      </motion.button>
+                    );
+                  })}
                 </div>
+              </motion.div>
+            )}
+
+            {/* Loading Thread Skeleton */}
+            {!loaded && (
+              <div className="flex items-center justify-center gap-2 py-12 text-xs font-semibold text-muted-foreground">
+                <Search className="size-4 animate-pulse text-primary" />
+                <span>بيحمّل المحادثة…</span>
               </div>
             )}
-            {!loaded && <Shimmer>بيحمّل المحادثة…</Shimmer>}
-            {messages.map((m) => (
-              <Message key={m.id} from={m.role}>
-                <MessageContent
-                  className={
-                    m.role === "user"
-                      ? "bg-primary text-primary-foreground"
-                      : m.error
-                        ? "text-destructive"
-                        : ""
-                  }
-                >
-                  {m.role === "user" ? (
-                    <p className="whitespace-pre-wrap">{m.content}</p>
-                  ) : (
-                    <>
-                      <AssistantMessage message={m} />
-                      <RateReply
-                        message={m}
-                        onRated={(rating) => {
-                          const updated = messages.map((x) =>
-                            x.id === m.id ? { ...x, rating } : x,
-                          );
-                          setMessages(updated);
-                          if (threadId) void saveThread(threadId, updated).catch(() => undefined);
-                        }}
-                      />
-                    </>
-                  )}
-                </MessageContent>
-              </Message>
-            ))}
-            {busy && loaded && messages.at(-1)?.role === "user" && (
-              <Message from="assistant">
-                <MessageContent>
-                  <div className="w-full">
-                    <details
-                      open
-                      className="mb-2 rounded-md border border-border bg-muted px-3 py-2 text-sm"
-                    >
-                      <summary className="cursor-pointer select-none font-medium text-muted-foreground">
-                        <Shimmer>نواة بيفكّر الآن…</Shimmer>
-                      </summary>
-                      <p className="mt-2 whitespace-pre-wrap leading-relaxed text-muted-foreground">
-                        {liveThinking || "بيقرأ سؤالك ويحدد يرد إزاي…"}
-                      </p>
-                    </details>
-                    <Shimmer>{activity || "نواة بيكتب الرد…"}</Shimmer>
-                  </div>
-                </MessageContent>
-              </Message>
-            )}
+
+            {/* Messages Thread with Smooth Entrance */}
+            <AnimatePresence initial={false}>
+              {messages.map((m) => {
+                const isUser = m.role === "user";
+                return (
+                  <motion.div
+                    key={m.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.25, ease: "easeOut" }}
+                  >
+                    <Message from={m.role}>
+                      <MessageContent
+                        className={
+                          isUser
+                            ? "rounded-3xl rounded-tl-md bg-primary px-4 py-2.5 text-sm leading-7 text-primary-foreground shadow-2xs"
+                            : m.error
+                              ? "rounded-2xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-destructive"
+                              : "bg-transparent px-0 py-0 text-foreground"
+                        }
+                      >
+                        {isUser ? (
+                          <p className="whitespace-pre-wrap">{m.content}</p>
+                        ) : (
+                          <>
+                            <AssistantMessage message={m} />
+                            <RateReply
+                              message={m}
+                              onRated={(rating) => {
+                                const updated = messages.map((x) =>
+                                  x.id === m.id ? { ...x, rating } : x,
+                                );
+                                setMessages(updated);
+                                if (threadId) void saveThread(threadId, updated).catch(() => undefined);
+                              }}
+                            />
+                          </>
+                        )}
+                      </MessageContent>
+                    </Message>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+
+            {/* Live Thinking Indicator */}
+            <AnimatePresence>
+              {busy && loaded && messages.at(-1)?.role === "user" && (
+                <NawatLiveThinkingBlock activity={activity} liveThinking={liveThinking} />
+              )}
+            </AnimatePresence>
           </ConversationContent>
           <ConversationScrollButton />
         </Conversation>
 
-        <div className="border-t border-border bg-card p-3">
+        {/* Floating Slim Prompt Composer */}
+        <div className="flex-none bg-gradient-to-t from-background via-background to-transparent px-3 pt-2 pb-[calc(env(safe-area-inset-bottom,0px)+0.75rem)] sm:px-6">
           <PromptInput
-            className="mx-auto max-w-3xl"
+            className="mx-auto max-w-3xl rounded-3xl border border-border/90 bg-muted/40 p-1.5 shadow-xs transition-all focus-within:border-primary/50 focus-within:bg-background focus-within:ring-4 focus-within:ring-primary/10"
             onSubmit={(message) => void send(message.text ?? input)}
           >
-            <PromptInputTextarea
-              ref={textareaRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="اكتب رسالتك لنواة…"
-              disabled={busy || !loaded}
-            />
-            <PromptInputFooter className="justify-end">
-              <PromptInputSubmit
-                status={busy ? "submitted" : undefined}
-                disabled={busy || !loaded || !input.trim()}
-                aria-label="إرسال"
+            <div className="flex items-end gap-1.5">
+              <PromptInputTextarea
+                ref={textareaRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder={busy ? "نواة بيفكّر الآن…" : "اكتب رسالتك لنواة…"}
+                disabled={busy || !loaded}
+                rows={1}
+                className="max-h-36 min-h-10 flex-1 resize-none border-0 bg-transparent px-3 py-2 text-sm shadow-none focus-visible:ring-0"
               />
-            </PromptInputFooter>
+              <PromptInputFooter className="p-0">
+                <PromptInputSubmit
+                  status={busy ? "submitted" : undefined}
+                  disabled={busy || !loaded || !input.trim()}
+                  aria-label="إرسال"
+                  className="size-10 rounded-full"
+                />
+              </PromptInputFooter>
+            </div>
           </PromptInput>
         </div>
       </section>
