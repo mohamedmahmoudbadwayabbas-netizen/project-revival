@@ -16,22 +16,13 @@ import {
   ChevronDown,
   Check,
   Search,
+  Send,
+  ArrowDown,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { logNawatInteraction, submitNawatFeedback } from "@/lib/nawat/agent-log.functions";
 import { toast } from "sonner";
-import {
-  Conversation,
-  ConversationContent,
-  ConversationScrollButton,
-} from "@/components/ai-elements/conversation";
-import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
-import {
-  PromptInput,
-  PromptInputFooter,
-  PromptInputSubmit,
-  PromptInputTextarea,
-} from "@/components/ai-elements/prompt-input";
+import { MessageResponse } from "@/components/ai-elements/message";
 import { Tool, ToolHeader } from "@/components/ai-elements/tool";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -369,9 +360,6 @@ function AssistantMessage({ message }: { message: NawatMessage }) {
   );
 }
 
-/**
- * Gemini / Claude Style Live Thinking Block for Nawat
- */
 function NawatLiveThinkingBlock({
   activity,
   liveThinking,
@@ -387,7 +375,6 @@ function NawatLiveThinkingBlock({
       transition={{ duration: 0.25 }}
       className="flex items-start gap-3 py-1"
     >
-      {/* Glowing Nawat Mark */}
       <div className="relative mt-0.5 grid size-8 shrink-0 place-items-center">
         <motion.span
           animate={{ scale: [1, 1.4, 1], opacity: [0.45, 0.12, 0.45] }}
@@ -403,7 +390,6 @@ function NawatLiveThinkingBlock({
         </motion.div>
       </div>
 
-      {/* Thinking Stream Card */}
       <div className="min-w-0 flex-1 space-y-2">
         <details
           open
@@ -441,7 +427,6 @@ function NawatLiveThinkingBlock({
           </p>
         </details>
 
-        {/* Subtle Shimmer Progress Bar */}
         <div className="h-1 w-40 overflow-hidden rounded-full bg-primary/10">
           <motion.div
             animate={{ x: ["100%", "-100%"] }}
@@ -465,7 +450,35 @@ export function NawatChat({ threadId }: { threadId?: string }) {
   const [liveThinking, setLiveThinking] = useState("");
   const [historyOpen, setHistoryOpen] = useState(false);
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
+  const [showScrollBottom, setShowScrollBottom] = useState(false);
+
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
+    messagesEndRef.current?.scrollIntoView({ behavior });
+  }, []);
+
+  // Auto-scroll when messages change
+  useEffect(() => {
+    scrollToBottom("smooth");
+  }, [messages, busy, scrollToBottom]);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 132)}px`;
+  }, [input]);
+
+  const handleScroll = () => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    setShowScrollBottom(distanceFromBottom > 140);
+  };
 
   const respond = useCallback(
     async (id: string, conversation: NawatMessage[]) => {
@@ -587,12 +600,24 @@ export function NawatChat({ threadId }: { threadId?: string }) {
     }
   };
 
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    void send(input);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      void send(input);
+    }
+  };
+
   return (
     <div
       className="relative flex h-[calc(100dvh-var(--nw-topbar-h,64px))] w-full overflow-hidden bg-background"
       dir="rtl"
     >
-      {/* ─── DESKTOP COLLAPSIBLE SIDEBAR (Claude Style) ─── */}
+      {/* ─── DESKTOP COLLAPSIBLE SIDEBAR ─── */}
       <AnimatePresence initial={false}>
         {desktopSidebarOpen && (
           <motion.aside
@@ -609,8 +634,8 @@ export function NawatChat({ threadId }: { threadId?: string }) {
         )}
       </AnimatePresence>
 
-      {/* ─── MAIN EDGE-TO-EDGE CHAT CANVAS ─── */}
-      <section className="relative flex min-w-0 flex-1 flex-col bg-background">
+      {/* ─── MAIN CHAT COLUMN ─── */}
+      <section className="relative flex min-w-0 flex-1 flex-col overflow-hidden bg-background">
         {/* Top Shimmer Line when Thinking */}
         <AnimatePresence>
           {busy && (
@@ -630,9 +655,8 @@ export function NawatChat({ threadId }: { threadId?: string }) {
         </AnimatePresence>
 
         {/* Single Slim Sub-Header Bar */}
-        <header className="flex h-12 flex-none items-center justify-between gap-2 border-b border-border/60 bg-background/85 px-3 backdrop-blur-md sm:px-5">
+        <header className="flex h-12 flex-none items-center justify-between gap-2 border-b border-border/60 bg-background/90 px-3 backdrop-blur-md sm:px-5">
           <div className="flex items-center gap-2">
-            {/* Desktop Sidebar Toggle */}
             <Button
               type="button"
               variant="ghost"
@@ -644,7 +668,6 @@ export function NawatChat({ threadId }: { threadId?: string }) {
               <PanelRight className="size-4" />
             </Button>
 
-            {/* Mobile & Tablet History Drawer Trigger */}
             <Sheet open={historyOpen} onOpenChange={setHistoryOpen}>
               <SheetTrigger asChild>
                 <Button
@@ -656,7 +679,11 @@ export function NawatChat({ threadId }: { threadId?: string }) {
                   <span>المحادثات</span>
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-[82vw] max-w-xs overflow-y-auto bg-card" dir="rtl">
+              <SheetContent
+                side="right"
+                className="w-[82vw] max-w-xs overflow-y-auto bg-card"
+                dir="rtl"
+              >
                 <SheetHeader>
                   <SheetTitle className="text-right text-sm font-bold">محادثاتك مع نواة</SheetTitle>
                 </SheetHeader>
@@ -667,7 +694,6 @@ export function NawatChat({ threadId }: { threadId?: string }) {
             </Sheet>
           </div>
 
-          {/* Right/End Quick Action: New Chat */}
           <Button
             asChild
             size="sm"
@@ -681,16 +707,20 @@ export function NawatChat({ threadId }: { threadId?: string }) {
           </Button>
         </header>
 
-        {/* Scrollable Conversation Area */}
-        <Conversation className="min-h-0 flex-1">
-          <ConversationContent className="mx-auto w-full max-w-3xl gap-6 px-3 py-6 sm:px-6 md:py-10">
-            {/* Empty Welcome Hero State (Gemini / Claude Style) */}
+        {/* Native Scrollable Messages Area */}
+        <div
+          ref={scrollContainerRef}
+          onScroll={handleScroll}
+          className="relative flex-1 min-h-0 overflow-y-auto px-3 py-5 sm:px-6 md:py-8"
+        >
+          <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
+            {/* Empty Welcome Hero State */}
             {loaded && messages.length === 0 && (
               <motion.div
                 initial={{ opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.38, ease: "easeOut" }}
-                className="flex flex-col items-center pt-2 pb-4 text-center sm:pt-8"
+                className="flex flex-col items-center pt-2 pb-4 text-center sm:pt-6"
               >
                 <motion.div
                   animate={{ y: [0, -4, 0] }}
@@ -709,7 +739,7 @@ export function NawatChat({ threadId }: { threadId?: string }) {
                 </p>
 
                 {/* Responsive Starter Cards Grid */}
-                <div className="mt-7 grid w-full grid-cols-1 gap-2.5 text-right sm:grid-cols-2">
+                <div className="mt-6 grid w-full grid-cols-1 gap-2.5 text-right sm:grid-cols-2">
                   {STARTER_CARDS.map((card, i) => {
                     const Icon = card.icon;
                     return (
@@ -722,7 +752,7 @@ export function NawatChat({ threadId }: { threadId?: string }) {
                         whileHover={{ y: -2 }}
                         whileTap={{ scale: 0.99 }}
                         onClick={() => void send(card.prompt)}
-                        className="group flex items-start gap-3 rounded-2xl border border-border/80 bg-card/50 p-3.5 text-right transition-colors hover:border-primary/40 hover:bg-primary/[0.04]"
+                        className="group flex items-start gap-3 rounded-2xl border border-border/80 bg-card/60 p-3.5 text-right transition-colors hover:border-primary/40 hover:bg-primary/[0.04]"
                       >
                         <div className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary transition group-hover:bg-primary group-hover:text-primary-foreground">
                           <Icon className="size-4" />
@@ -750,7 +780,7 @@ export function NawatChat({ threadId }: { threadId?: string }) {
               </div>
             )}
 
-            {/* Messages Thread with Smooth Entrance */}
+            {/* Messages Thread */}
             <AnimatePresence initial={false}>
               {messages.map((m) => {
                 const isUser = m.role === "user";
@@ -760,36 +790,43 @@ export function NawatChat({ threadId }: { threadId?: string }) {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.25, ease: "easeOut" }}
+                    className={`flex w-full items-start gap-3 ${
+                      isUser ? "justify-end" : "justify-start"
+                    }`}
                   >
-                    <Message from={m.role}>
-                      <MessageContent
-                        className={
-                          isUser
-                            ? "rounded-3xl rounded-tl-md bg-primary px-4 py-2.5 text-sm leading-7 text-primary-foreground shadow-2xs"
-                            : m.error
-                              ? "rounded-2xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-destructive"
-                              : "bg-transparent px-0 py-0 text-foreground"
-                        }
-                      >
-                        {isUser ? (
-                          <p className="whitespace-pre-wrap">{m.content}</p>
-                        ) : (
-                          <>
-                            <AssistantMessage message={m} />
-                            <RateReply
-                              message={m}
-                              onRated={(rating) => {
-                                const updated = messages.map((x) =>
-                                  x.id === m.id ? { ...x, rating } : x,
-                                );
-                                setMessages(updated);
-                                if (threadId) void saveThread(threadId, updated).catch(() => undefined);
-                              }}
-                            />
-                          </>
-                        )}
-                      </MessageContent>
-                    </Message>
+                    {!isUser && (
+                      <div className="mt-0.5 shrink-0">
+                        <NawatMark size={28} />
+                      </div>
+                    )}
+
+                    <div
+                      className={`min-w-0 ${
+                        isUser
+                          ? "max-w-[85%] sm:max-w-[75%] rounded-3xl rounded-tl-md bg-primary px-4 py-2.5 text-sm leading-7 text-primary-foreground shadow-2xs"
+                          : m.error
+                            ? "w-full rounded-2xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive"
+                            : "flex-1 text-foreground"
+                      }`}
+                    >
+                      {isUser ? (
+                        <p className="whitespace-pre-wrap">{m.content}</p>
+                      ) : (
+                        <>
+                          <AssistantMessage message={m} />
+                          <RateReply
+                            message={m}
+                            onRated={(rating) => {
+                              const updated = messages.map((x) =>
+                                x.id === m.id ? { ...x, rating } : x,
+                              );
+                              setMessages(updated);
+                              if (threadId) void saveThread(threadId, updated).catch(() => undefined);
+                            }}
+                          />
+                        </>
+                      )}
+                    </div>
                   </motion.div>
                 );
               })}
@@ -801,36 +838,55 @@ export function NawatChat({ threadId }: { threadId?: string }) {
                 <NawatLiveThinkingBlock activity={activity} liveThinking={liveThinking} />
               )}
             </AnimatePresence>
-          </ConversationContent>
-          <ConversationScrollButton />
-        </Conversation>
 
-        {/* Floating Slim Prompt Composer */}
+            <div ref={messagesEndRef} />
+          </div>
+        </div>
+
+        {/* Scroll to Bottom Floating Pill (Only appears when scrolled up) */}
+        <AnimatePresence>
+          {showScrollBottom && (
+            <motion.button
+              type="button"
+              initial={{ opacity: 0, scale: 0.85 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.85 }}
+              onClick={() => scrollToBottom("smooth")}
+              aria-label="الانتقال للأسفل"
+              className="absolute bottom-24 left-1/2 z-20 grid size-9 -translate-x-1/2 place-items-center rounded-full border border-border bg-background/95 text-foreground shadow-md backdrop-blur-xs hover:bg-muted"
+            >
+              <ArrowDown className="size-4" />
+            </motion.button>
+          )}
+        </AnimatePresence>
+
+        {/* Clean Native Floating Prompt Composer */}
         <div className="flex-none bg-gradient-to-t from-background via-background to-transparent px-3 pt-2 pb-[calc(env(safe-area-inset-bottom,0px)+0.75rem)] sm:px-6">
-          <PromptInput
-            className="mx-auto max-w-3xl rounded-3xl border border-border/90 bg-muted/40 p-1.5 shadow-xs transition-all focus-within:border-primary/50 focus-within:bg-background focus-within:ring-4 focus-within:ring-primary/10"
-            onSubmit={(message) => void send(message.text ?? input)}
-          >
-            <div className="flex items-end gap-1.5">
-              <PromptInputTextarea
+          <form onSubmit={handleFormSubmit} className="mx-auto max-w-3xl">
+            <div className="flex items-end gap-2 rounded-3xl border border-border bg-muted/45 p-1.5 shadow-xs transition-all focus-within:border-primary/60 focus-within:bg-background focus-within:ring-4 focus-within:ring-primary/10">
+              <textarea
                 ref={textareaRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
                 placeholder={busy ? "نواة بيفكّر الآن…" : "اكتب رسالتك لنواة…"}
                 disabled={busy || !loaded}
                 rows={1}
-                className="max-h-36 min-h-10 flex-1 resize-none border-0 bg-transparent px-3 py-2 text-sm shadow-none focus-visible:ring-0"
+                dir="auto"
+                className="max-h-32 min-h-10 flex-1 resize-none border-0 bg-transparent px-3.5 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-0 disabled:opacity-50"
               />
-              <PromptInputFooter className="p-0">
-                <PromptInputSubmit
-                  status={busy ? "submitted" : undefined}
-                  disabled={busy || !loaded || !input.trim()}
-                  aria-label="إرسال"
-                  className="size-10 rounded-full"
-                />
-              </PromptInputFooter>
+
+              <motion.button
+                type="submit"
+                whileTap={{ scale: 0.92 }}
+                disabled={busy || !loaded || !input.trim()}
+                aria-label="إرسال"
+                className="grid size-10 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground shadow-xs transition hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground"
+              >
+                <Send className="size-4 rtl:-scale-x-100" />
+              </motion.button>
             </div>
-          </PromptInput>
+          </form>
         </div>
       </section>
     </div>
