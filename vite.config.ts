@@ -10,6 +10,11 @@ export default defineConfig({
   },
   vite: {
     plugins: [mcpPlugin()],
+    server: {
+      host: "0.0.0.0",
+      port: 3000,
+      allowedHosts: true,
+    },
     optimizeDeps: {
       include: ["cmdk", "@radix-ui/react-alert-dialog", "xlsx"],
     },

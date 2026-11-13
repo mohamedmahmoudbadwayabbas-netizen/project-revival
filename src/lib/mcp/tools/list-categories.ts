@@ -1,5 +1,6 @@
 import { defineTool } from "@lovable.dev/mcp-js";
 import { createClient } from "@supabase/supabase-js";
+import { createMockSupabaseClient } from "@/integrations/supabase/mock-client";
 
 export default defineTool({
   name: "list_categories",
@@ -8,9 +9,14 @@ export default defineTool({
   inputSchema: {},
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async () => {
-    const sb = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
+    const url = process.env.SUPABASE_URL;
+    const key = process.env.SUPABASE_PUBLISHABLE_KEY;
+    const sb =
+      url && key
+        ? createClient(url, key, {
+            auth: { persistSession: false, autoRefreshToken: false },
+          })
+        : createMockSupabaseClient("mcp:list_categories");
     const { data, error } = await sb
       .from("categories")
       .select("id,name,name_ar,slug,image_url,created_at")
