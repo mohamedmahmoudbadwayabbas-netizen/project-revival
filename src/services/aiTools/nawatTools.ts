@@ -580,7 +580,9 @@ export async function dealsAndCoupons(params: {
       });
 
       if (error) throw error;
-      const result = data as {
+      // validate_coupon يرجع صفوفاً (TABLE): صف واحد = صالح، لا صفوف = غير صالح.
+      const row = (Array.isArray(data) ? data[0] : data) as any;
+      const result = { ...(row ?? { code, discount_amount: 0 }), is_valid: !!row } as {
         is_valid: boolean;
         code: string;
         discount_amount: number;
@@ -802,7 +804,7 @@ export async function deliveryZoneChecker(params: {
         (z) =>
           z.name.includes(term) ||
           (z.area && z.area.includes(term)) ||
-          z.city.includes(term)
+          (z.city ?? '').includes(term)
       );
     }
 
@@ -883,10 +885,10 @@ export async function reorderAssistant(params: {
 
     const targetItems =
       action === 'repeat_last_order'
-        ? orders[0].items ?? []
-        : orders.flatMap((o) => o.items ?? []);
+        ? ((orders[0].items ?? []) as any[])
+        : orders.flatMap((o) => (Array.isArray(o.items) ? o.items : []) as any[]);
 
-    const uniqueIds = Array.from(new Set(targetItems.map((i) => i.id).filter(Boolean)));
+    const uniqueIds = Array.from(new Set(targetItems.map((i: any) => String(i.id ?? '')).filter(Boolean)));
     const { data: liveProducts } = await supabase
       .from('products')
       .select('id, name, name_ar, price, stock, stock_quantity, unit_label, is_active, image_url')
@@ -898,7 +900,7 @@ export async function reorderAssistant(params: {
     }
 
     const verifiedItems = targetItems
-      .map((item) => {
+      .map((item: any) => {
         const live = liveMap.get(item.id);
         if (!live || !live.is_active || getEffectiveStock(live) <= 0) return null;
         return {
@@ -913,7 +915,7 @@ export async function reorderAssistant(params: {
       .filter((x): x is NonNullable<typeof x> => x !== null);
 
     const estimatedReorderTotalEGP = roundEGP(
-      verifiedItems.reduce((s, i) => s + i.currentPriceEGP * Math.min(i.requestedQty, i.availableStock), 0)
+      verifiedItems.reduce((s: number, i: any) => s + i.currentPriceEGP * Math.min(i.requestedQty, i.availableStock), 0)
     );
 
     return {
