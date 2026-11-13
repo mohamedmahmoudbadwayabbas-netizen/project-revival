@@ -127,6 +127,13 @@
       "when": 1794430410914,
       "tag": "0017_ai_key_vault",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1794597066324,
+      "tag": "0018_database_driven_agent_governance",
+      "breakpoints": true
     }
   ]
 }

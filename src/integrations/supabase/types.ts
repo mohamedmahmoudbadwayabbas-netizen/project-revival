@@ -205,6 +205,36 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_agent_configs: {
+        Row: {
+          agent_name: string
+          dynamic_rules: Json
+          forbidden_patterns: Json
+          id: string
+          system_prompt_base: string
+          temperature: number
+          updated_at: string
+        }
+        Insert: {
+          agent_name: string
+          dynamic_rules?: Json
+          forbidden_patterns?: Json
+          id?: string
+          system_prompt_base: string
+          temperature?: number
+          updated_at?: string
+        }
+        Update: {
+          agent_name?: string
+          dynamic_rules?: Json
+          forbidden_patterns?: Json
+          id?: string
+          system_prompt_base?: string
+          temperature?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ai_alerts: {
         Row: {
           created_at: string
@@ -229,6 +259,104 @@ export type Database = {
           message?: string
           provider?: string | null
           resolved?: boolean
+        }
+        Relationships: []
+      }
+      ai_governance_audit_logs: {
+        Row: {
+          action_type: string
+          after_state: Json | null
+          before_state: Json | null
+          created_at: string
+          executed_by: string | null
+          id: string
+          proposal_id: string | null
+        }
+        Insert: {
+          action_type: string
+          after_state?: Json | null
+          before_state?: Json | null
+          created_at?: string
+          executed_by?: string | null
+          id?: string
+          proposal_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          after_state?: Json | null
+          before_state?: Json | null
+          created_at?: string
+          executed_by?: string | null
+          id?: string
+          proposal_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_governance_audit_logs_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "ai_governance_proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_governance_proposals: {
+        Row: {
+          action_payload: Json
+          action_type: string
+          agent_name: string
+          category: string
+          created_at: string
+          dedupe_key: string | null
+          evidence_count: number
+          execution_result: string | null
+          expected_impact_ar: string
+          id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          root_cause_ar: string
+          sample_interaction_ids: string[]
+          severity: string
+          status: string
+          title_ar: string
+        }
+        Insert: {
+          action_payload: Json
+          action_type: string
+          agent_name?: string
+          category: string
+          created_at?: string
+          dedupe_key?: string | null
+          evidence_count?: number
+          execution_result?: string | null
+          expected_impact_ar: string
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          root_cause_ar: string
+          sample_interaction_ids?: string[]
+          severity?: string
+          status?: string
+          title_ar: string
+        }
+        Update: {
+          action_payload?: Json
+          action_type?: string
+          agent_name?: string
+          category?: string
+          created_at?: string
+          dedupe_key?: string | null
+          evidence_count?: number
+          execution_result?: string | null
+          expected_impact_ar?: string
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          root_cause_ar?: string
+          sample_interaction_ids?: string[]
+          severity?: string
+          status?: string
+          title_ar?: string
         }
         Relationships: []
       }
@@ -348,6 +476,42 @@ export type Database = {
           id?: number
           model?: string | null
           provider?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ai_tool_registry: {
+        Row: {
+          agent_name: string
+          description_ar: string
+          id: string
+          is_enabled: boolean
+          label_ar: string
+          requires_approval: boolean
+          runtime_hints: string
+          tool_name: string
+          updated_at: string
+        }
+        Insert: {
+          agent_name: string
+          description_ar: string
+          id?: string
+          is_enabled?: boolean
+          label_ar: string
+          requires_approval?: boolean
+          runtime_hints?: string
+          tool_name: string
+          updated_at?: string
+        }
+        Update: {
+          agent_name?: string
+          description_ar?: string
+          id?: string
+          is_enabled?: boolean
+          label_ar?: string
+          requires_approval?: boolean
+          runtime_hints?: string
+          tool_name?: string
           updated_at?: string
         }
         Relationships: []
@@ -924,6 +1088,33 @@ export type Database = {
         }
         Relationships: []
       }
+      product_search_synonyms: {
+        Row: {
+          created_at: string
+          id: string
+          mapped_terms: string[]
+          product_ids: string[]
+          source: string
+          term: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mapped_terms: string[]
+          product_ids?: string[]
+          source?: string
+          term: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mapped_terms?: string[]
+          product_ids?: string[]
+          source?: string
+          term?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           avg_rating: number
@@ -952,6 +1143,7 @@ export type Database = {
           purchase_count: number
           rating: number | null
           reviews_count: number
+          search_keywords: string[]
           stock: number | null
           stock_quantity: number
           unit: string | null
@@ -987,6 +1179,7 @@ export type Database = {
           purchase_count?: number
           rating?: number | null
           reviews_count?: number
+          search_keywords?: string[]
           stock?: number | null
           stock_quantity?: number
           unit?: string | null
@@ -1022,6 +1215,7 @@ export type Database = {
           purchase_count?: number
           rating?: number | null
           reviews_count?: number
+          search_keywords?: string[]
           stock?: number | null
           stock_quantity?: number
           unit?: string | null
