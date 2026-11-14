@@ -137,6 +137,23 @@ async function loadDynamicNawatRuntime() {
       : [];
 
     let fullPrompt = basePrompt;
+    // تفضيلات العميل الفردية (لا تُعمَّم على باقي العملاء أبداً)
+    try {
+      const { data: auth } = await supabase.auth.getUser();
+      if (auth?.user) {
+        const { data: prof } = await (supabase as any)
+          .from("profiles")
+          .select("ai_preferences")
+          .eq("id", auth.user.id)
+          .maybeSingle();
+        const prefs = prof?.ai_preferences;
+        if (prefs && typeof prefs === "object" && Object.keys(prefs).length) {
+          fullPrompt += `\n\n### تفضيلات هذا العميل فقط (خصّص ردك له ولا تعتبرها قاعدة عامة):\n${JSON.stringify(prefs)}`;
+        }
+      }
+    } catch {
+      /* preferences are optional */
+    }
     if (rulesList.length > 0) {
       fullPrompt += `\n\n### قواعد سلوكية إضافية معتمدة من إدارة المتجر (إلزامية التنفيذ):\n${rulesList
         .map((r) => `- ${r}`)

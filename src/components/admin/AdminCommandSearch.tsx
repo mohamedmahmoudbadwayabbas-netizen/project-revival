@@ -20,7 +20,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase-loose";
 
 const PAGES = [
   { label: "لوحة المؤشرات", to: "/admin", icon: LayoutDashboard },

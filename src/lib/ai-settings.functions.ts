@@ -79,7 +79,7 @@ export const testAiConnection = createServerFn({ method: "POST" })
             httpOptions: { retryOptions: { attempts: 1 } },
           });
           await ai.models.generateContent({
-            model: s?.model || "gemini-2.5-flash",
+            model: s?.model || "gemini-3.5-flash",
             contents: contents as any,
           });
           okCount++;
@@ -117,7 +117,7 @@ export const testAiConnection = createServerFn({ method: "POST" })
 export const listAiAlerts = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data } = await context.supabase
+    const { data } = await (context.supabase as any)
       .from("ai_alerts")
       .select("id, kind, message, created_at")
       .eq("resolved", false)
@@ -130,6 +130,6 @@ export const dismissAiAlert = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
-    await context.supabase.from("ai_alerts").update({ resolved: true }).eq("id", data.id);
+    await (context.supabase as any).from("ai_alerts").update({ resolved: true }).eq("id", data.id);
     return { ok: true };
   });

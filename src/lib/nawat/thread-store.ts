@@ -1,5 +1,5 @@
 import type { UIMessage } from "ai";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase-loose";
 import type { Json } from "@/integrations/supabase/types";
 import type { NawatMessage } from "./chat-engine";
 

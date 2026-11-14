@@ -1,14 +1,15 @@
+import { DEEP_ANALYSIS_MODEL } from "@/lib/gemini-config";
 import { createServerFn } from "@tanstack/react-start";
 import { GoogleGenAI } from "@google/genai";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { AI_TOOL_SUITE } from "@/services/aiTools/toolDefinitions";
 import {
-  DEFAULT_GEMINI_MODEL,
   DEFAULT_GEMINI_MAPS_MODEL,
   ALLOWED_IMAGE_MODELS,
+  ANALYSIS_FALLBACK_MODELS,
 } from "@/lib/gemini-config";
 
-type GeminiPurpose = "chat" | "image" | "maps";
+type GeminiPurpose = "chat" | "image" | "maps" | "analysis";
 export type GeminiJsonValue =
   string | number | boolean | null | GeminiJsonValue[] | { [key: string]: GeminiJsonValue };
 export interface GeminiClientResponse {
@@ -86,7 +87,7 @@ function getRequestedTools(config: Record<string, unknown> | undefined): string[
 }
 
 function assertValidRequest(data: GeminiRequest): GeminiRequest {
-  if (!data || !["chat", "image", "maps"].includes(data.purpose))
+  if (!data || !["chat", "image", "maps", "analysis"].includes(data.purpose))
     throw new Error("Invalid Gemini request purpose.");
   if (typeof data.model !== "string" || !data.model.trim())
     throw new Error("A Gemini model is required.");
@@ -133,6 +134,8 @@ export const generateGeminiContent = createServerFn({ method: "POST" })
     const isAdmin = ADMIN_ROLES.has(role);
     const isModerator = role === "moderator";
 
+    if (data.purpose === "analysis" && !isAdmin)
+      throw new Error("Deep analysis is available to store admins only.");
     if (data.purpose === "image" && !isAdmin)
       throw new Error("Image generation is available to store admins only.");
     if (
@@ -221,15 +224,27 @@ export const generateGeminiContent = createServerFn({ method: "POST" })
 
     const { splitKeys } = await import("@/lib/ai-provider.server");
     const savedKeys = provider === "gemini" ? splitKeys(settings?.api_key) : [];
-    const keys = savedKeys.length ? savedKeys : splitKeys(process.env["GEMINI_API_KEY"]);
+    // مفاتيح Gemini المحفوظة في الخزانة (ai_key_vault) بترتيب الأولوية، ثم متغير البيئة كاحتياطي.
+    const vaultGeminiKeys = vaultMod
+      .usableKeys(await vaultMod.listVaultKeys())
+      .filter((k) => String(k.provider).toLowerCase() === "gemini")
+      .map((k) => k.api_key)
+      .filter(Boolean);
+    const keys = [
+      ...new Set([
+        ...savedKeys,
+        ...vaultGeminiKeys,
+        ...splitKeys(process.env["GEMINI_API_KEY"]),
+      ]),
+    ];
     if (!keys.length)
       throw new Error(
         "لم يتم وضع مفتاح الذكاء الاصطناعي بعد. يمكن للمسؤول إضافته من الإعدادات ← الذكاء الاصطناعي.",
       );
     const config = { ...data.config };
-    if (data.purpose === "chat" || data.purpose === "maps") {
+    if (data.purpose === "chat" || data.purpose === "maps" || data.purpose === "analysis") {
       const requestedMax = Number(config.maxOutputTokens);
-      const maxOutputTokens = data.purpose === "chat" ? 4096 : 512;
+      const maxOutputTokens = data.purpose === "analysis" ? 8192 : data.purpose === "chat" ? 4096 : 512;
       config.maxOutputTokens =
         Number.isFinite(requestedMax) && requestedMax > 0
           ? Math.min(requestedMax, maxOutputTokens)
@@ -237,10 +252,16 @@ export const generateGeminiContent = createServerFn({ method: "POST" })
     }
     const savedModel = provider === "gemini" ? settings?.model?.trim() : "";
     const chatModelOverride = savedModel || process.env["GEMINI_CHAT_MODEL"]?.trim();
-    const model = data.purpose === "chat" && chatModelOverride ? chatModelOverride : data.model;
+    const model =
+      data.purpose === "chat" && chatModelOverride && data.model !== DEEP_ANALYSIS_MODEL ? chatModelOverride : data.model;
     let response: Awaited<ReturnType<GoogleGenAI["models"]["generateContent"]>> | undefined;
     let lastError: unknown;
-    const chain = data.purpose === "image" ? [model, model] : [model];
+    const chain =
+      data.purpose === "image"
+        ? [model, model]
+        : data.purpose === "analysis"
+          ? [...new Set([model, ...ANALYSIS_FALLBACK_MODELS])]
+          : [...new Set([model, "gemini-3.1-flash-lite"])];
     // تدوير المفاتيح: إذا نفدت حصة مفتاح أو كان غير صالح ننتقل للمفتاح التالي تلقائيًا.
     keyLoop: for (let k = 0; k < keys.length; k++) {
       const ai = new GoogleGenAI({

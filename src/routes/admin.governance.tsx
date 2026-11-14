@@ -22,7 +22,7 @@ import {
 import { toast } from "sonner";
 import { PageHead } from "@/components/admin/PageHead";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase-loose";
 
 export const Route = createFileRoute("/admin/governance")({
   head: () => ({
@@ -98,6 +98,9 @@ function GovernancePage() {
         r.created
           ? `اكتشف المحلل الذكي ${r.created} تحسين تنفيذي جديد`
           : "لا توجد أخطاء سلوكية جديدة في السجلات",
+        {
+          description: `تحت المراقبة (أقل من 3 عملاء): ${(r as any).monitored ?? 0} • مرفوض بالنقد الذاتي: ${(r as any).rejected ?? 0}`,
+        },
       );
       qc.invalidateQueries({ queryKey: ["ai-governance-proposals"] });
     } catch (e: any) {
@@ -123,6 +126,12 @@ function GovernancePage() {
       setBusy(false);
     }
   }
+
+  const [tab, setTab] = useState<"pending" | "done">("pending");
+  const allProposals = proposals.data ?? [];
+  const pendingList = allProposals.filter((p: any) => p.status === "pending");
+  const doneList = allProposals.filter((p: any) => p.status !== "pending");
+  const visible = tab === "pending" ? pendingList : doneList;
 
   async function review(id: string, status: "approved" | "rejected") {
     try {
@@ -178,18 +187,29 @@ function GovernancePage() {
         />
       </div>
 
+      <div className="flex gap-2">
+        <Button size="sm" variant={tab === "pending" ? "default" : "outline"} onClick={() => setTab("pending")}>
+          بانتظار المراجعة ({pendingList.length})
+        </Button>
+        <Button size="sm" variant={tab === "done" ? "default" : "outline"} onClick={() => setTab("done")}>
+          سجل الإصلاحات المنفذة ({doneList.length})
+        </Button>
+      </div>
+
       <div className="lux-card p-2">
         {proposals.isLoading ? (
           <div className="grid place-items-center p-16">
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
           </div>
-        ) : !proposals.data?.length ? (
+        ) : !visible.length ? (
           <div className="p-16 text-center text-muted-foreground">
-            لا توجد مقترحات حالياً. اضغط على «تشخيص أخطاء الذكاء الاصطناعي» لفحص آخر المحادثات.
+            {tab === "pending"
+              ? "لا توجد مقترحات بانتظار المراجعة. اضغط على «تشخيص أخطاء الذكاء الاصطناعي» لفحص آخر المحادثات."
+              : "لا توجد إصلاحات منفذة بعد."}
           </div>
         ) : (
           <ul className="divide-y divide-border">
-            {proposals.data.map((p) => (
+            {visible.map((p: any) => (
               <li key={p.id} className="space-y-3 p-5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex flex-wrap items-center gap-2">
@@ -224,6 +244,29 @@ function GovernancePage() {
                     {formatHumanPayload(p.action_type, p.action_payload)}
                   </div>
                 </div>
+
+                {(p.confidence_score != null || p.why_this_fix || p.side_effects_evaluated) && (
+                  <div className="space-y-1.5 rounded-xl border border-border bg-muted/20 p-3 text-xs">
+                    <div className="flex flex-wrap gap-3 font-bold text-foreground">
+                      <span>تقرير النقد الذاتي</span>
+                      {p.confidence_score != null && (
+                        <span className="text-primary">الثقة: {Math.round(Number(p.confidence_score) * 100)}%</span>
+                      )}
+                      {p.distinct_sessions_count != null && (
+                        <span className="text-muted-foreground">جلسات مختلفة: {p.distinct_sessions_count}</span>
+                      )}
+                    </div>
+                    {p.why_this_fix && (
+                      <p><span className="font-semibold text-foreground">لماذا هذا الحل: </span><span className="text-muted-foreground">{p.why_this_fix}</span></p>
+                    )}
+                    {p.side_effects_evaluated && (
+                      <p><span className="font-semibold text-foreground">الآثار الجانبية: </span><span className="text-muted-foreground">{p.side_effects_evaluated}</span></p>
+                    )}
+                    {p.reflection?.red_team && (
+                      <p><span className="font-semibold text-foreground">اعتراض النموذج على نفسه: </span><span className="text-muted-foreground">{p.reflection.red_team}</span></p>
+                    )}
+                  </div>
+                )}
 
                 {p.execution_result && (
                   <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">

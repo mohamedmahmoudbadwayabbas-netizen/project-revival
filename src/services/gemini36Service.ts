@@ -1,3 +1,4 @@
+import { pickNebrasModel } from "./aiTools/complexityRouter";
 /* =========================================================================
    GEMINI AI ADMIN ENGINE (PHASE 4: AGENTIC MULTI-STEP TOOL-CALLING LOOP)
    Autonomous Store Admin Copilot with Live Supabase, Tool Calling & Self-Verification
@@ -483,6 +484,8 @@ export async function runAdminCoPilotChat(
 
   const customerExperience = page === "assistant" && userRole === "customer";
   if (customerExperience) executionMode = "suggest";
+  // نبراس: توجيه تلقائي حسب صعوبة السؤال. نواة تبقى على النموذج الخفيف.
+  selectedModel = (customerExperience ? "gemini-3.1-flash-lite" : pickNebrasModel(message)) as GeminiModelChoice;
 
   // أحداث التقدم لا يجب أن تكسر المحادثة إذا رمت الواجهة استثناءً.
   const emit = (step: NawatProgressEvent["step"], state: NawatProgressEvent["state"]) => {

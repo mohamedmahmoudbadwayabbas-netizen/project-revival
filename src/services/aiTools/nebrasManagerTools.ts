@@ -15,7 +15,7 @@
  *  - Safety Gate: Write/destructive actions require `confirmed === true`.
  */
 
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase-loose';
 import { generateAdminImage } from '@/services/geminiImageService';
 import type {
   AbandonedCartRow,

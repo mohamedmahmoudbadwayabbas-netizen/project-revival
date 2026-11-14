@@ -1,12 +1,12 @@
-# Codebase Revival
+# Project Revival
 
-/skill:migrate-external-project Source: code archive. Migrate the attached project into Lovable.
+Imported website: https://github.com/mohamedmahmoudbadwayabbas-netizen/project-revival
 
 This project was built with [Lovable](https://lovable.dev).
 
 ## Build with Lovable
 
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/2743d355-8924-4558-9f9c-06625004115f).
+Continue developing this project in the [Lovable editor](https://lovable.dev/projects/469aa129-31cb-47f2-b50b-18799b579edf).
 
 - **Ship faster**: describe what you want to build and Lovable handles the code.
 - **Stay in sync**: every change made in Lovable is committed straight to this repository.

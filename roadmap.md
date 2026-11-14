@@ -42,7 +42,7 @@ Full details and pre-solved blockers: IMPORT_PROTOCOL.md section 6.
 - [x] Driver role/profile/assignment contract and guarded `assign_driver` RPC in migration 0016.
 - [x] Append-only wallet ledger primitive with idempotent admin posting in migration 0016.
 - [x] Removed unsupported Gemini model IDs and unverified model fallback labels from the client.
-- [ ] Apply migration 0016 in the target database and connect the admin assignment UI to `assign_driver`.
+- [x] Apply migration 0016 in the target database (applied 2026-11-13 as 0017_critical_operations_hardening). [ ] Connect the admin assignment UI to `assign_driver`.
 
 ## Alwadi Assistant
 

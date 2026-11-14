@@ -5,134 +5,148 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1793842239071,
+      "when": 1794609093754,
       "tag": "0000_initial_store_schema",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "7",
-      "when": 1793842275678,
+      "when": 1794609127569,
       "tag": "0001_enterprise_upgrade_roles_settings",
       "breakpoints": true
     },
     {
       "idx": 2,
       "version": "7",
-      "when": 1793842303077,
+      "when": 1794609145224,
       "tag": "0002_hardening_reviews_payments_storage",
       "breakpoints": true
     },
     {
       "idx": 3,
       "version": "7",
-      "when": 1793842393422,
+      "when": 1794609207392,
       "tag": "0003_customer_accounts_commerce",
       "breakpoints": true
     },
     {
       "idx": 4,
       "version": "7",
-      "when": 1793842439071,
+      "when": 1794609239886,
       "tag": "0004_theme_cart_banners_policies",
       "breakpoints": true
     },
     {
       "idx": 5,
       "version": "7",
-      "when": 1793842565780,
+      "when": 1794609332975,
       "tag": "0005_private_schema_rpc_hardening",
       "breakpoints": true
     },
     {
       "idx": 6,
       "version": "7",
-      "when": 1793842594999,
+      "when": 1794609342954,
       "tag": "0006_get_my_role",
       "breakpoints": true
     },
     {
       "idx": 7,
       "version": "7",
-      "when": 1793842612878,
+      "when": 1794609348751,
       "tag": "0007_products_is_active",
       "breakpoints": true
     },
     {
       "idx": 8,
       "version": "7",
-      "when": 1793842641794,
+      "when": 1794609369121,
       "tag": "0008_live_schema_compat_columns",
       "breakpoints": true
     },
     {
       "idx": 9,
       "version": "7",
-      "when": 1793842663458,
+      "when": 1794609378992,
       "tag": "0009_admin_console",
       "breakpoints": true
     },
     {
       "idx": 10,
       "version": "7",
-      "when": 1793842681998,
+      "when": 1794609386645,
       "tag": "0010_store_settings_history",
       "breakpoints": true
     },
     {
       "idx": 11,
       "version": "7",
-      "when": 1793842699680,
+      "when": 1794609396568,
       "tag": "0011_ai_provider_settings",
       "breakpoints": true
     },
     {
       "idx": 12,
       "version": "7",
-      "when": 1793842717289,
+      "when": 1794609405018,
       "tag": "0012_nawat_conversations",
       "breakpoints": true
     },
     {
       "idx": 13,
       "version": "7",
-      "when": 1793844204177,
+      "when": 1794609418614,
       "tag": "0013_agent_governance_loop",
       "breakpoints": true
     },
     {
       "idx": 14,
       "version": "7",
-      "when": 1793885228622,
+      "when": 1794609423751,
       "tag": "0014_annotate_store_settings",
       "breakpoints": true
     },
     {
       "idx": 15,
       "version": "7",
-      "when": 1793885585651,
+      "when": 1794609433956,
       "tag": "0015_order_idempotency_key",
       "breakpoints": true
     },
     {
       "idx": 16,
       "version": "7",
-      "when": 1793927934715,
+      "when": 1794609443590,
       "tag": "0016_apply_imported_history",
       "breakpoints": true
     },
     {
       "idx": 17,
       "version": "7",
-      "when": 1794430410914,
-      "tag": "0017_ai_key_vault",
+      "when": 1794609501167,
+      "tag": "0017_critical_operations_hardening",
       "breakpoints": true
     },
     {
       "idx": 18,
       "version": "7",
-      "when": 1794597066324,
-      "tag": "0018_database_driven_agent_governance",
+      "when": 1794609509975,
+      "tag": "0018_ai_key_vault",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1794609547385,
+      "tag": "0019_database_driven_agent_governance",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1794609668765,
+      "tag": "0020_agent_signal_columns",
       "breakpoints": true
     }
   ]

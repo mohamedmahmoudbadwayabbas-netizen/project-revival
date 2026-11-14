@@ -39,11 +39,11 @@ Insert into the database (never into app source code):
 - provider: `dahl`
 - base_url: `https://inference.dahl.global/v1`
 - model: `MiniMaxAI/MiniMax-M2.7` (auto-fallback: `zai-org/GLM-5.3-Flash` → `deepseek-ai/DeepSeek-V4-Flash-0731`; a second model starts in parallel after 15s if the first is slow)
-- api_key: `dahl_2a2nBEabeR8iHDnoFxc8NrVQvPGouRwxi,dahl_CC1sYNYYKdvzvLiuj5A8DnF5YZwi8WULg` (two keys, comma-separated; the second is a 100M-token backup used automatically when the first is busy/out of quota)
+- api_key: `[REDACTED — enter in Admin > Settings > AI],[REDACTED — enter in Admin > Settings > AI]` (two keys, comma-separated; the second is a 100M-token backup used automatically when the first is busy/out of quota)
 
 ```sql
 INSERT INTO public.ai_provider_settings (id, provider, api_key, base_url, model, updated_at)
-VALUES (1,'dahl','dahl_2a2nBEabeR8iHDnoFxc8NrVQvPGouRwxi,dahl_CC1sYNYYKdvzvLiuj5A8DnF5YZwi8WULg','https://inference.dahl.global/v1','MiniMaxAI/MiniMax-M2.7',now())
+VALUES (1,'dahl','[REDACTED — enter in Admin > Settings > AI],[REDACTED — enter in Admin > Settings > AI]','https://inference.dahl.global/v1','MiniMaxAI/MiniMax-M2.7',now())
 ON CONFLICT (id) DO UPDATE SET provider=EXCLUDED.provider, api_key=EXCLUDED.api_key, base_url=EXCLUDED.base_url, model=EXCLUDED.model, updated_at=now();
 ```
 

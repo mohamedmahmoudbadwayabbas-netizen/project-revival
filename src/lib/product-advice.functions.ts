@@ -13,7 +13,7 @@ export const getProductAdvice = createServerFn({ method: "POST" })
   .validator(productIdSchema)
   .middleware([requireSupabaseAuth])
   .handler(async ({ data: productId, context }): Promise<string> => {
-    const { data: product, error } = await context.supabase
+    const { data: product, error } = await (context.supabase as any)
       .from("products")
       .select("id,name,description,price_per_unit,old_price,is_active")
       .eq("id", productId)

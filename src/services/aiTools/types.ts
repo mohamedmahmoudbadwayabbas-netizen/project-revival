@@ -208,7 +208,7 @@ export interface GroundingSource {
   uri?: string;
 }
 
-export type GeminiModelChoice = "gemini-2.5-flash";
+export type GeminiModelChoice = "gemini-3.5-flash" | "gemini-3.1-flash-lite" | "gemini-4-hydrogen";
 
 export type GeminiRoleChoice =
   "store_architect" | "market_researcher" | "growth_strategist" | "copywriter";

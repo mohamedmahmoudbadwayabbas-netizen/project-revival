@@ -28,10 +28,9 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
-
 ## Project rules
 
-- Database schema lives in drizzle/migrations (applied by the migration tool); add new migrations there, never edit applied ones — keeps Cloud schema history in one place.
+- Database schema lives in drizzle/migrations, applied only through the Lovable migration tool (never hand-edited) — keeps Cloud schema history in one place.
 - Storage buckets are private; serve files via signed URLs — the workspace blocks public buckets.
 - AI provider/key/model are admin-editable at runtime (single settings row read server-side via admin client); non-Gemini providers go through an OpenAI-compatible adapter that converts the Gemini request/response shape — keeps all assistant client code provider-agnostic.
 - SYSTEM_MANIFEST.md is the rebuild guide for a fresh Lovable account (migrations, buckets, auth, AI setup, agent tables); update it whenever a table, tool, or integration is added — lets a new account recreate everything without explanation.

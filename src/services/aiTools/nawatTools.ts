@@ -13,7 +13,7 @@
  *  - Direct Exports: Exports both `executeNawatTool` and all 9 named handlers for `aiActionGateway.ts`.
  */
 
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase-loose';
 import type {
   AddressRow,
   CartItemRow,
@@ -521,7 +521,7 @@ export async function orderTracker(params: {
 
     const enriched = orders.map((o) => ({
       ...o,
-      statusAr: STATUS_AR[o.status] ?? o.status,
+      statusAr: STATUS_AR[o.status ?? ''] ?? o.status,
     }));
 
     if (action === 'list_my_orders') {

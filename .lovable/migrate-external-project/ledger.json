@@ -1,100 +1,16 @@
 [
- {
-  "capability": "code",
-  "source": "code archive (TanStack Start storefront, admin, driver, assistant, MCP)",
-  "outcome": "migrated",
-  "status": "verified (build OK, 31 tests pass; home, categories, cart, auth, admin login, assistant render with live data)",
-  "next_action": "none"
- },
- {
-  "capability": "schema",
-  "source": "drizzle/migrations 0000-0015",
-  "outcome": "migrated to Lovable Cloud",
-  "status": "verified (32 tables, 92 policies) in new Cloud",
-  "next_action": "none"
- },
- {
-  "capability": "checkout",
-  "source": "create_order RPC + client idempotency key",
-  "outcome": "migrated + fixed (0015 adds idempotency support the client already sent)",
-  "status": "migrated; not re-run in this account",
-  "next_action": "place a test order"
- },
- {
-  "capability": "records",
-  "source": "previous Cloud database (no export attached)",
-  "outcome": "migrate",
-  "status": "pending (only sample rows from migrations)",
-  "next_action": "request per-table CSV/JSON exports"
- },
- {
-  "capability": "auth identities",
-  "source": "previous Cloud auth (no export attached)",
-  "outcome": "migrate",
-  "status": "pending",
-  "next_action": "request user export (ids, emails); first-login verify + new password"
- },
- {
-  "capability": "auth methods",
-  "source": "email/password, phone-as-email, Google",
-  "outcome": "email + Google enabled",
-  "status": "email + Google enabled; signed-in flow not exercised",
-  "next_action": "owner signs up; verify sign-in"
- },
- {
-  "capability": "authorization",
-  "source": "RLS + user_roles + private.has_role",
-  "outcome": "migrated",
-  "status": "verified: anon cannot read orders, roles, or AI settings",
-  "next_action": "grant admin to owner account after sign-up"
- },
- {
-  "capability": "storage buckets",
-  "source": "product-images, store-assets (private)",
-  "outcome": "recreated private; policies from migrations",
-  "status": "recreated private: product-images, store-assets",
-  "next_action": "none"
- },
- {
-  "capability": "storage bytes",
-  "source": "old buckets",
-  "outcome": "migrate",
-  "status": "pending",
-  "next_action": "request product/banner images"
- },
- {
-  "capability": "AI providers",
-  "source": "admin-editable ai_provider_settings row (+ optional GEMINI_API_KEY)",
-  "outcome": "kept",
-  "status": "pending (key lived in old database row)",
-  "next_action": "admin re-enters key in Admin > Settings > AI"
- },
- {
-  "capability": "Google Maps",
-  "source": "VITE_GOOGLE_MAPS_API_KEY",
-  "outcome": "kept",
-  "status": "accepted (fallback picker works without key)",
-  "next_action": "optional key"
- },
- {
-  "capability": "MCP server + OAuth",
-  "source": "src/lib/mcp, /mcp, consent route",
-  "outcome": "migrated; OAuth server activated; manifest extracted (4 tools)",
-  "status": "OAuth server active; external client unverified",
-  "next_action": "publish, then connect a client"
- },
- {
-  "capability": "cron/webhooks",
-  "source": "none found in archive",
-  "outcome": "none",
-  "status": "accepted",
-  "next_action": "none"
- },
- {
-  "capability": "cutover",
-  "source": "old project URL",
-  "outcome": "pending",
-  "status": "pending",
-  "next_action": "publish new app"
- }
+ {"capability": "code", "source": "github.com/mohamedmahmoudbadwayabbas-netizen/project-revival", "outcome": "migrated", "status": "verified (build OK, 61/61 tests, storefront/cart/auth/assistant/admin render desktop+phone)", "next_action": "none"},
+ {"capability": "schema", "source": "drizzle/migrations 0000-0018 (+ pending 0016_critical_operations_hardening)", "outcome": "migrated to Lovable Cloud as 0000-0019, plus 0020 adding columns the governance code reads", "status": "verified", "next_action": "none"},
+ {"capability": "checkout", "source": "create_order RPC + idempotency key", "outcome": "migrated", "status": "verified: anon order created, repeated key returned same order, stock movement written; test order removed", "next_action": "none"},
+ {"capability": "records", "source": "previous Cloud database (no export in repo)", "outcome": "migrate", "status": "pending (sample rows from migrations only)", "next_action": "request per-table CSV/JSON exports"},
+ {"capability": "auth identities", "source": "previous Cloud auth (no export in repo)", "outcome": "migrate", "status": "pending", "next_action": "request user export (ids, emails); first-login verify + new password"},
+ {"capability": "auth methods", "source": "email/password, Google", "outcome": "email + Google enabled", "status": "admin session verified with test user; real sign-up not exercised", "next_action": "owner signs up, then gets admin role"},
+ {"capability": "authorization", "source": "RLS + user_roles + private.has_role", "outcome": "migrated", "status": "verified: anon reads of orders, user_roles, ai_provider_settings return nothing; admin pages open for admin role", "next_action": "grant admin to owner account after sign-up"},
+ {"capability": "storage buckets", "source": "product-images, store-assets (private)", "outcome": "recreated private", "status": "created; policies from migrations", "next_action": "none"},
+ {"capability": "storage bytes", "source": "old buckets", "outcome": "migrate", "status": "pending", "next_action": "request product/banner images"},
+ {"capability": "AI providers", "source": "admin-editable ai_provider_settings / ai_key_vault", "outcome": "kept", "status": "pending: plaintext keys in IMPORT_PROTOCOL.md were redacted, not imported", "next_action": "admin enters key in Admin > Settings > AI"},
+ {"capability": "Google Maps", "source": "VITE_GOOGLE_MAPS_API_KEY", "outcome": "kept", "status": "accepted (fallback picker works without key)", "next_action": "optional key"},
+ {"capability": "MCP server + OAuth", "source": "src/lib/mcp, /mcp, consent route", "outcome": "migrated; OAuth server activated", "status": "external client unverified", "next_action": "publish, then connect a client"},
+ {"capability": "cron/webhooks", "source": "none found (cron-auth helper only)", "outcome": "none", "status": "accepted", "next_action": "none"},
+ {"capability": "cutover", "source": "old project URL", "outcome": "pending", "status": "pending", "next_action": "publish new app"}
 ]

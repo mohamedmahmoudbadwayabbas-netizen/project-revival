@@ -656,7 +656,7 @@ export async function generatePlainText(
     const { GoogleGenAI } = await import("@google/genai");
     const ai = new GoogleGenAI({ apiKey: key });
     const r = await ai.models.generateContent({
-      model: settings?.model || "gemini-2.5-flash",
+      model: settings?.model || "gemini-3.5-flash",
       contents: prompt,
       config,
     });

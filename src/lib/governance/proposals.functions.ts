@@ -1,7 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { DEFAULT_GEMINI_MODEL } from "@/lib/gemini-config";
+import { DEEP_ANALYSIS_MODEL } from "@/lib/gemini-config";
 import { generateGeminiContent } from "@/lib/gemini.functions";
+import { consolidateRules, countDistinctSessions, gateProposal, isTechnicalBug, normalizeConfidence } from "./reflection";
 
 async function assertAdmin(context: { supabase: any; userId: string }) {
   const { data } = await context.supabase.rpc("has_role", {
@@ -17,18 +18,40 @@ async function assertAdmin(context: { supabase: any; userId: string }) {
  * actual product catalog, and current agent rules, then asks Gemini to diagnose real AI
  * behavioral failures and generate executable database fixes.
  */
+/** يستخرج كائن JSON من رد النموذج حتى لو أحاطه بنص أو أسوار ```json. */
+export function parseAnalysisJson(raw: string): { proposals?: any[] } | null {
+  const text = String(raw ?? "").replace(/```(?:json)?/gi, "").trim();
+  const candidates = [text];
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start !== -1 && end > start) candidates.push(text.slice(start, end + 1));
+  const arrStart = text.indexOf("[");
+  const arrEnd = text.lastIndexOf("]");
+  if (arrStart !== -1 && arrEnd > arrStart) candidates.push(text.slice(arrStart, arrEnd + 1));
+  for (const c of candidates) {
+    try {
+      const v = JSON.parse(c);
+      if (Array.isArray(v)) return { proposals: v };
+      if (v && typeof v === "object") return v;
+    } catch {
+      /* try next */
+    }
+  }
+  return null;
+}
+
 export const generateProposals = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const supabaseAdmin = (await import("@/integrations/supabase/client.server")).supabaseAdmin as any;
     const since = new Date(Date.now() - 30 * 864e5).toISOString();
 
     const [interactionsRes, feedbackRes, productsRes, configRes, existingRes] = await Promise.all([
       supabaseAdmin
         .from("agent_interactions")
         .select(
-          "id, input_summary, outcome, tools_called, implicit_signal, guardrail_triggered, thinking_summary, created_at",
+          "id, thread_id, actor_id, input_summary, outcome, tools_called, implicit_signal, guardrail_triggered, thinking_summary, created_at",
         )
         .eq("agent_type", "nawat")
         .gte("created_at", since)
@@ -65,13 +88,15 @@ export const generateProposals = createServerFn({ method: "POST" })
 
     const feedbackMap = new Map<string, any>();
     for (const fb of feedbackRes.data ?? []) {
-      feedbackMap.set(fb.interaction_id, fb);
+      if (fb.interaction_id) feedbackMap.set(fb.interaction_id, fb);
     }
 
     const enrichedInteractions = (interactionsRes.data ?? []).map((item: any) => ({
       ...item,
       feedback: feedbackMap.get(item.id) ?? null,
+      technical_bug: isTechnicalBug(item),
     }));
+    const byId = new Map<string, any>((interactionsRes.data ?? []).map((i: any) => [i.id, i]));
 
     const catalogSummary = (productsRes.data ?? []).map((p: any) => ({
       id: p.id,
@@ -103,6 +128,19 @@ ${JSON.stringify(enrichedInteractions)}
    - "enrich_product_keywords": لإضافة كلمات مفتاحية لمنتج محدد في جدول products. ضع product_id و product_name و keywords (مصفوفة) في action_payload.
    - "create_draft_product": فقط إذا طلب عميل حقيقي (في input_summary) منتجاً غير موجود نهائياً في الكتالوج. ضع name_ar و suggested_price في action_payload.
 2. انتبه: إذا تدخل الحارس (guardrail_triggered = true) أو كان الوكيل هو من اخترع اسم منتج/سعر من خياله، فهذه **هلوسة (hallucination)** تُعالج بـ "inject_prompt_rule" لمنع تكرارها مستقبلاً!
+
+### تصنيف الأخطاء (Error Taxonomy) — إلزامي:
+- خطأ حقيقي: هلوسة منتج/سعر (hallucination)، تسريب لغة غير العامية المصرية (language_leak)، رد فارغ أو انهيار (empty_response)، أكثر من 6 استدعاءات أدوات في دور واحد (tool_loop)، فجوة بحث رغم وجود المنتج (synonym_gap).
+- ليس خطأ: شكوى من الأسعار أو رسوم التوصيل أو سياسة المتجر، ذوق شخصي (لا أحب الحار/البقدونس)، طلبات خارج نطاق المتجر رفضها الوكيل بأدب. لا تقترح لها أي تعديل عام؛ إن كانت تفضيلاً فردياً ضع is_individual_preference=true.
+- عتبة الأدلة: الأخطاء التقنية تكفيها جلسة واحدة. أما القواعد العامة والمرادفات والمنتجات المسودة فتحتاج 3 جلسات/عملاء مختلفين على الأقل. ضع في sample_interaction_ids معرفات التفاعلات الحقيقية الداعمة.
+
+### حلقة التفكير والنقد الذاتي (4 خطوات قبل كل مقترح):
+1. Reality Check: هل هو خطأ تقني حقيقي أم مزاج عميل واحد؟
+2. What-If Simulation: لو طُبّق على كل العملاء، من قد يتضرر؟ هل يقلل المبيعات؟
+3. Self-Critique / Red Teaming: ما الذي قد ينكسر لو وافق المدير؟ وما البدائل؟
+4. Optimal Synthesis: أصدر المقترح فقط إن صمد، بثقة لا تقل عن 0.85.
+القواعد الديناميكية محدودة بـ 15 قاعدة؛ ادمج المتشابه بدل التكرار.
+
 3. أرجع النتيجة بصيغة JSON صالحة فقط بدون أي نص خارجي، على الشكل:
 {
   "proposals": [
@@ -116,7 +154,14 @@ ${JSON.stringify(enrichedInteractions)}
       "action_type": "inject_prompt_rule" | "update_tool_hints" | "add_search_synonym" | "enrich_product_keywords" | "create_draft_product",
       "action_payload": { ... },
       "evidence_count": 1,
-      "dedupe_key": "مفتاح_فريد_للمقترح"
+      "sample_interaction_ids": ["uuid"],
+      "dedupe_key": "مفتاح_فريد_للمقترح",
+      "confidence_score": 0.0-1.0,
+      "is_individual_preference": false,
+      "harms_conversions": false,
+      "reflection": { "reality_check": "...", "what_if": "...", "red_team": "...", "synthesis": "..." },
+      "side_effects_evaluated": "الآثار الجانبية المتوقعة",
+      "why_this_fix": "لماذا هذا الحل أفضل من البدائل"
     }
   ]
 }
@@ -124,8 +169,8 @@ ${JSON.stringify(enrichedInteractions)}
 
     const aiRes: any = await generateGeminiContent({
       data: {
-        purpose: "governance_analysis",
-        model: DEFAULT_GEMINI_MODEL,
+        purpose: "analysis",
+        model: DEEP_ANALYSIS_MODEL,
         contents: [{ role: "user", parts: [{ text: diagnosticPrompt }] }],
         config: {
           responseMimeType: "application/json",
@@ -134,18 +179,18 @@ ${JSON.stringify(enrichedInteractions)}
       } as never,
     });
 
+    // نماذج التفكير ترجع أجزاء "thought" قبل الإجابة؛ نتجاهلها ونقرأ نص الإجابة فقط.
     const rawText =
       aiRes?.candidates?.[0]?.content?.parts
-        ?.map((p: any) => p?.text ?? "")
+        ?.filter((p: any) => !p?.thought)
+        .map((p: any) => p?.text ?? "")
         .join("") ||
       aiRes?.text ||
       "{}";
 
-    let parsed: { proposals?: any[] } = {};
-    try {
-      const cleanedJson = rawText.replace(/^```json\s*/i, "").replace(/```\s*$/, "").trim();
-      parsed = JSON.parse(cleanedJson);
-    } catch {
+    const parsed = parseAnalysisJson(rawText);
+    if (!parsed) {
+      console.error("[governance] unparsable analysis output:", rawText.slice(0, 500));
       throw new Error("تعذر قراءة مخرجات التحليل الذكي");
     }
 
@@ -157,15 +202,23 @@ ${JSON.stringify(enrichedInteractions)}
       "create_draft_product",
     ]);
 
+    let monitored = 0;
+    let rejected = 0;
     const freshDrafts = (parsed.proposals ?? [])
-      .filter(
-        (p) =>
-          p &&
-          validActionTypes.has(p.action_type) &&
-          p.dedupe_key &&
-          !existingKeys.has(p.dedupe_key),
-      )
-      .map((p) => ({
+      .filter((p) => p && validActionTypes.has(p.action_type) && p.dedupe_key && !existingKeys.has(p.dedupe_key))
+      .map((p) => {
+        const ids = (Array.isArray(p.sample_interaction_ids) ? p.sample_interaction_ids : [])
+          .map(String)
+          .filter((id: string) => byId.has(id));
+        const sessions = countDistinctSessions(ids, byId);
+        return { p, ids, sessions, gate: gateProposal(p, sessions) };
+      })
+      .filter(({ gate }) => {
+        if (gate.monitor) monitored++;
+        else if (!gate.accept) rejected++;
+        return gate.accept;
+      })
+      .map(({ p, ids, sessions }) => ({
         agent_name: p.agent_name || "nawat",
         category: p.category || "tool_tuning",
         severity: p.severity || "medium",
@@ -174,12 +227,18 @@ ${JSON.stringify(enrichedInteractions)}
         expected_impact_ar: String(p.expected_impact_ar || ""),
         action_type: p.action_type,
         action_payload: p.action_payload ?? {},
-        evidence_count: Number(p.evidence_count || 1),
+        evidence_count: ids.length || 1,
+        sample_interaction_ids: ids,
         dedupe_key: String(p.dedupe_key),
+        confidence_score: normalizeConfidence(p.confidence_score),
+        distinct_sessions_count: sessions,
+        side_effects_evaluated: String(p.side_effects_evaluated || ""),
+        why_this_fix: String(p.why_this_fix || ""),
+        reflection: p.reflection ?? null,
         status: "pending",
       }));
 
-    if (!freshDrafts.length) return { created: 0 };
+    if (!freshDrafts.length) return { created: 0, monitored, rejected };
 
     const { error: insErr } = await supabaseAdmin
       .from("ai_governance_proposals" as never)
@@ -190,7 +249,7 @@ ${JSON.stringify(enrichedInteractions)}
       throw new Error("تعذر حفظ المقترحات الذكية");
     }
 
-    return { created: freshDrafts.length };
+    return { created: freshDrafts.length, monitored, rejected };
   });
 
 /** Admin-only: Operations & Delivery scan */
@@ -198,7 +257,7 @@ export const generateOpsProposals = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const supabaseAdmin = (await import("@/integrations/supabase/client.server")).supabaseAdmin as any;
 
     const [productsRes, existingRes] = await Promise.all([
       supabaseAdmin
@@ -265,7 +324,7 @@ export const reviewProposal = createServerFn({ method: "POST" })
   })
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const supabaseAdmin = (await import("@/integrations/supabase/client.server")).supabaseAdmin as any;
 
     const { data: proposalRow, error } = await supabaseAdmin
       .from("ai_governance_proposals" as never)
@@ -313,7 +372,7 @@ export const reviewProposal = createServerFn({ method: "POST" })
           : [];
 
         const nextRules = payload.rule_text
-          ? Array.from(new Set([...prevRules, String(payload.rule_text).trim()]))
+          ? consolidateRules(prevRules, String(payload.rule_text))
           : prevRules;
         const nextForbidden = payload.forbidden_pattern
           ? Array.from(new Set([...prevForbidden, String(payload.forbidden_pattern).trim()]))

@@ -4,9 +4,16 @@
  */
 import type { Database } from "@/integrations/supabase/types";
 
-type T<N extends keyof Database["public"]["Tables"]> = Database["public"]["Tables"][N]["Row"];
+type PublicTables = Database["public"]["Tables"];
+// الأنواع المولدة تعكس قاعدة Supabase المربوطة حاليًا (alwadi)، وهي أقدم من مخطط التطبيق
+// وتنقصها جداول/أعمدة يعتمد عليها. لحين توحيد المخطط تبقى صفوف العقد مرنة (any)؛
+// KnownRow متاح للرجوع لأعمدة القاعدة الفعلية.
+export type KnownRow<N extends string> = N extends keyof PublicTables ? PublicTables[N]["Row"] : never;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
+type T<N extends string> = any;
 
-export type AppRole = Database["public"]["Enums"]["app_role"];
+type PublicEnums = Database["public"]["Enums"];
+export type AppRole = PublicEnums extends { app_role: infer R } ? R : string;
 export type ProductRow = T<"products">;
 export type CategoryRow = T<"categories">;
 export type ProductBundleRow = T<"product_bundles">;

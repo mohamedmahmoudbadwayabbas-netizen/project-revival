@@ -228,3 +228,5 @@ Required invariants: all stock changes happen server-side, received quantity can
 
 ## Intent Router (AI tool routing)
 src/services/aiTools/intentRouter.ts maps every message to ≤2 clusters / ≤5 tools out of the 19-tool constitution. To add a tool: implement it in AI_TOOL_SUITE, add its name to the cluster's `tools`, set status to live. No DB tables involved.
+
+- ai_governance_proposals: confidence_score, distinct_sessions_count, side_effects_evaluated, why_this_fix, reflection; profiles.ai_preferences (per-customer Nawat memory). Gate logic: src/lib/governance/reflection.ts

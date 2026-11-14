@@ -13,7 +13,7 @@ export const AI_PROVIDER_PRESETS: AiProviderPreset[] = [
     id: "gemini",
     label: "Google Gemini",
     baseUrl: "",
-    modelHint: "gemini-2.5-flash",
+    modelHint: "gemini-3.5-flash",
     keyUrl: "https://aistudio.google.com/apikey",
   },
   {
