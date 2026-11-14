@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Building2, Package, Clock, MapPin } from "lucide-react";
+import { Building2, MapPin } from "lucide-react";
 import { AnimatedCounter } from "@/components/admin/AnimatedCounter";
 import { supabase } from "@/integrations/supabase/client";
 import { LiveBranch, fetchLiveBranches, UNIFIED_ALL_BRANCHES_ID } from "@/lib/branches-data";
@@ -110,21 +110,21 @@ export function BranchCardsOverview({
             <div
               key={branch.id}
               onClick={() => handleCardClick(branch.id)}
-              className={`rounded-xl border p-4 transition-colors cursor-pointer bg-white dark:bg-zinc-900 shadow-xs ${
+              className={`rounded-2xl border p-4 transition-colors cursor-pointer bg-card shadow-xs ${
                 isSelected
-                  ? "border-emerald-600 ring-1 ring-emerald-600"
-                  : "border-zinc-200/80 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700"
+                  ? "border-primary ring-1 ring-primary"
+                  : "border-border hover:border-primary/40"
               }`}
             >
               {/* Header */}
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100 truncate">
+                    <span className="text-xs font-bold text-foreground truncate">
                       {branch.name}
                     </span>
                     {isMain && (
-                      <span className="text-[10px] font-medium px-1.5 py-0.2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
+                      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
                         الرئيسي
                       </span>
                     )}

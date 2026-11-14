@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Grid2X2,
   Layers,
@@ -19,6 +20,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { formatNumberAr } from "@/lib/format-ar";
+import { cn } from "@/lib/utils";
+import { SkeletonBox } from "@/components/storefront/Skeletons";
 
 const ICON_RULES: [RegExp, LucideIcon][] = [
   [/دواجن|فراخ|دجاج|poultry|chicken/i, Drumstick],
@@ -31,11 +34,11 @@ const ICON_RULES: [RegExp, LucideIcon][] = [
   [/خضر|فاكه|produce|fruit/i, Apple],
   [/أطفال|طفل|baby/i, Baby],
   [/عناية|شخصي|care/i, Sparkles],
-  [/قهوة|شاي|coffee|tea/i, Coffee],
+  [/قهوة|محمص|شاي|coffee|tea|roaster/i, Coffee],
   [/حلو|شوكولا|snack|candy/i, Candy],
   [/سمك|أسماك|بحري|fish/i, Fish],
   [/مجمد|frozen/i, Snowflake],
-  [/مشروب|عصير|drink/i, CupSoda],
+  [/مشروب|عصير|drink|beverage/i, CupSoda],
 ];
 const FALLBACK_ICONS: LucideIcon[] = [Layers, Wheat, Leaf, Apple, Coffee, Candy];
 const TILE_TONES = [
@@ -47,13 +50,12 @@ const TILE_TONES = [
   "tile-teal",
   "tile-purple",
 ];
+
 function categoryIcon(name: string, index: number): LucideIcon {
   return (
     ICON_RULES.find(([re]) => re.test(name))?.[1] ?? FALLBACK_ICONS[index % FALLBACK_ICONS.length]
   );
 }
-import { cn } from "@/lib/utils";
-import { SkeletonBox } from "@/components/storefront/Skeletons";
 
 export type Category = {
   id: string;
@@ -79,15 +81,16 @@ export function CategoryGrid({
   isLoading = false,
 }: CategoryGridProps) {
   const isAllSelected = !active || active === "all";
+  const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
 
   return (
     <section aria-labelledby="category-grid-title">
-      <div className="mb-6 flex items-end justify-between gap-4">
+      <div className="mb-5 flex items-end justify-between gap-4">
         <div>
-          <span className="text-sm font-bold text-primary">تسوّق حسب القسم</span>
+          <span className="text-xs font-bold text-primary sm:text-sm">تسوّق حسب القسم</span>
           <h2
             id="category-grid-title"
-            className="mt-1 text-2xl font-bold text-primary-dark sm:text-3xl"
+            className="mt-1 text-xl font-bold text-foreground sm:text-3xl"
           >
             أقسام المتجر
           </h2>
@@ -96,9 +99,9 @@ export function CategoryGrid({
           <button
             type="button"
             onClick={() => onSelect(null)}
-            className="rounded-full border border-border bg-card px-4 py-2 text-xs font-semibold text-primary hover:border-primary/40"
+            className="rounded-xl border border-border bg-card px-3.5 py-2 text-xs font-bold text-primary transition-colors hover:border-primary/40"
           >
-            كل الأقسام
+            عرض كل الأقسام
           </button>
         )}
       </div>
@@ -120,13 +123,15 @@ export function CategoryGrid({
           </div>
         </div>
       ) : (
-        <div className="no-scrollbar -mx-3 flex snap-x gap-4 overflow-x-auto px-3 pb-2 sm:gap-6">
+        <div className="no-scrollbar -mx-3 flex snap-x gap-3 overflow-x-auto px-3 pb-2 sm:gap-5">
           {categories.map((category, index) => {
             const isActive = active === category.id || active === category.slug;
             const count =
               productsCountByCategory[category.id] ?? productsCountByCategory[category.slug] ?? 0;
             const name = category.name_ar || category.name;
             const Icon = categoryIcon(`${name} ${category.slug}`, index);
+            const showImage = Boolean(category.image_url) && !failedImages[category.id];
+
             return (
               <button
                 key={category.id}
@@ -138,10 +143,10 @@ export function CategoryGrid({
               >
                 <span
                   className={cn(
-                    "grid h-24 w-24 place-items-center overflow-hidden rounded-full border-2 bg-card p-1 shadow-card transition-all duration-300 group-hover:-translate-y-1 sm:h-28 sm:w-28",
+                    "grid h-22 w-22 place-items-center overflow-hidden rounded-full border-2 bg-card p-1 shadow-card transition-all duration-300 group-hover:-translate-y-1 sm:h-26 sm:w-26",
                     isActive
-                      ? "border-primary"
-                      : "border-transparent group-hover:border-primary/30",
+                      ? "border-primary ring-2 ring-primary/20"
+                      : "border-border/60 group-hover:border-primary/40",
                   )}
                 >
                   <span
@@ -150,17 +155,20 @@ export function CategoryGrid({
                       TILE_TONES[index % TILE_TONES.length],
                     )}
                   >
-                    {category.image_url ? (
+                    {showImage ? (
                       <img
-                        src={category.image_url}
+                        src={category.image_url!}
                         alt=""
                         loading="lazy"
                         decoding="async"
+                        onError={() =>
+                          setFailedImages((prev) => ({ ...prev, [category.id]: true }))
+                        }
                         className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                       />
                     ) : (
                       <Icon
-                        className="h-9 w-9 transition-transform duration-300 group-hover:scale-110"
+                        className="h-8 w-8 transition-transform duration-300 group-hover:scale-110"
                         aria-hidden="true"
                       />
                     )}
@@ -169,13 +177,13 @@ export function CategoryGrid({
                 <span className="text-center">
                   <strong
                     className={cn(
-                      "block text-xs font-bold sm:text-sm",
+                      "line-clamp-2 block text-xs font-bold leading-snug sm:text-sm",
                       isActive ? "text-primary" : "text-foreground",
                     )}
                   >
                     {name}
                   </strong>
-                  <small className="text-[11px] text-muted-foreground">
+                  <small className="mt-0.5 block text-[11px] font-medium text-muted-foreground">
                     {count > 0 ? `${formatNumberAr(count)} صنف` : "تصفّح"}
                   </small>
                 </span>

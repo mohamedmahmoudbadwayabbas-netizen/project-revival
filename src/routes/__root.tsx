@@ -15,7 +15,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { CartProvider } from "@/lib/cart-context";
 import { AuthProvider } from "@/lib/auth-context";
-import { SettingsProvider } from "@/lib/settings-context";
+import { SettingsProvider, useSettings } from "@/lib/settings-context";
 import { ThemeProvider } from "@/lib/theme-context";
 import { ColorModeProvider } from "@/lib/color-mode-context";
 import { I18nProvider } from "@/lib/i18n-context";
@@ -114,13 +114,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       {
         property: "og:image",
-        content:
-          "https://storage.googleapis.com/gpt-engineer-file-uploads/7FGpG204P8ZoMaDVUrQDzFmMxBS2/social-images/social-1785331350061-1785331017982.webp",
+        content: `${SITE_URL}/images/hero/fresh-produce.jpg`,
       },
       {
         name: "twitter:image",
-        content:
-          "https://storage.googleapis.com/gpt-engineer-file-uploads/7FGpG204P8ZoMaDVUrQDzFmMxBS2/social-images/social-1785331350061-1785331017982.webp",
+        content: `${SITE_URL}/images/hero/fresh-produce.jpg`,
       },
     ],
     links: [
@@ -176,6 +174,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <I18nProvider>
         <SettingsProvider>
+          <FaviconSync />
           <ThemeProvider>
             <ColorModeProvider storageKey="store-color-mode" defaultMode="light">
               <LayoutConfigProvider>
@@ -185,7 +184,7 @@ function RootComponent() {
                       <StorefrontAnnouncement />
                       <StorefrontHeader />
                       <RouteFade>
-                        <div className="pb-36 md:pb-0">
+                        <div className="pb-20 md:pb-0">
                           <Outlet />
                         </div>
                       </RouteFade>
@@ -228,4 +227,19 @@ function StorefrontHeader() {
 // Smooth route layout container without forced unmount
 function RouteFade({ children }: { children: ReactNode }) {
   return <div className="transition-opacity duration-150">{children}</div>;
+}
+
+function FaviconSync() {
+  const { favicon_url } = useSettings();
+  useEffect(() => {
+    if (!favicon_url || typeof document === "undefined") return;
+    let link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+    if (!link) {
+      link = document.createElement("link");
+      link.rel = "icon";
+      document.head.appendChild(link);
+    }
+    link.href = favicon_url;
+  }, [favicon_url]);
+  return null;
 }

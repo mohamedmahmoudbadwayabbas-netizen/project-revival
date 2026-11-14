@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Search, X, Plus, ShoppingBag, Sparkles, Loader2, Check } from "lucide-react";
+import { Search, X, Plus, Sparkles, Loader2, Check, ImageIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/lib/cart-context";
@@ -11,8 +11,11 @@ import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { flyToCart } from "@/lib/fly-to-cart";
 import { motion, AnimatePresence } from "motion/react";
+import { formatPriceAr } from "@/lib/format-ar";
+import { inferUnitLabel } from "@/lib/storefront-home";
 
 type SearchProduct = Product;
+const EMPTY_PRODUCTS: SearchProduct[] = [];
 
 interface SmartSearchBarProps {
   className?: string;
@@ -29,11 +32,12 @@ export function SmartSearchBar({
 }: SmartSearchBarProps) {
   const { query, setQuery } = useSearch();
   const [debouncedQuery, setDebouncedQuery] = useState(query);
-  const { data: allProducts = [] } = useStoreProducts();
-  const [results, setResults] = useState<SearchProduct[]>([]);
+  const { data: allProducts = EMPTY_PRODUCTS } = useStoreProducts();
+  const [results, setResults] = useState<SearchProduct[]>(EMPTY_PRODUCTS);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [addedIds, setAddedIds] = useState<Record<string, boolean>>({});
+  const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
 
   const { addItem } = useCart();
   const navigate = useNavigate();
@@ -50,8 +54,8 @@ export function SmartSearchBar({
   // Filter products whenever debouncedQuery changes
   useEffect(() => {
     if (!debouncedQuery.trim()) {
-      setResults([]);
-      setIsOpen(false);
+      setResults((prev) => (prev.length === 0 ? prev : EMPTY_PRODUCTS));
+      setIsOpen((prev) => (prev ? false : prev));
       return;
     }
 
@@ -78,10 +82,8 @@ export function SmartSearchBar({
     if ((product.stock_quantity ?? 0) <= 0) return;
     const targetQty = product.is_by_weight ? 0.5 : 1;
 
-    // Optimistic UI update
     addItem(product, targetQty);
 
-    // Visual feedback badge animation
     setAddedIds((prev) => ({ ...prev, [product.id]: true }));
     setTimeout(() => {
       setAddedIds((prev) => ({ ...prev, [product.id]: false }));
@@ -90,7 +92,7 @@ export function SmartSearchBar({
     const targetImg =
       (e.currentTarget.parentElement?.querySelector("img") as HTMLImageElement) || null;
     flyToCart(targetImg);
-    toast.success(`تمت إضافة "${product.name}" للسلة بنجاح 🛒`);
+    toast.success(`تمت إضافة "${product.name_ar || product.name}" للسلة بنجاح`);
   };
 
   const handleProductClick = (productId: string) => {
@@ -101,7 +103,6 @@ export function SmartSearchBar({
 
   return (
     <div ref={containerRef} className={`relative w-full ${className}`} dir="rtl">
-      {/* Central Classical Input Box */}
       <div className="relative flex items-center">
         <Input
           autoFocus={autoFocus}
@@ -114,10 +115,10 @@ export function SmartSearchBar({
             if (query.trim()) setIsOpen(true);
           }}
           placeholder={placeholder}
-          className="h-12 w-full rounded-2xl border-2 border-border/80 bg-card ps-11 pe-10 text-xs sm:text-sm font-bold shadow-xs transition-all focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20"
+          className="h-10 w-full rounded-xl border border-border bg-card ps-10 pe-9 text-xs font-semibold shadow-xs transition-all focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 sm:h-11 sm:text-sm"
         />
 
-        <div className="absolute start-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
+        <div className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground">
           {isLoading ? (
             <Loader2 className="h-4 w-4 animate-spin text-primary" />
           ) : (
@@ -128,11 +129,12 @@ export function SmartSearchBar({
         {query && (
           <button
             type="button"
+            aria-label="مسح البحث"
             onClick={() => {
               setQuery("");
               setIsOpen(false);
             }}
-            className="absolute end-3 top-1/2 -translate-y-1/2 grid h-6 w-6 place-items-center rounded-full bg-muted text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+            className="absolute end-2.5 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-full bg-muted text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
           >
             <X className="h-3.5 w-3.5" />
           </button>
@@ -147,65 +149,62 @@ export function SmartSearchBar({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 4, scale: 0.98 }}
             transition={{ duration: 0.15 }}
-            className="absolute start-0 end-0 top-full z-50 mt-2 overflow-hidden rounded-3xl border border-border/80 bg-card p-2 shadow-2xl backdrop-blur-md"
+            className="absolute start-0 end-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-border bg-card p-2 shadow-2xl"
           >
             {results.length > 0 ? (
-              <div className="space-y-1 max-h-80 overflow-y-auto divide-y divide-border/40">
-                <div className="px-3 py-1.5 text-[11px] font-black text-muted-foreground flex items-center justify-between">
+              <div className="max-h-80 space-y-1 overflow-y-auto divide-y divide-border/40">
+                <div className="flex items-center justify-between px-3 py-1.5 text-[11px] font-bold text-muted-foreground">
                   <span className="flex items-center gap-1">
-                    <Sparkles className="h-3 w-3 text-emerald-500" /> نتائج البحث السريع (
+                    <Sparkles className="h-3 w-3 text-primary" /> نتائج البحث السريع (
                     <bdi dir="ltr" className="tabular-nums">
                       {results.length}
                     </bdi>
                     )
-                  </span>
-                  <span className="text-[10px] font-bold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-full">
-                    تصحيح إملائي تلقائي 🎯
                   </span>
                 </div>
 
                 {results.map((product) => {
                   const isAdded = addedIds[product.id];
                   const unavailable = (product.stock_quantity ?? 0) <= 0;
+                  const showImg = Boolean(product.image_url) && !failedImages[product.id];
+                  const unitLabel = product.is_by_weight ? "بالوزن" : inferUnitLabel(product);
+
                   return (
                     <div
                       key={product.id}
                       onClick={() => handleProductClick(product.id)}
-                      className="group flex items-center justify-between gap-3 p-2.5 rounded-2xl transition-all hover:bg-secondary/70 cursor-pointer"
+                      className="group flex cursor-pointer items-center justify-between gap-3 rounded-xl p-2 transition-colors hover:bg-secondary/70"
                     >
-                      {/* Thumbnail & Product Details */}
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="h-11 w-11 shrink-0 overflow-hidden rounded-xl border border-border/50 bg-secondary grid place-items-center">
-                          {product.image_url ? (
+                      <div className="flex min-w-0 items-center gap-3">
+                        <div className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl border border-border/50 bg-white">
+                          {showImg ? (
                             <img
-                              src={product.image_url}
-                              alt={product.name}
-                              className={`h-full w-full object-cover group-hover:scale-110 transition-transform duration-300 ${unavailable ? "opacity-50 grayscale" : ""}`}
+                              src={product.image_url!}
+                              alt={product.name_ar || product.name}
+                              onError={() =>
+                                setFailedImages((prev) => ({ ...prev, [product.id]: true }))
+                              }
+                              className={`h-full w-full object-contain p-1 ${unavailable ? "opacity-50 grayscale" : ""}`}
                             />
                           ) : (
-                            <span className="text-lg">🌿</span>
+                            <ImageIcon className="h-5 w-5 text-muted-foreground" />
                           )}
                         </div>
 
                         <div className="min-w-0">
-                          <h4 className="text-xs font-black text-foreground truncate group-hover:text-primary transition-colors">
-                            {product.name}
+                          <h4 className="truncate text-xs font-bold text-foreground transition-colors group-hover:text-primary">
+                            {product.name_ar || product.name}
                           </h4>
-                          <div
-                            dir="ltr"
-                            className="flex flex-wrap items-center gap-2 text-left tabular-nums text-[11px] text-muted-foreground font-bold mt-0.5"
-                          >
-                            <span className="text-emerald-600 dark:text-emerald-400 font-black">
-                              {product.price_per_unit.toFixed(2)} EGP
+                          <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[11px] font-bold tabular-nums text-muted-foreground">
+                            <span className="font-black text-primary">
+                              {formatPriceAr(product.price_per_unit)}
                             </span>
                             {product.old_price && product.old_price > product.price_per_unit && (
-                              <span className="line-through text-[10px] text-muted-foreground/70">
-                                {product.old_price.toFixed(2)} EGP
+                              <span className="text-[10px] line-through opacity-70">
+                                {formatPriceAr(product.old_price)}
                               </span>
                             )}
-                            <span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded-md">
-                              {product.is_by_weight ? "بالوزن" : product.unit_label || "قطعة"}
-                            </span>
+                            <span className="text-[10px] text-muted-foreground">{unitLabel}</span>
                           </div>
                           {unavailable && (
                             <span className="text-[10px] font-bold text-destructive">

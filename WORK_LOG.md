@@ -413,3 +413,8 @@
 - حد أقصى 15 قاعدة مع دمج المتشابه.
 - تفضيلات كل عميل في ai_preferences بالملف الشخصي.
 - كارت الاقتراح يعرض: الثقة، عدد الجلسات، لماذا هذا الحل، الآثار الجانبية.
+
+## 2026-11-14 — حفظ جميع الصور والأشكال البصرية في Supabase Storage وقاعدة البيانات
+- **حاويات التخزين (`product-images` و`store-assets`):** إنشاء الحاويتين الخاصتين في مشروع Supabase (`gpoqacclpjadzbhevgal`) ورفع جميع الصور المحلية والأشكال البصرية (43 صورة منتجات، 11 صورة أقسام، 4 صور بانر وخلفيات، و4 أصول SVG للشعار والأيقونة والعنصر العائم وخلفية الدخول).
+- **تحديث روابط قاعدة البيانات (`products` و`categories` و`store_settings`):** حفظ روابط موقّعة طويلة الأمد (10 سنوات) في `products.image_url` و`products.images` (42 منتجًا)، و`categories.image_url` (11 قسمًا)، وحقول `store_settings` (`logo_url`, `favicon_url`, `hero_image_url`, `hero_bg_image`, `cart_empty_bg`, `login_bg_pattern`, `floating_element_image`) حتى تظهر جميع الصور والأشكال تلقائيًا عند ربط أي نسخة من المشروع بقاعدة البيانات.
+- **تحديث التطبيق (`public-settings.functions.ts`, `storefront-home.ts`, `index.tsx`, `StoreLogo.tsx`, `__root.tsx`):** تمرير كافة حقول الصور والخلفيات والأيقونة من `store_settings` إلى السلايدر والشعار والـ favicon والسلة وشاشة الدخول، وإزالة الروابط الخارجية القديمة من القوالب الافتراضية.

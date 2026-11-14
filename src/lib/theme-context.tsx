@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { getPublicStoreSettings } from "@/lib/public-settings.functions";
 import { normalizeStoreIdentity, STORE_IDENTITY } from "@/lib/store-identity";
 
 export type ThemeSettings = {
@@ -26,7 +27,7 @@ const DEFAULTS: ThemeSettings = {
   hero_grid_images: [],
   hero_title: "كل احتياجات البيت في مكان واحد",
   hero_subtitle: "تصفّح المنتجات المتاحة واختر ما يناسب قائمتك.",
-  hero_cta_text: "تسوّق الآن 🛒",
+  hero_cta_text: "تسوّق الآن",
   auth_bg_url: null,
   cart_empty_bg_url: null,
 };
@@ -71,7 +72,6 @@ function applyTokens(t: ThemeSettings) {
   };
   const primary = hexToHsl(t.primary_hex);
   const accent = hexToHsl(t.accent_hex);
-  // Brand colors are fixed in src/styles.css; only non-color tokens apply here.
   void set;
   void primary;
   void accent;
@@ -92,17 +92,18 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     let mounted = true;
 
     const load = async () => {
-      const { data } = await supabase
-        .from("store_settings_public")
-        .select("*")
-        .limit(1)
-        .maybeSingle();
+      let data: Record<string, unknown> | null = null;
+      try {
+        data = (await getPublicStoreSettings()) as Record<string, unknown>;
+      } catch {
+        data = null;
+      }
       if (!mounted) return;
-      if (!data) {
+      if (!data || Object.keys(data).length === 0) {
         applyTokens(DEFAULTS);
         return;
       }
-      const d = normalizeStoreIdentity(data as Record<string, unknown>) as any;
+      const d = normalizeStoreIdentity(data) as any;
       const merged = normalizeStoreIdentity({
         ...DEFAULTS,
         id: d.id ?? DEFAULTS.id,

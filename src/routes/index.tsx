@@ -1,19 +1,10 @@
 import { SITE_URL, BRAND_NAME_AR } from "@/lib/brand";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { type Product } from "@/lib/cart-context";
 import { useSettings } from "@/lib/settings-context";
 import { useSearch } from "@/lib/search-context";
-import {
-  ArrowLeft,
-  Banknote,
-  PackageOpen,
-  RotateCcw,
-  SearchX,
-  Sparkles,
-  Truck,
-} from "lucide-react";
-import heroLuxe from "@/assets/hero-luxe.jpg";
+import { Banknote, PackageOpen, RotateCcw, SearchX, Sparkles, Truck } from "lucide-react";
 import { StoreLogo } from "@/components/storefront/StoreLogo";
 import { formatNumberAr } from "@/lib/format-ar";
 import { HomePageSkeleton } from "@/components/storefront/Skeletons";
@@ -25,11 +16,18 @@ import { ProductCard } from "@/components/storefront/ProductCard";
 import { ProductModal } from "@/components/storefront/ProductModal";
 import { CategoryGrid } from "@/components/storefront/CategoryGrid";
 import { BuyAgainRail } from "@/components/storefront/BuyAgainRail";
+import { OffersHeroSlider } from "@/components/storefront/OffersHeroSlider";
+import {
+  buildOffersSlides,
+  getDiscountPercent,
+  partitionCatalogSections,
+  type OffersSlideAction,
+} from "@/lib/storefront-home";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "سوبرماركت الوادي الأخضر — سلة البيت الكاملة تبدأ بفكرة" },
+      { title: "سوبرماركت الوادي الأخضر — سلة البيت الكاملة" },
       {
         name: "description",
         content:
@@ -49,8 +47,11 @@ export const Route = createFileRoute("/")({
   component: HomePage,
 });
 
+type CollectionMode = "remaining" | "all" | "offers";
+
 export function HomePage() {
   const settings = useSettings();
+  const navigate = useNavigate();
   const { query: searchQuery, setQuery: setSearchQuery } = useSearch();
   const { data: productsData, isLoading: isProductsLoading } = useStoreProducts();
   const { data: categoriesData } = useStoreCategories();
@@ -63,9 +64,7 @@ export function HomePage() {
 
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedProductForModal, setSelectedProductForModal] = useState<Product | null>(null);
-  const [selectedCollection, setSelectedCollection] = useState<"all" | "offers" | "featured">(
-    "all",
-  );
+  const [collectionMode, setCollectionMode] = useState<CollectionMode>("remaining");
 
   useEffect(() => {
     const syncCategoryFromUrl = () => {
@@ -78,12 +77,11 @@ export function HomePage() {
   }, []);
 
   const heroBanner = heroBanners[0];
-  const heroSubtitle = "اكتب اسم منتج أو جزءًا من قائمتك، أو ابدأ من أحد أقسام الهايبر ماركت.";
 
   const handleSelectCategory = (categoryId: string | null) => {
     const target = categoryId ?? "all";
     setSelectedCategory(target);
-    setSelectedCollection("all");
+    setCollectionMode("remaining");
     setSearchQuery("");
 
     const url = new URL(window.location.href);
@@ -96,6 +94,36 @@ export function HomePage() {
     }
   };
 
+  const handleSlideAction = (action: OffersSlideAction) => {
+    if (action.type === "scroll") {
+      document.getElementById(action.targetId)?.scrollIntoView({ behavior: "smooth" });
+      return;
+    }
+    if (action.type === "filter") {
+      setSelectedCategory("all");
+      setSearchQuery("");
+      setCollectionMode(action.collection === "offers" ? "offers" : "all");
+      document.getElementById("supermarket-shelves")?.scrollIntoView({ behavior: "smooth" });
+      return;
+    }
+    navigate({ to: action.to });
+  };
+
+  const slides = useMemo(
+    () =>
+      buildOffersSlides({
+        heroTitle: heroBanner?.title || settings.hero_title,
+        heroSubtitle: heroBanner?.subtitle || settings.hero_subtitle,
+        heroImageUrl: heroBanner?.image_url || settings.hero_image_url,
+        heroBgImage: settings.hero_bg_image,
+        pantryImageUrl: settings.cart_empty_bg,
+        heroCtaText: heroBanner?.cta_text || settings.hero_cta_text,
+        freeShippingThreshold: settings.free_shipping_threshold,
+        products,
+      }),
+    [heroBanner, settings, products],
+  );
+
   const productsCountByCategory = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const product of products) {
@@ -105,6 +133,14 @@ export function HomePage() {
     }
     return counts;
   }, [products]);
+
+  const { weeklyOffers, remainingCatalog } = useMemo(
+    () => partitionCatalogSections(products, 5),
+    [products],
+  );
+
+  const isBrowsing = !searchQuery.trim() && selectedCategory === "all";
+  const showOffersStrip = isBrowsing && collectionMode === "remaining" && weeklyOffers.length > 0;
 
   const filteredProducts = useMemo(() => {
     let list = products;
@@ -128,165 +164,95 @@ export function HomePage() {
   }, [products, selectedCategory, searchQuery, categories]);
 
   const hasOffers = useMemo(
-    () =>
-      filteredProducts.some(
-        (product) => product.old_price != null && product.old_price > product.price_per_unit,
-      ),
-    [filteredProducts],
-  );
-  const hasFeatured = useMemo(
-    () => filteredProducts.some((product) => product.is_featured),
-    [filteredProducts],
+    () => products.some((product) => getDiscountPercent(product) > 0),
+    [products],
   );
 
-  const homeProducts = useMemo(() => {
-    if (selectedCategory !== "all" || searchQuery.trim()) return filteredProducts;
-    if (selectedCollection === "offers") {
-      return filteredProducts.filter(
-        (product) => product.old_price != null && product.old_price > product.price_per_unit,
-      );
+  const displayedGridProducts = useMemo(() => {
+    if (!isBrowsing) return filteredProducts;
+    if (collectionMode === "offers") {
+      return products.filter((product) => getDiscountPercent(product) > 0);
     }
-    if (selectedCollection === "featured") {
-      return filteredProducts.filter((product) => product.is_featured);
+    if (collectionMode === "all") {
+      return products;
     }
-    return filteredProducts;
-  }, [filteredProducts, selectedCollection, selectedCategory, searchQuery]);
+    // Default view: exclude items already highlighted in the weeklyOffers strip -> zero duplication
+    return remainingCatalog;
+  }, [isBrowsing, filteredProducts, collectionMode, products, remainingCatalog]);
+
+  const activeCategoryName = useMemo(() => {
+    if (selectedCategory === "all") return null;
+    const cat = categories.find((c) => c.id === selectedCategory || c.slug === selectedCategory);
+    return cat ? cat.name_ar || cat.name : null;
+  }, [selectedCategory, categories]);
 
   if (loading) return <HomePageSkeleton />;
 
+  const contentEyebrow = searchQuery.trim()
+    ? "بحث المتجر"
+    : activeCategoryName
+      ? "منتجات القسم"
+      : collectionMode === "offers"
+        ? "تخفيضات المتجر"
+        : showOffersStrip
+          ? "باقي التشكيلة"
+          : "كل التشكيلة";
+
   const contentLabel = searchQuery.trim()
     ? "نتائج البحث"
-    : selectedCategory !== "all"
-      ? "منتجات القسم"
-      : selectedCollection === "offers"
-        ? "منتجات عليها سعر سابق مسجل"
-        : selectedCollection === "featured"
-          ? "اختيارات المتجر"
-          : "تصفّح منتجات المتجر";
+    : activeCategoryName
+      ? activeCategoryName
+      : collectionMode === "offers"
+        ? "جميع العروض المتوفرة"
+        : showOffersStrip
+          ? "تصفّح بقية منتجات المتجر"
+          : "جميع منتجات المتجر";
 
-  const isBrowsing = !searchQuery.trim() && selectedCategory === "all";
-  const bestSellers = products
-    .filter((p) => p.is_top_seller || p.is_popular || p.is_featured)
-    .slice(0, 12);
-  const weeklyOffers = products
-    .filter((p) => p.old_price != null && p.old_price > p.price_per_unit)
-    .slice(0, 12);
-
-  const chip = (active: boolean) =>
-    `min-h-11 rounded-full px-5 text-sm font-bold transition-colors ${
+  const filterBtnClass = (active: boolean) =>
+    `min-h-10 rounded-xl px-4 text-xs font-bold transition-colors sm:text-sm ${
       active
-        ? "bg-primary text-primary-foreground"
-        : "bg-card text-muted-foreground border border-border hover:border-primary/40 hover:text-primary"
+        ? "bg-primary text-primary-foreground shadow-xs"
+        : "border border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-primary"
     }`;
-
-  const Row = ({
-    id,
-    eyebrow,
-    title,
-    items,
-  }: {
-    id: string;
-    eyebrow: string;
-    title: string;
-    items: Product[];
-  }) =>
-    items.length === 0 ? null : (
-      <section className="mt-12" aria-labelledby={id}>
-        <div className="mb-5 flex items-end justify-between gap-4">
-          <div>
-            <span className="text-sm font-bold text-primary">{eyebrow}</span>
-            <h2 id={id} className="mt-1 text-2xl font-bold text-primary-dark sm:text-3xl">
-              {title}
-            </h2>
-          </div>
-        </div>
-        <div className="no-scrollbar -mx-3 flex snap-x gap-3 overflow-x-auto px-3 pb-2 sm:gap-4">
-          {items.map((product) => (
-            <div key={product.id} className="w-[46%] shrink-0 snap-start sm:w-[230px]">
-              <ProductCard product={product} onOpen={setSelectedProductForModal} />
-            </div>
-          ))}
-        </div>
-      </section>
-    );
 
   return (
     <main
-      className="min-h-screen overflow-x-hidden bg-background pb-28 text-right text-foreground md:pb-0"
+      className="min-h-screen overflow-x-hidden bg-background text-right text-foreground"
       dir="rtl"
     >
-      {/* PROMO HERO — compact on phones, products show early */}
-      <section className="px-3 pt-3 sm:px-6 sm:pt-6" aria-labelledby="home-hero-title">
-        <div className="mx-auto max-w-[1320px] md:hidden">
-          <SmartSearchBar placeholder="ابحث عن منتج أو اكتب قائمة مشترياتك…" />
+      {/* ١. البحث الموحد على الجوال + سلايدر العروض المتحرك */}
+      <section className="px-3 pt-3 sm:px-6 sm:pt-5">
+        <div id="mobile-unified-search" className="mx-auto mb-3 max-w-[1320px] md:hidden">
+          <SmartSearchBar placeholder="ابحث عن منتج أو اكتب طلبك…" />
         </div>
-        <div className="relative mx-auto mt-3 max-w-[1320px] overflow-hidden rounded-3xl bg-fresh text-primary-foreground shadow-elegant md:mt-0">
-          <img
-            src={heroBanner?.image_url || settings.hero_image_url || heroLuxe}
-            alt="تشكيلة من البقالة والمنتجات الطازجة"
-            width={1600}
-            height={1008}
-            fetchPriority="high"
-            decoding="async"
-            className="absolute inset-y-0 left-0 h-full w-[55%] object-cover md:w-1/2"
-            style={{
-              maskImage: "linear-gradient(to left, transparent, black 45%)",
-              WebkitMaskImage: "linear-gradient(to left, transparent, black 45%)",
-            }}
-          />
-          <div className="relative flex min-h-[190px] max-w-[62%] flex-col justify-center gap-2 p-5 sm:min-h-[320px] sm:gap-4 sm:p-10 md:max-w-[50%]">
-            <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-accent px-3 py-1 text-[11px] font-black text-accent-foreground sm:text-sm">
-              <Truck className="h-3.5 w-3.5" aria-hidden="true" /> توصيل في ٤٥ دقيقة
-            </span>
-            <h1
-              id="home-hero-title"
-              className="text-xl font-black leading-snug sm:text-4xl lg:text-5xl"
-            >
-              {heroBanner?.title || "طازج كل يوم.. لباب بيتك"}
-            </h1>
-            <p className="hidden text-base leading-8 opacity-90 sm:block">{heroSubtitle}</p>
-            <div className="hidden max-w-md md:block">
-              <SmartSearchBar placeholder="ابحث عن منتج أو اكتب قائمة مشترياتك…" />
-            </div>
-            <button
-              type="button"
-              onClick={() =>
-                document
-                  .getElementById("supermarket-shelves")
-                  ?.scrollIntoView({ behavior: "smooth" })
-              }
-              className="mt-1 inline-flex min-h-11 w-fit items-center gap-2 rounded-xl bg-background px-5 text-sm font-black text-primary shadow-card transition-transform active:scale-95 sm:text-base"
-            >
-              {heroBanner?.cta_text || settings.hero_cta_text || "تسوّق الآن"}
-              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-            </button>
-          </div>
-        </div>
-      </section>
 
-      {/* TRUST PILLS — one compact row */}
-      <section className="mx-auto mt-3 max-w-[1320px] px-3 sm:px-6" aria-label="مميزات التسوق">
-        <ul className="no-scrollbar flex gap-2 overflow-x-auto">
-          {[
-            { icon: Truck, t: "توصيل سريع" },
-            { icon: Banknote, t: "الدفع عند الاستلام" },
-            { icon: RotateCcw, t: "استبدال سهل" },
-          ].map(({ icon: Icon, t }) => (
-            <li
-              key={t}
-              className="flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-card px-3 py-2 text-xs font-bold text-primary-dark"
-            >
-              <Icon className="h-4 w-4 text-primary" aria-hidden="true" />
-              {t}
-            </li>
-          ))}
-        </ul>
+        <OffersHeroSlider slides={slides} onAction={handleSlideAction} />
+
+        {/* شريط المزايا المدمج النظيف (بدون تكديس كبسولات) */}
+        <div
+          aria-label="مميزات التسوق"
+          className="mx-auto mt-3 flex max-w-[1320px] flex-wrap items-center justify-center gap-x-6 gap-y-2 border-b border-border/60 pb-3 text-xs font-semibold text-muted-foreground sm:justify-start sm:text-sm"
+        >
+          <span className="inline-flex items-center gap-1.5 text-foreground">
+            <Truck className="h-4 w-4 text-primary" aria-hidden="true" />
+            توصيل سريع خلال ٤٥ دقيقة
+          </span>
+          <span className="inline-flex items-center gap-1.5 text-foreground">
+            <Banknote className="h-4 w-4 text-primary" aria-hidden="true" />
+            الدفع عند الاستلام أو أونلاين
+          </span>
+          <span className="inline-flex items-center gap-1.5 text-foreground">
+            <RotateCcw className="h-4 w-4 text-primary" aria-hidden="true" />
+            استبدال واسترجاع فوري
+          </span>
+        </div>
       </section>
 
       <BuyAgainRail onOpenProduct={setSelectedProductForModal} />
 
       <div className="mx-auto max-w-[1320px] px-3 sm:px-6">
-        <section id="home-departments" className="mt-6 sm:mt-10">
+        {/* ٢. أقسام المتجر */}
+        <section id="home-departments" className="mt-6 sm:mt-8">
           <CategoryGrid
             categories={categories}
             active={selectedCategory}
@@ -295,16 +261,45 @@ export function HomePage() {
           />
         </section>
 
-        {isBrowsing && (
-          <Row id="best-sellers" eyebrow="يحبها عملاؤنا" title="الأكثر طلبًا" items={bestSellers} />
-        )}
-        {isBrowsing && (
-          <Row id="weekly-offers" eyebrow="وفّر أكثر" title="عروض الأسبوع" items={weeklyOffers} />
+        {/* ٣. عروض الأسبوع المميزة (تظهر فقط في التصفح العام بدون تكرار في الشبكة أدناه) */}
+        {showOffersStrip && (
+          <section
+            id="weekly-offers"
+            className="mt-9 sm:mt-11"
+            aria-labelledby="weekly-offers-title"
+          >
+            <div className="mb-4 flex items-end justify-between gap-4">
+              <div>
+                <span className="text-xs font-bold text-primary sm:text-sm">وفّر أكثر اليوم</span>
+                <h2
+                  id="weekly-offers-title"
+                  className="mt-1 text-xl font-bold text-foreground sm:text-3xl"
+                >
+                  عروض الأسبوع المميزة
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCollectionMode("offers")}
+                className="text-xs font-bold text-primary hover:underline sm:text-sm"
+              >
+                عرض كل التخفيضات ←
+              </button>
+            </div>
+            <div className="no-scrollbar -mx-3 flex snap-x gap-3 overflow-x-auto px-3 pb-2 sm:gap-4">
+              {weeklyOffers.map((product) => (
+                <div key={product.id} className="w-[46%] shrink-0 snap-start sm:w-[225px]">
+                  <ProductCard product={product} onOpen={setSelectedProductForModal} />
+                </div>
+              ))}
+            </div>
+          </section>
         )}
 
+        {/* شريط حالة البحث */}
         {searchQuery.trim() && (
           <div
-            className="mt-8 flex items-center justify-between rounded-xl border border-border bg-secondary px-5 py-3 text-sm"
+            className="mt-7 flex items-center justify-between rounded-xl border border-border bg-secondary px-4 py-3 text-xs sm:text-sm"
             role="status"
           >
             <span>
@@ -314,59 +309,57 @@ export function HomePage() {
             <button
               type="button"
               onClick={() => setSearchQuery("")}
-              className="min-h-11 px-2 font-bold text-primary"
+              className="px-2 font-bold text-primary hover:underline"
             >
               مسح البحث
             </button>
           </div>
         )}
 
-        <section id="supermarket-shelves" className="mt-12 scroll-mt-24">
-          <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        {/* ٤. شبكة المنتجات الرئيسية (بدون تكرار العناصر المعروضة في العروض المميزة) */}
+        <section id="supermarket-shelves" className="mt-9 scroll-mt-20 sm:mt-11">
+          <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <span className="text-sm font-bold text-primary">كل التشكيلة</span>
-              <h2 className="mt-1 text-2xl font-bold text-primary-dark sm:text-3xl">
-                {contentLabel}
-              </h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {formatNumberAr(homeProducts.length)} منتج
+              <span className="text-xs font-bold text-primary sm:text-sm">{contentEyebrow}</span>
+              <h2 className="mt-1 text-xl font-bold text-foreground sm:text-3xl">{contentLabel}</h2>
+              <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+                {formatNumberAr(displayedGridProducts.length)} منتج
               </p>
             </div>
+
             {isBrowsing && (
-              <div className="flex flex-wrap gap-2" role="group" aria-label="تصفية المنتجات">
+              <div className="flex flex-wrap gap-2" role="group" aria-label="تصفية التشكيلة">
                 <button
                   type="button"
-                  onClick={() => setSelectedCollection("all")}
-                  aria-pressed={selectedCollection === "all"}
-                  className={chip(selectedCollection === "all")}
+                  onClick={() => setCollectionMode("remaining")}
+                  aria-pressed={collectionMode === "remaining"}
+                  className={filterBtnClass(collectionMode === "remaining")}
                 >
-                  الكل
+                  الموصى بها ({formatNumberAr(remainingCatalog.length)})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCollectionMode("all")}
+                  aria-pressed={collectionMode === "all"}
+                  className={filterBtnClass(collectionMode === "all")}
+                >
+                  كل المنتجات ({formatNumberAr(products.length)})
                 </button>
                 {hasOffers && (
                   <button
                     type="button"
-                    onClick={() => setSelectedCollection("offers")}
-                    aria-pressed={selectedCollection === "offers"}
-                    className={chip(selectedCollection === "offers")}
+                    onClick={() => setCollectionMode("offers")}
+                    aria-pressed={collectionMode === "offers"}
+                    className={filterBtnClass(collectionMode === "offers")}
                   >
-                    العروض
-                  </button>
-                )}
-                {hasFeatured && (
-                  <button
-                    type="button"
-                    onClick={() => setSelectedCollection("featured")}
-                    aria-pressed={selectedCollection === "featured"}
-                    className={chip(selectedCollection === "featured")}
-                  >
-                    اختيارات المتجر
+                    كل العروض
                   </button>
                 )}
               </div>
             )}
           </div>
 
-          {homeProducts.length === 0 ? (
+          {displayedGridProducts.length === 0 ? (
             <EmptyState
               icon={
                 searchQuery ? (
@@ -378,11 +371,9 @@ export function HomePage() {
               title={
                 searchQuery
                   ? "لم نجد نتائج مطابقة"
-                  : selectedCollection === "offers"
+                  : collectionMode === "offers"
                     ? "لا توجد عروض حاليًا"
-                    : selectedCollection === "featured"
-                      ? "لا توجد اختيارات مميزة حاليًا"
-                      : "لا توجد منتجات في هذا القسم"
+                    : "لا توجد منتجات في هذا القسم"
               }
               description={
                 searchQuery
@@ -390,12 +381,12 @@ export function HomePage() {
                   : "ستظهر المنتجات هنا عند إضافتها إلى المتجر."
               }
               action={
-                searchQuery || selectedCollection !== "all" || selectedCategory !== "all" ? (
+                searchQuery || collectionMode !== "remaining" || selectedCategory !== "all" ? (
                   <button
                     type="button"
                     onClick={() => {
                       setSelectedCategory("all");
-                      setSelectedCollection("all");
+                      setCollectionMode("remaining");
                       setSearchQuery("");
                     }}
                     className="min-h-11 rounded-xl bg-primary px-6 text-sm font-bold text-primary-foreground"
@@ -407,7 +398,7 @@ export function HomePage() {
             />
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
-              {homeProducts.map((product) => (
+              {displayedGridProducts.map((product) => (
                 <ProductCard
                   key={product.id}
                   product={product}
@@ -418,40 +409,51 @@ export function HomePage() {
           )}
         </section>
 
-        {/* ASSISTANT CTA — light */}
-        <section className="mt-14 flex flex-col items-start justify-between gap-5 rounded-3xl border border-border bg-secondary px-6 py-8 sm:flex-row sm:items-center sm:px-10">
+        {/* دعوة مساعد التسوّق نواة */}
+        <section className="mt-12 flex flex-col items-start justify-between gap-5 rounded-3xl border border-border bg-secondary/70 px-6 py-7 sm:flex-row sm:items-center sm:px-9">
           <div>
-            <h2 className="text-2xl font-bold text-primary-dark">عندك قائمة مشتريات؟</h2>
-            <p className="mt-2 max-w-lg text-sm leading-7 text-muted-foreground">
-              اكتبها لنواة بكلماتك، وهي تقترح لك المنتجات المناسبة من المتجر.
+            <h2 className="text-xl font-bold text-foreground sm:text-2xl">عندك قائمة مشتريات؟</h2>
+            <p className="mt-1.5 max-w-lg text-xs leading-6 text-muted-foreground sm:text-sm">
+              اكتب طلبات البيت بكلماتك لنواة، وستجهز لك السلة بأفضل الأصناف المتوفرة فورًا.
             </p>
           </div>
           <Link
             to="/assistant"
-            className="inline-flex min-h-12 items-center gap-2 rounded-xl border border-primary bg-card px-6 text-base font-bold text-primary hover:bg-background"
+            className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-primary bg-card px-5 text-sm font-bold text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
           >
-            <Sparkles className="h-4 w-4" aria-hidden="true" /> جرّب نواة
+            <Sparkles className="h-4 w-4" aria-hidden="true" />
+            <span>جرّب نواة الآن</span>
           </Link>
         </section>
       </div>
 
-      <footer className="mt-14 bg-primary-dark text-primary-foreground">
-        <div className="mx-auto flex max-w-[1320px] flex-col gap-6 px-6 py-10 sm:flex-row sm:items-center sm:justify-between">
+      <footer className="mt-12 bg-emerald-950 text-emerald-50">
+        <div className="mx-auto flex max-w-[1320px] flex-col gap-5 px-6 py-8 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <StoreLogo name={settings.site_name || BRAND_NAME_AR} inverted />
-            <p className="mt-2 text-sm text-primary-foreground/75">
-              كل احتياجات بيتك في مكان واحد.
+            <StoreLogo
+              name={settings.site_name || BRAND_NAME_AR}
+              logoUrl={settings.logo_url}
+              inverted
+            />
+            <p className="mt-2 text-xs text-emerald-100/80 sm:text-sm">
+              كل احتياجات بيتك الطازجة واليومية في مكان واحد.
             </p>
           </div>
-          <nav className="flex flex-wrap gap-5 text-sm font-bold" aria-label="روابط الموقع">
+          <nav
+            className="flex flex-wrap gap-5 text-xs font-bold sm:text-sm"
+            aria-label="روابط الموقع"
+          >
             <a href="#home-departments" className="hover:underline">
               الأقسام
             </a>
+            <Link to="/categories" className="hover:underline">
+              كل الأقسام
+            </Link>
             <Link to="/assistant" className="hover:underline">
               نواة
             </Link>
           </nav>
-          <span className="text-xs text-primary-foreground/70">
+          <span className="text-xs text-emerald-100/75">
             © ٢٠٢٦ {settings.site_name || BRAND_NAME_AR}
           </span>
         </div>

@@ -151,10 +151,8 @@ function CartPage() {
     bank_account_info: null,
     store_address: null,
   });
-  const [bg, setBg] = useState<{ empty: string | null; floating: string | null }>({
-    empty: null,
-    floating: null,
-  });
+  const emptyBgUrl = theme.cart_empty_bg_url ?? settings.cart_empty_bg;
+  const floatingBgUrl = settings.floating_element_image;
   const [form, setForm] = useState({
     customer_name: "",
     phone: "",
@@ -249,14 +247,7 @@ function CartPage() {
         setZones(z);
       });
     (async () => {
-      const [{ data: rpc }, { data: pub }] = await Promise.all([
-        (supabase as any).rpc("get_payment_config"),
-        supabase
-          .from("store_settings_public" as any)
-          .select("cart_empty_bg,floating_element_image")
-          .limit(1)
-          .maybeSingle(),
-      ]);
+      const { data: rpc } = await (supabase as any).rpc("get_payment_config");
       const { data: bundleRows, error: bundleError } = await supabase
         .from("product_bundles")
         .select("id,name,description,buy_quantity,pay_quantity,product_ids")
@@ -274,11 +265,6 @@ function CartPage() {
           instapay_handle: pay0.instapay_handle ?? null,
           bank_account_info: pay0.bank_account_info ?? null,
           store_address: pay0.store_address ?? null,
-        });
-      if (pub)
-        setBg({
-          empty: (pub as any).cart_empty_bg ?? null,
-          floating: (pub as any).floating_element_image ?? null,
         });
     })();
 
@@ -562,34 +548,32 @@ function CartPage() {
       <main className="mx-auto w-full max-w-5xl px-4 py-6">
         {items.length === 0 ? (
           <div className="relative mx-auto max-w-lg overflow-visible">
-            {bg.floating && (
+            {floatingBgUrl && (
               <img
-                src={bg.floating}
+                src={floatingBgUrl}
                 alt=""
                 aria-hidden
-                className="pointer-events-none absolute -top-12 -left-10 z-10 h-32 w-32 select-none object-contain drop-shadow-2xl -rotate-12"
+                className="pointer-events-none absolute -top-8 -left-6 z-10 h-24 w-24 select-none object-contain drop-shadow-xl -rotate-12"
               />
             )}
             <Card
-              className={`relative flex flex-col items-center gap-3 overflow-hidden p-10 text-center ${theme.cart_empty_bg_url || bg.empty ? "border-white/10 bg-cover bg-center text-white" : ""}`}
+              className={`relative flex flex-col items-center gap-3 overflow-hidden p-10 text-center ${emptyBgUrl ? "border-white/10 bg-cover bg-center text-white" : ""}`}
               style={{
                 borderRadius: theme.card_radius_px,
-                ...(theme.cart_empty_bg_url || bg.empty
-                  ? { backgroundImage: `url(${theme.cart_empty_bg_url ?? bg.empty})` }
-                  : {}),
+                ...(emptyBgUrl ? { backgroundImage: `url(${emptyBgUrl})` } : {}),
               }}
             >
-              {(theme.cart_empty_bg_url || bg.empty) && (
-                <div className="absolute inset-0 bg-gradient-to-br from-black/75 via-black/55 to-black/75" />
+              {emptyBgUrl && (
+                <div className="absolute inset-0 bg-gradient-to-br from-black/75 via-black/60 to-black/75" />
               )}
               <div
-                className={`relative z-10 grid h-24 w-24 place-items-center rounded-3xl text-5xl ${theme.cart_empty_bg_url || bg.empty ? "bg-white/10 backdrop-blur" : "bg-primary/15 text-primary"}`}
+                className={`relative z-10 grid h-24 w-24 place-items-center rounded-3xl text-5xl ${emptyBgUrl ? "bg-white/15 backdrop-blur" : "bg-primary/15 text-primary"}`}
               >
                 🛒
               </div>
               <p className="relative z-10 font-display text-xl font-black">سلتك فارغة الآن</p>
               <p
-                className={`relative z-10 font-display text-sm font-medium ${bg.empty ? "text-white/80" : "text-muted-foreground"}`}
+                className={`relative z-10 font-display text-sm font-medium ${emptyBgUrl ? "text-white/90" : "text-muted-foreground"}`}
               >
                 ابدأ رحلة تسوّقك من "سوبرماركت الوادي الأخضر" — منتجات طازجة تصلك سريعاً 🌿
               </p>

@@ -1,17 +1,8 @@
-import { useEffect, useState } from "react";
 import { MessageCircle } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { useSettings } from "@/lib/settings-context";
 
 export function WhatsAppFloat() {
-  const [num, setNum] = useState<string | null>(null);
-  useEffect(() => {
-    supabase
-      .from("store_settings_public" as any)
-      .select("whatsapp_number")
-      .limit(1)
-      .maybeSingle()
-      .then(({ data }: any) => setNum(data?.whatsapp_number ?? null));
-  }, []);
+  const { whatsapp_number: num } = useSettings();
   if (!num) return null;
   const clean = num.replace(/[^0-9]/g, "");
   return (

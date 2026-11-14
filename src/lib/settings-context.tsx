@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { getPublicStoreSettings } from "@/lib/public-settings.functions";
 import { normalizeStoreIdentity, STORE_IDENTITY } from "@/lib/store-identity";
+import { BRAND_NAME_AR } from "@/lib/brand";
 
 export type StoreSettings = {
   id?: string;
@@ -43,9 +44,9 @@ export type StoreSettings = {
   hero_style?: "gradient" | "image" | "split";
 };
 
-// Store brand defaults use the approved Figma palette in HSL tokens.
+// Store brand defaults use the approved Figma palette in HSL tokens and local assets only.
 const DEFAULTS: StoreSettings = {
-  site_name: "متجر إلكتروني",
+  site_name: BRAND_NAME_AR,
   logo_url: null,
   favicon_url: null,
   primary_color: STORE_IDENTITY.greenHsl,
@@ -59,14 +60,12 @@ const DEFAULTS: StoreSettings = {
   whatsapp_number: null,
   hero_title: "",
   hero_subtitle: "",
-  hero_image_url: null,
-  hero_cta_text: "تسوّق الآن 🛒",
-  hero_bg_image:
-    "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1600&q=85",
+  hero_image_url: "/images/hero/fresh-produce.jpg",
+  hero_cta_text: "تسوّق الآن",
+  hero_bg_image: "/images/hero/fresh-produce.jpg",
   login_bg_pattern: null,
   cart_empty_bg: null,
-  floating_element_image:
-    "https://images.unsplash.com/photo-1588964895597-cfccd6e2dbf9?auto=format&fit=crop&w=500&q=80",
+  floating_element_image: null,
   store_address: null,
   store_lat: null,
   store_lng: null,
@@ -74,7 +73,7 @@ const DEFAULTS: StoreSettings = {
   meta_pixel_id: null,
   min_order_amount: 100,
   default_delivery_fee: 35,
-  free_shipping_threshold: 500,
+  free_shipping_threshold: 300,
   first_order_coupon_enabled: false,
   first_order_coupon_code: null,
   first_order_discount_percent: 10,
@@ -97,7 +96,6 @@ const SettingsContext = createContext<{
 function applyTheme(s: StoreSettings) {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
-  // Theme tokens are raw HSL triplets ("h s% l%"), so convert hex / hsl() inputs.
   const toTriplet = (raw: string) => {
     const v = raw.trim();
     const hex = v.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
@@ -131,7 +129,6 @@ function applyTheme(s: StoreSettings) {
     if (!value) return;
     root.style.setProperty(name, toTriplet(value));
   };
-  // Brand colors are fixed in src/styles.css (brand system); saved colors are no longer applied.
   void setColor;
   if (s.card_radius) {
     const radMap: Record<string, string> = {
@@ -161,16 +158,16 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     let mounted = true;
 
     const load = async () => {
-      const { data, error } = await supabase
-        .from("store_settings_public")
-        .select("*")
-        .limit(1)
-        .maybeSingle();
+      let data: Record<string, unknown> | null = null;
+      try {
+        data = (await getPublicStoreSettings()) as Record<string, unknown>;
+      } catch (err) {
+        console.warn("[Settings] Public settings load error:", (err as Error)?.message ?? err);
+      }
       if (!mounted) return;
-      if (error) console.warn("[Settings] Supabase error:", error.message);
       const merged = normalizeStoreIdentity({
         ...DEFAULTS,
-        ...((data as any) ?? {}),
+        ...(data ?? {}),
       }) as StoreSettings;
       for (const key of Object.keys(merged) as (keyof StoreSettings)[]) {
         if (merged[key] === null && DEFAULTS[key] !== null && DEFAULTS[key] !== undefined)

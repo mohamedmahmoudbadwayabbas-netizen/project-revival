@@ -36,26 +36,11 @@ type Category = {
 };
 
 const PRESET_GALLERY = [
-  [
-    "خضروات وفواكه",
-    "https://images.unsplash.com/photo-1610832958506-aa56368176cf?auto=format&fit=crop&w=800&q=80",
-  ],
-  [
-    "البقالة والتموين",
-    "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80",
-  ],
-  [
-    "الألبان والأجبان",
-    "https://images.unsplash.com/photo-1628088062854-d1870b4553da?auto=format&fit=crop&w=800&q=80",
-  ],
-  [
-    "لحوم ودواجن",
-    "https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?auto=format&fit=crop&w=800&q=80",
-  ],
-  [
-    "المخبوزات والحلويات",
-    "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=800&q=80",
-  ],
+  ["خضروات وفواكه", "/images/categories/vegetables-fruits.jpg"],
+  ["البقالة والتموين", "/images/categories/grocery-pantry.jpg"],
+  ["الألبان والأجبان", "/images/categories/dairy-cheese.jpg"],
+  ["لحوم ودواجن", "/images/categories/meats-poultry.jpg"],
+  ["المخبوزات والحلويات", "/images/categories/bakery-sweets.jpg"],
 ];
 
 export const Route = createFileRoute("/admin/categories")({

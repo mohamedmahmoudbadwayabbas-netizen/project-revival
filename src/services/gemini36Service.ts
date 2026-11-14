@@ -1059,12 +1059,15 @@ export async function generateExecutiveSummary(
 
   const [orders, products] = await Promise.all([
     readAll((from, to) =>
-      supabaseLoose.from("orders").select("id,total_price,status,created_at").range(from, to),
+      supabaseLoose
+        .from("orders")
+        .select("id,total_price,total_amount,status,created_at")
+        .range(from, to),
     ),
     readAll((from, to) =>
       supabaseLoose
         .from("products")
-        .select("id,name,stock_quantity,is_active")
+        .select("id,name,stock,stock_quantity,low_stock_threshold,is_active")
         .eq("is_active", true)
         .range(from, to),
     ),
@@ -1074,16 +1077,17 @@ export async function generateExecutiveSummary(
     (order: any) => order.status !== "cancelled" && new Date(order.created_at).getTime() >= since,
   );
   const totalRevenue = recentOrders.reduce(
-    (sum: number, order: any) => sum + (Number(order.total_price) || 0),
+    (sum: number, order: any) => sum + (Number(order.total_price ?? order.total_amount) || 0),
     0,
   );
   const averageOrderValue = recentOrders.length ? totalRevenue / recentOrders.length : 0;
-  const lowStockProducts = products.filter(
-    (product: any) =>
-      Number(product.stock_quantity ?? 0) > 0 && Number(product.stock_quantity) <= 10,
-  );
+  const lowStockProducts = products.filter((product: any) => {
+    const qty = Number(product.stock ?? product.stock_quantity ?? 0);
+    const threshold = Number(product.low_stock_threshold ?? 5);
+    return qty > 0 && qty <= threshold;
+  });
   const outOfStockProducts = products.filter(
-    (product: any) => Number(product.stock_quantity ?? 0) <= 0,
+    (product: any) => Number(product.stock ?? product.stock_quantity ?? 0) <= 0,
   );
   const health = Math.max(
     40,
@@ -1097,14 +1101,14 @@ export async function generateExecutiveSummary(
   );
 
   return {
-    headline: `آخر 30 يوماً في Supabase: ${recentOrders.length} طلب، بإيراد ${totalRevenue.toFixed(2)} ج.م`,
+    headline: `ملخص آخر 30 يوماً: ${recentOrders.length} طلب بإيرادات ${totalRevenue.toFixed(2)} ج.م`,
     overallHealthScore: health,
     insights: [
-      `متوسط قيمة الطلب في البيانات المقروءة: ${averageOrderValue.toFixed(2)} ج.م.`,
-      `قرأت ${products.length} منتجاً نشطاً من Supabase؛ منها ${lowStockProducts.length} منخفض المخزون و${outOfStockProducts.length} نافد.`,
+      `متوسط قيمة الطلب المسجل: ${averageOrderValue.toFixed(2)} ج.م.`,
+      `إجمالي الأصناف النشطة: ${products.length} صنفاً، منها ${lowStockProducts.length} منخفض المخزون و${outOfStockProducts.length} منتهي المخزون.`,
       recentOrders.length
-        ? "الأرقام محسوبة من سجلات الطلبات غير الملغاة خلال آخر 30 يوماً."
-        : "لم تُرجع Supabase طلبات غير ملغاة خلال آخر 30 يوماً.",
+        ? "الأرقام محسوبة من الطلبات غير الملغاة خلال آخر 30 يوماً."
+        : "لا توجد طلبات غير ملغاة مسجلة خلال آخر 30 يوماً حتى الآن.",
     ],
     actionableTips: [
       {
@@ -1112,7 +1116,7 @@ export async function generateExecutiveSummary(
           lowStockProducts.length || outOfStockProducts.length
             ? "مراجعة المنتجات منخفضة المخزون"
             : "متابعة المخزون المسجل",
-        description: `قراءة Supabase الحالية تُظهر ${lowStockProducts.length} منتجاً منخفض المخزون و${outOfStockProducts.length} منتجاً نافداً.`,
+        description: `وضع المخزون الحالي يُظهر ${lowStockProducts.length} منتجاً منخفض المخزون و${outOfStockProducts.length} منتجاً منتهي المخزون.`,
         impact: lowStockProducts.length || outOfStockProducts.length ? "Urgent" : "Medium",
         category: "Inventory",
         quickActionLabel: "إدارة المنتجات",
@@ -1120,7 +1124,7 @@ export async function generateExecutiveSummary(
       },
       {
         title: "مراجعة أداء الطلبات",
-        description: `تعرض القراءة ${recentOrders.length} طلباً غير ملغى خلال آخر 30 يوماً، بإيراد مسجل قدره ${totalRevenue.toFixed(2)} ج.م.`,
+        description: `سجل آخر 30 يوماً يعرض ${recentOrders.length} طلباً غير ملغى بإجمالي إيرادات ${totalRevenue.toFixed(2)} ج.م.`,
         impact: "Medium",
         category: "Operations",
         quickActionLabel: "عرض الطلبات",

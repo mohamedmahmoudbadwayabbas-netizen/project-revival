@@ -98,53 +98,69 @@ export function calculateLiveStats(orders: any[], products: any[], branchId?: st
   };
 }
 
+let inFlightBranchesPromise: Promise<LiveBranch[]> | null = null;
+
 /**
  * Fetches only persisted branches. Delivery zones describe coverage and must
  * not be presented as physical stores.
  */
 export async function fetchLiveBranches(): Promise<LiveBranch[]> {
-  try {
-    const [
-      { data: branchesData, error: branchesError },
-      { data: ordersData },
-      { data: productsData },
-    ] = await Promise.all([
-      supabase
-        .from("branches")
-        .select(
-          "id,name,name_en,city,governorate,address,phone,status,is_main,delivery_zones,estimated_minutes,fee,min_order_amount,is_active",
-        )
-        .eq("is_active", true)
-        .order("name", { ascending: true }),
-      supabase.from("orders").select("id,delivery_zone_id,total_price,status,created_at,address"),
-      supabase.from("products").select("id,stock"),
-    ]);
-
-    if (branchesError) {
-      console.error("[Branches] Failed to load persisted branches:", branchesError.message);
-      return [];
-    }
-
-    const orders = ordersData || [];
-    const products = productsData || [];
-    return (branchesData ?? []).map((branch) => ({
-      id: branch.id,
-      name: branch.name,
-      nameEn: branch.name_en ?? undefined,
-      city: branch.city ?? "",
-      governorate: branch.governorate ?? undefined,
-      address: branch.address ?? "",
-      phone: branch.phone ?? "",
-      status: branch.status ?? "closed",
-      isMain: Boolean(branch.is_main),
-      deliveryZones: Array.isArray(branch.delivery_zones) ? branch.delivery_zones : [],
-      estimatedMinutes: branch.estimated_minutes ?? undefined,
-      fee: branch.fee ?? undefined,
-      minOrderAmount: branch.min_order_amount ?? undefined,
-      stats: calculateLiveStats(orders, products, branch.id),
-    }));
-  } catch (err) {
-    console.error("Error fetching live branches from Supabase:", err);
-    return [];
+  if (inFlightBranchesPromise) {
+    return inFlightBranchesPromise;
   }
+
+  inFlightBranchesPromise = (async () => {
+    try {
+      const [
+        { data: branchesData, error: branchesError },
+        { data: ordersData },
+        { data: productsData },
+      ] = await Promise.all([
+        supabase
+          .from("branches")
+          .select(
+            "id,name,name_en,city,governorate,address,phone,status,is_main,delivery_zones,estimated_minutes,fee,min_order_amount,is_active",
+          )
+          .eq("is_active", true)
+          .order("name", { ascending: true }),
+        supabase
+          .from("orders")
+          .select("id,delivery_zone_id,total_price,total_amount,status,created_at,address"),
+        supabase.from("products").select("id,stock,stock_quantity"),
+      ]);
+
+      if (branchesError) {
+        if (!branchesError.message?.includes("schema cache")) {
+          console.warn("[Branches] Failed to load persisted branches:", branchesError.message);
+        }
+        return [];
+      }
+
+      const orders = ordersData || [];
+      const products = productsData || [];
+      return (branchesData ?? []).map((branch) => ({
+        id: branch.id,
+        name: branch.name,
+        nameEn: branch.name_en ?? undefined,
+        city: branch.city ?? "",
+        governorate: branch.governorate ?? undefined,
+        address: branch.address ?? "",
+        phone: branch.phone ?? "",
+        status: branch.status ?? "closed",
+        isMain: Boolean(branch.is_main),
+        deliveryZones: Array.isArray(branch.delivery_zones) ? branch.delivery_zones : [],
+        estimatedMinutes: branch.estimated_minutes ?? undefined,
+        fee: branch.fee ?? undefined,
+        minOrderAmount: branch.min_order_amount ?? undefined,
+        stats: calculateLiveStats(orders, products, branch.id),
+      }));
+    } catch (err) {
+      console.warn("Error fetching live branches from Supabase:", err);
+      return [];
+    } finally {
+      inFlightBranchesPromise = null;
+    }
+  })();
+
+  return inFlightBranchesPromise;
 }

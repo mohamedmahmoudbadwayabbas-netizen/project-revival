@@ -167,8 +167,7 @@ export const DEFAULT_LAYOUT_CONFIG: StoreLayoutConfig = {
         subtitle:
           "تسوّق جميع سلع البقالة، اللحوم البلدية الطازجة، الأجبان والمنظفات بأسعار الجملة التنافسية وتوصيل فوري لباب منزلك.",
         badge: "طازج يومياً 🌿",
-        image_url:
-          "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1400&q=80",
+        image_url: "/images/hero/fresh-produce.jpg",
         button_text: "تصفّح العروض الآن 🛒",
         link_url: "/categories",
       },
@@ -177,8 +176,7 @@ export const DEFAULT_LAYOUT_CONFIG: StoreLayoutConfig = {
         title: "قسم اللحوم والدواجن الطازجة 🥩",
         subtitle: "لحوم بلدية مذبوحة ومجهزة يومياً بأعلى معايير النظافة والرقابة البيطرية الصارمة.",
         badge: "ذبح يومي مضمون ✨",
-        image_url:
-          "https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?auto=format&fit=crop&w=1400&q=80",
+        image_url: "/images/categories/meats-poultry.jpg",
         button_text: "تسوّق اللحوم البلدي 🥩",
         link_url: "/categories",
       },
@@ -204,8 +202,7 @@ export const DEFAULT_LAYOUT_CONFIG: StoreLayoutConfig = {
         subtitle: "جبن بلدي، قشطة، ولبن طازج بخصم 20%",
         tag: "خصم 20%",
         badge: "طازج يومياً",
-        imageUrl:
-          "https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=600&q=80",
+        imageUrl: "/images/categories/dairy-cheese.jpg",
         linkUrl: "/categories",
         accentColor: "from-amber-500/20 to-orange-500/20",
       },
@@ -215,8 +212,7 @@ export const DEFAULT_LAYOUT_CONFIG: StoreLayoutConfig = {
         subtitle: "أفضل أسعار الزيوت، الأرز، المكرونات والمعلبات",
         tag: "توفير حتى 30%",
         badge: "عروض السوبرماركت",
-        imageUrl:
-          "https://images.unsplash.com/photo-1578916171728-46686eac8d58?auto=format&fit=crop&w=600&q=80",
+        imageUrl: "/images/hero/pantry-bundle.jpg",
         linkUrl: "/categories",
         accentColor: "from-emerald-500/20 to-teal-500/20",
       },
@@ -226,8 +222,7 @@ export const DEFAULT_LAYOUT_CONFIG: StoreLayoutConfig = {
         subtitle: "مجهزة طازجة حسب رغبتك بتتبيلة خاصة",
         tag: "بلدي 100%",
         badge: "عرض الشواء",
-        imageUrl:
-          "https://images.unsplash.com/photo-1588168333986-5078d3ae3976?auto=format&fit=crop&w=600&q=80",
+        imageUrl: "/images/categories/meats-poultry.jpg",
         linkUrl: "/categories",
         accentColor: "from-rose-500/20 to-red-500/20",
       },

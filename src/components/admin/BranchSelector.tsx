@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Building2, ChevronDown, MapPin, Check, Store, Clock } from "lucide-react";
+import { Building2, ChevronDown, MapPin, Check, Store } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -52,8 +52,10 @@ export function BranchSelector({
 
     // Fetch unified stats across all branches from real database
     const [{ data: ordersData }, { data: productsData }] = await Promise.all([
-      supabase.from("orders").select("id,delivery_zone_id,total_amount,status,created_at,address"),
-      supabase.from("products").select("id,stock"),
+      supabase
+        .from("orders")
+        .select("id,delivery_zone_id,total_amount,total_price,status,created_at,address"),
+      supabase.from("products").select("id,stock,stock_quantity"),
     ]);
     const unified = calculateLiveStats(ordersData || [], productsData || []);
     setAllStats(unified);
@@ -87,14 +89,14 @@ export function BranchSelector({
 
   const unifiedBranch: LiveBranch = {
     id: UNIFIED_ALL_BRANCHES_ID,
-    name: `جميع الفروع (${branches.length || 3} فروع - نظرة موحدة)`,
+    name: branches.length > 0 ? `جميع الفروع (${branches.length})` : "جميع الفروع",
     nameEn: "All Branches (Unified View)",
     city: "كافة الفروع",
-    address: "تغطية مركزية موحدة لكافة فروع السوبرماركت",
+    address: "تغطية مركزية موحدة لكافة عمليات المتجر",
     phone: "",
     status: "open",
     isMain: true,
-    deliveryZones: ["كافة مناطق التوصيل التابعة للفروع"],
+    deliveryZones: ["كافة مناطق التوصيل"],
     stats: allStats,
   };
 
@@ -109,39 +111,39 @@ export function BranchSelector({
         <Button
           variant="outline"
           className={cn(
-            "h-10 px-3.5 rounded-2xl border-border/80 bg-card/90 backdrop-blur-xl hover:bg-secondary/70 text-foreground font-bold text-xs gap-2.5 transition-all shadow-xs cursor-pointer",
+            "h-10 px-3.5 rounded-2xl border-border/80 bg-card/90 hover:bg-secondary/70 text-foreground font-bold text-xs gap-2.5 transition-all shadow-xs cursor-pointer",
             className,
           )}
         >
-          <div className="grid h-6 w-6 place-items-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+          <div className="grid h-6 w-6 place-items-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
             <Store className="h-3.5 w-3.5" />
           </div>
 
-          <div className="flex flex-col items-start text-start leading-tight">
+          <div className="flex flex-col items-start text-start leading-tight min-w-0">
             <span className="text-[10px] text-muted-foreground font-semibold flex items-center gap-1">
-              <span>الفرع المختار</span>
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span>نطاق العرض</span>
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
             </span>
-            <span className="truncate max-w-[160px] text-foreground font-extrabold">
+            <span className="truncate max-w-[180px] text-foreground font-extrabold">
               {currentBranch.name}
             </span>
           </div>
 
-          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground me-auto" />
+          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground me-auto shrink-0" />
         </Button>
       </DropdownMenuTrigger>
 
       <DropdownMenuContent
         align="end"
-        className="w-80 rounded-2xl p-2 bg-popover/95 backdrop-blur-2xl border border-border shadow-2xl space-y-1 text-right"
+        className="w-80 rounded-2xl p-2 bg-popover border border-border shadow-2xl space-y-1 text-right"
       >
         <DropdownMenuLabel className="text-xs font-bold text-muted-foreground px-2 py-1.5 flex items-center justify-between">
-          <span>اختيار الفرع للتحكم والمتابعة:</span>
+          <span>اختيار نطاق المتابعة:</span>
           <Badge
             variant="outline"
             className="text-[10px] font-mono border-emerald-500/30 text-emerald-600"
           >
-            {branches.length} فروع متصلة
+            {branches.length > 0 ? `${branches.length} فروع متصلة` : "المخزون الموحد"}
           </Badge>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
@@ -175,7 +177,9 @@ export function BranchSelector({
             </div>
             <p className="text-[10px] text-muted-foreground truncate">{unifiedBranch.address}</p>
             <div className="flex items-center gap-2 pt-0.5 text-[10px]">
-              <span className="text-emerald-600 font-medium">● {branches.length} فروع نشطة</span>
+              <span className="text-emerald-600 font-medium">
+                {branches.length > 0 ? `● ${branches.length} فروع نشطة` : "● عرض موحد للمتجر"}
+              </span>
               <span className="text-muted-foreground">• {allStats.activeOrders} طلب جاري</span>
             </div>
           </div>

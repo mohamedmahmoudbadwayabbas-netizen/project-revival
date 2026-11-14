@@ -11,6 +11,7 @@ import {
   History,
   Settings,
   Ticket,
+  Store,
 } from "lucide-react";
 import {
   CommandDialog,
@@ -24,12 +25,14 @@ import { supabase } from "@/lib/supabase-loose";
 
 const PAGES = [
   { label: "لوحة المؤشرات", to: "/admin", icon: LayoutDashboard },
+  { label: "المنتجات والمخزون", to: "/admin/products", icon: Package },
+  { label: "الطلبات والمبيعات", to: "/admin/orders", icon: Receipt },
+  { label: "العملاء", to: "/admin/customers", icon: User },
+  { label: "الفروع والمخزون الجغرافي", to: "/admin/branches", icon: Store },
   { label: "المستخدمون والصلاحيات", to: "/admin/users", icon: ShieldCheck },
   { label: "استوديو البيانات", to: "/admin/database", icon: Database },
   { label: "سجل العمليات", to: "/admin/activity", icon: History },
-  { label: "المنتجات", to: "/admin/products", icon: Package },
-  { label: "الطلبات", to: "/admin/orders", icon: Receipt },
-  { label: "الكوبونات", to: "/admin/coupons", icon: Ticket },
+  { label: "الكوبونات والخصومات", to: "/admin/coupons", icon: Ticket },
   { label: "الإعدادات", to: "/admin/settings", icon: Settings },
 ];
 
@@ -70,7 +73,7 @@ export function AdminCommandSearch() {
         supabase.from("products").select("id,name").ilike("name", like).limit(5),
         supabase
           .from("orders")
-          .select("id,customer_name,phone,total_price")
+          .select("id,customer_name,phone,total_amount,total_price")
           .or(`customer_name.ilike.${like},phone.ilike.${like}`)
           .limit(5),
         supabase
@@ -90,7 +93,7 @@ export function AdminCommandSearch() {
         ...(o.data ?? []).map((x) => ({
           id: x.id,
           label: `${x.customer_name} — ${x.phone}`,
-          sub: `طلب بقيمة ${x.total_price} ج.م`,
+          sub: `طلب بقيمة ${Number(x.total_amount ?? x.total_price ?? 0).toFixed(2)} ج.م`,
           to: "/admin/orders",
           kind: "order" as const,
         })),
@@ -98,7 +101,7 @@ export function AdminCommandSearch() {
           id: x.id,
           label: x.full_name || x.phone || "عميل",
           sub: x.phone || "عميل",
-          to: "/admin/users",
+          to: "/admin/customers",
           kind: "customer" as const,
         })),
       ]);

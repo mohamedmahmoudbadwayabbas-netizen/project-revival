@@ -115,12 +115,10 @@ const DEFAULT_SETTINGS: Settings = {
   first_order_coupon_enabled: false,
   first_order_coupon_code: "WELCOME10",
   first_order_discount_percent: 10,
-  hero_bg_image:
-    "https://images.unsplash.com/photo-1578916171728-46686eac8d58?auto=format&fit=crop&w=1600&q=85",
+  hero_bg_image: "/images/hero/weekly-deals.jpg",
   login_bg_pattern: null,
-  cart_empty_bg: null,
-  floating_element_image:
-    "https://images.unsplash.com/photo-1588964895597-cfccd6e2dbf9?auto=format&fit=crop&w=500&q=80",
+  cart_empty_bg: "/images/hero/pantry-bundle.jpg",
+  floating_element_image: null,
 
   categories_style: "grid",
   products_style: "modern",

@@ -348,19 +348,19 @@ export function ShopLivePreview({ layout }: ShopLivePreviewProps) {
                       {[
                         {
                           name: "ألبان وأجبان 🧀",
-                          img: "https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=300&q=80",
+                          img: "/images/categories/dairy-cheese.jpg",
                         },
                         {
                           name: "لحوم ودواجن 🥩",
-                          img: "https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?auto=format&fit=crop&w=300&q=80",
+                          img: "/images/categories/meats-poultry.jpg",
                         },
                         {
                           name: "بقالة وتموين 🥫",
-                          img: "https://images.unsplash.com/photo-1588964895597-cfccd6e2dbf9?auto=format&fit=crop&w=300&q=80",
+                          img: "/images/categories/grocery-pantry.jpg",
                         },
                         {
                           name: "مشروبات وبقالة 🧃",
-                          img: "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=300&q=80",
+                          img: "/images/categories/beverages-juices.jpg",
                         },
                       ]
                         .slice(0, layout.featuredCategories.maxItems || 4)

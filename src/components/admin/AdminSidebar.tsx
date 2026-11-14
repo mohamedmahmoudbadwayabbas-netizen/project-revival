@@ -34,6 +34,7 @@ import {
   ClipboardList,
   LineChart,
   Building,
+  Bot,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
@@ -148,7 +149,7 @@ const navSections: NavSection[] = [
       { title: "المستخدمون والصلاحيات", url: "/admin/users", icon: ShieldCheck },
       { title: "استوديو البيانات", url: "/admin/database", icon: Database },
       { title: "سجل العمليات", url: "/admin/activity", icon: History },
-      { title: "حوكمة الوكلاء", url: "/admin/governance", icon: History },
+      { title: "حوكمة الوكلاء", url: "/admin/governance", icon: Bot },
     ],
   },
   {
@@ -244,7 +245,7 @@ export function AdminSidebar() {
                           {!collapsed && item.badge && (
                             <span
                               className={cn(
-                                "text-[9px] font-semibold px-1.5 py-0.2 rounded-md shrink-0",
+                                "text-[9px] font-semibold px-1.5 py-0.5 rounded-md shrink-0",
                                 "bg-sidebar-primary text-sidebar-primary-foreground",
                               )}
                             >
@@ -275,7 +276,7 @@ export function AdminSidebar() {
                 {user?.email || "admin@store.com"}
               </span>
             </div>
-            <span className="text-[9px] font-semibold text-sidebar-primary-foreground bg-sidebar-primary px-1.5 py-0.2 rounded">
+            <span className="text-[9px] font-semibold text-sidebar-primary-foreground bg-sidebar-primary px-1.5 py-0.5 rounded">
               مسؤول
             </span>
           </div>

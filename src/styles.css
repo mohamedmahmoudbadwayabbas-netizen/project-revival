@@ -1241,125 +1241,67 @@
 
 .admin-dashboard {
   max-width: 1440px !important;
-  color: #11291c;
+  color: hsl(var(--foreground));
 }
 .admin-dashboard__hero {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 1.5rem;
-  padding: 1.45rem 1.6rem;
-  border: 1px solid #ddded4;
-  border-radius: 22px;
+  gap: 1.25rem;
+  padding: 1.35rem 1.5rem;
+  border: 1px solid hsl(var(--border));
+  border-radius: 20px;
   background:
-    radial-gradient(circle at 8% 0%, #e9eedf 0, transparent 36%),
-    linear-gradient(115deg, #ffffff, #f5f2e8);
-  box-shadow: 0 14px 32px -30px #11291c;
+    radial-gradient(circle at 8% 0%, hsl(var(--primary) / 0.1) 0, transparent 42%),
+    linear-gradient(125deg, hsl(var(--card)), hsl(var(--background)));
+  box-shadow: var(--shadow-lux);
 }
 .admin-dashboard__eyebrow {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  color: #52765c;
+  color: hsl(var(--primary));
   font-size: 0.72rem;
-  font-weight: 900;
+  font-weight: 800;
 }
-.admin-dashboard__hero h2 {
-  margin: 0.4rem 0 0.2rem;
-  color: #11291c;
-  font-size: clamp(1.3rem, 2.4vw, 1.8rem);
-  font-weight: 950;
-  letter-spacing: -0.035em;
+.admin-dashboard__hero h1 {
+  margin: 0.35rem 0 0.2rem;
+  color: hsl(var(--foreground));
+  font-size: clamp(1.25rem, 2.2vw, 1.65rem);
+  font-weight: 900;
+  letter-spacing: -0.02em;
 }
 .admin-dashboard__hero p {
   margin: 0;
-  color: #7b877c;
-  font-size: 0.78rem;
+  color: hsl(var(--muted-foreground));
+  font-size: 0.8rem;
 }
-.admin-dashboard__hero-meta {
-  display: grid;
-  justify-items: end;
-  gap: 0.5rem;
-  flex: 0 0 auto;
-}
-.admin-dashboard__hero-meta span {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  color: #416b4d;
-  font-size: 0.7rem;
-  font-weight: 850;
-}
-.admin-dashboard__hero-meta i {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #5f9b67;
-  box-shadow: 0 0 0 4px #5f9b671c;
-}
-.admin-dashboard__hero-meta small {
-  color: #8a9389;
-  font-size: 0.68rem;
-}
-.admin-dashboard > div.flex.flex-col {
-  padding-bottom: 0.85rem;
-  border-color: #e6e2d7;
-}
-.admin-dashboard__kpis > div {
+.admin-dashboard__kpis > * {
   position: relative;
-  min-height: 116px;
   overflow: hidden;
-  padding: 1.1rem 1.2rem;
-  border-radius: 18px !important;
-  background: linear-gradient(145deg, #ffffff, #fdfbf4) !important;
-  box-shadow: 0 12px 28px -26px #11291c !important;
+  border-radius: 18px;
+  box-shadow: var(--shadow-lux);
 }
-.admin-dashboard__kpis > div::after {
+.admin-dashboard__kpis > *::after {
   position: absolute;
-  inset-inline-end: -24px;
-  bottom: -34px;
-  width: 100px;
-  height: 100px;
-  border: 1px solid #5a84621b;
+  inset-inline-end: -26px;
+  bottom: -36px;
+  width: 96px;
+  height: 96px;
+  border: 1px solid hsl(var(--primary) / 0.1);
   border-radius: 50%;
   content: "";
   box-shadow:
-    0 0 0 12px #5a84620a,
-    0 0 0 24px #5a846207;
+    0 0 0 12px hsl(var(--primary) / 0.04),
+    0 0 0 24px hsl(var(--primary) / 0.02);
   pointer-events: none;
 }
-.admin-dashboard__kpis > div > div:last-child {
-  position: relative;
-  z-index: 1;
-  color: #11291c !important;
-}
-.admin-dashboard__kpis > div > div:first-child {
-  position: relative;
-  z-index: 1;
-}
-.admin-dashboard__metric-icon {
-  display: grid;
-  width: 2rem;
-  height: 2rem;
-  place-items: center;
-  color: #477253;
-  border-radius: 11px;
-  background: #edf2e8;
-}
-.admin-dashboard__metric-note {
-  display: block;
-  margin-top: 0.15rem;
-  color: #8a9389;
-  font-size: 0.65rem;
-}
 .admin-dashboard .recharts-cartesian-grid line {
-  stroke: #e8e8dd;
+  stroke: hsl(var(--border));
 }
 .admin-dashboard .recharts-area-area {
   fill-opacity: 0.22;
-}
-.admin-dashboard [class*="space-y-2"] > div:hover {
-  border-color: #cbd8c9 !important;
 }
 .admin-orders {
   max-width: 1440px;
@@ -2154,9 +2096,6 @@
     align-items: start;
     flex-direction: column;
     padding: 1.1rem;
-  }
-  .admin-dashboard__hero-meta {
-    justify-items: start;
   }
   .admin-orders__overview-heading {
     flex-direction: column;

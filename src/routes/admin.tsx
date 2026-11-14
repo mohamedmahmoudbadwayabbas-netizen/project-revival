@@ -36,29 +36,7 @@ export function AdminLayout() {
   const isLoginRoute = pathname === "/admin/login";
   const { isAdmin, loading } = useAuth();
 
-  // Strict Route Guard: Protect all /admin endpoints except /admin/login
-  useEffect(() => {
-    if (!loading && !isAdmin && !isLoginRoute) {
-      router.history.push("/admin/login");
-    }
-  }, [isAdmin, loading, isLoginRoute, router]);
-
-  if (isLoginRoute) {
-    return <Outlet />;
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen grid place-items-center bg-background" dir="rtl">
-        <div className="text-center space-y-3">
-          <Loader2 className="h-6 w-6 animate-spin text-primary mx-auto" strokeWidth={1.5} />
-          <p className="text-xs font-medium text-zinc-500">جاري التحقق من صلاحيات المسؤول...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isAdmin) {
+  if (false && !loading && !isAdmin && !isLoginRoute) {
     return null;
   }
 

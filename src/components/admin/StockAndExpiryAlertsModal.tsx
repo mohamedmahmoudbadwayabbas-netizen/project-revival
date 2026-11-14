@@ -3,14 +3,9 @@ import {
   AlertTriangle,
   CalendarClock,
   PackageX,
-  Sparkles,
-  ArrowRight,
-  TrendingDown,
   RefreshCw,
   Tag,
-  Clock,
   CheckCircle2,
-  Bell,
   Check,
 } from "lucide-react";
 import {
@@ -57,6 +52,7 @@ interface StockAndExpiryAlertsModalProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   triggerButton?: React.ReactNode;
+  hideTrigger?: boolean;
 }
 
 export function StockAndExpiryAlertsModal({
@@ -65,6 +61,7 @@ export function StockAndExpiryAlertsModal({
   open: controlledOpen,
   onOpenChange: setControlledOpen,
   triggerButton,
+  hideTrigger = false,
 }: StockAndExpiryAlertsModalProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const isControlled = controlledOpen !== undefined;
@@ -85,33 +82,35 @@ export function StockAndExpiryAlertsModal({
 
   const handleApplyDiscount = (item: ExpiryAlertItem) => {
     setAppliedDiscounts((prev) => ({ ...prev, [item.id]: true }));
-    toast.success(`تم تطبيق خصم ترويجي فوري على (${item.name}) 🔥`, {
+    toast.success(`تم تطبيق خصم ترويجي فوري على (${item.name})`, {
       description: `السعر الجديد: ${item.discountPrice} ج.م بدلاً من ${item.originalPrice} ج.م لتسريع البيع قبل انتهاء الصلاحية`,
     });
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      {triggerButton ? (
-        <DialogTrigger asChild>{triggerButton}</DialogTrigger>
-      ) : (
-        <DialogTrigger asChild>
-          <Button
-            variant="outline"
-            className="h-10 px-3.5 rounded-2xl border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 font-extrabold text-xs gap-2 transition-all shadow-xs relative"
-          >
-            <div className="relative">
-              <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-              {totalAlertsCount > 0 && (
-                <span className="absolute -top-1.5 -end-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-600 px-1 text-[9px] font-black text-white ring-2 ring-background">
-                  {totalAlertsCount}
-                </span>
-              )}
-            </div>
-            <span className="hidden sm:inline">تنبيهات المخزون والصلاحية</span>
-          </Button>
-        </DialogTrigger>
-      )}
+      {!hideTrigger &&
+        (triggerButton ? (
+          <DialogTrigger asChild>{triggerButton}</DialogTrigger>
+        ) : (
+          <DialogTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9 px-3 rounded-xl border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 font-bold text-xs gap-2 transition-all shadow-xs relative cursor-pointer"
+            >
+              <div className="relative">
+                <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                {totalAlertsCount > 0 && (
+                  <span className="absolute -top-1.5 -end-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-600 px-1 text-[9px] font-black text-white ring-2 ring-background">
+                    {totalAlertsCount}
+                  </span>
+                )}
+              </div>
+              <span className="hidden sm:inline">تنبيهات المخزون</span>
+            </Button>
+          </DialogTrigger>
+        ))}
 
       <DialogContent
         className="max-w-2xl rounded-3xl p-6 bg-card border-border shadow-2xl"
@@ -174,8 +173,9 @@ export function StockAndExpiryAlertsModal({
               ) : (
                 lowStockItems.map((item) => {
                   const isOrdered = requestedSupplies[item.id];
+                  const safeThreshold = Math.max(item.threshold, 1);
                   const percentage = Math.min(
-                    Math.round((item.currentStock / item.threshold) * 100),
+                    Math.max(Math.round((item.currentStock / safeThreshold) * 100), 0),
                     100,
                   );
 

@@ -13,11 +13,11 @@ import { flyToCart } from "@/lib/fly-to-cart";
 import { useState } from "react";
 import { formatNumberAr, formatPriceAr, toArabicDigits } from "@/lib/format-ar";
 import { FavoriteButton } from "@/components/storefront/FavoriteButton";
+import { getDiscountPercent, inferUnitLabel } from "@/lib/storefront-home";
 
 /**
- * Product Card v2 — بطاقة هايبرماركت مدمجة:
- * صورة 1:1 · اسم (سطران) · وحدة البيع · السعر الكبير · زر (+) يتحول لعداد في مكانه بدون نوافذ.
- * نصوص المساعدة لا تقل عن 12px.
+ * Product Card — بطاقة هايبرماركت نظيفة ومتوازنة:
+ * صورة 1:1 مع خلفية نقية · شارة خصم واحدة على الأكثر · وحدة قياس دقيقة · سعر واضح · زر (+) يتحول لعداد.
  */
 export function ProductCard({
   product,
@@ -37,10 +37,8 @@ export function ProductCard({
   );
 
   const isTopSellerActive = Boolean(isTopSeller ?? (product.is_top_seller || product.is_popular));
-  const hasDiscount = Boolean(product.old_price && product.old_price > product.price_per_unit);
-  const discount = hasDiscount
-    ? Math.round(((product.old_price! - product.price_per_unit) / product.old_price!) * 100)
-    : 0;
+  const discount = getDiscountPercent(product);
+  const hasDiscount = discount > 0;
 
   const stock = product.stock_quantity ?? 0;
   const lowThreshold = product.low_stock_threshold ?? 5;
@@ -53,7 +51,7 @@ export function ProductCard({
     : product.price_per_unit;
   const unitText = product.is_by_weight
     ? `${formatPriceAr(product.price_per_unit)} / كجم`
-    : (product.unit_label ?? "قطعة");
+    : inferUnitLabel(product);
 
   const handleAdd = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
@@ -101,9 +99,9 @@ export function ProductCard({
   };
 
   return (
-    <div className="group relative flex h-full flex-col overflow-hidden rounded-xl border border-slate-100 bg-card text-card-foreground shadow-card transition-colors duration-200 hover:border-primary/30 dark:border-border">
+    <div className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border/80 bg-card text-card-foreground shadow-card transition-all duration-200 hover:border-primary/40">
       {/* الصورة 1:1 */}
-      <div className="relative aspect-square overflow-hidden bg-white">
+      <div className="relative aspect-square overflow-hidden bg-white dark:bg-white/95">
         <Link
           to="/products/$productId"
           params={{ productId: product.id }}
@@ -113,11 +111,11 @@ export function ProductCard({
             <img
               onError={() => setImgFailed(true)}
               src={product.image_url}
-              alt={`${product.name} — ${product.unit_label ?? "قطعة"}`}
-              loading="lazy"
-              decoding="async"
+              alt={`${product.name_ar || product.name} — ${unitText}`}
+              loading="eager"
+              decoding="sync"
               className={cn(
-                "h-full w-full object-contain p-2",
+                "h-full w-full object-contain p-2.5 transition-transform duration-300 group-hover:scale-[1.03]",
                 outOfStock && "opacity-50 grayscale",
               )}
             />
@@ -131,16 +129,13 @@ export function ProductCard({
           )}
         </Link>
 
-        {/* شارة زاوية أعلى اليسار */}
+        {/* شارة زاوية واحدة فقط منعًا للتزاحم البصري */}
         {discount > 0 ? (
-          <span
-            dir="ltr"
-            className="absolute left-2 top-2 z-10 rounded-md bg-destructive px-1.5 py-0.5 text-xs font-bold tabular-nums text-destructive-foreground"
-          >
-            -{formatNumberAr(discount)}%
+          <span className="absolute left-2.5 top-2.5 z-10 rounded-md bg-destructive px-2 py-0.5 text-xs font-extrabold tabular-nums text-destructive-foreground shadow-xs">
+            خصم {formatNumberAr(discount)}٪
           </span>
         ) : isTopSellerActive ? (
-          <span className="absolute left-2 top-2 z-10 rounded-md bg-accent px-1.5 py-0.5 text-xs font-bold text-accent-foreground">
+          <span className="absolute left-2.5 top-2.5 z-10 rounded-md bg-accent px-2 py-0.5 text-xs font-bold text-accent-foreground shadow-xs">
             الأكثر طلباً
           </span>
         ) : null}
@@ -148,7 +143,7 @@ export function ProductCard({
         <FavoriteButton
           productId={product.id}
           productName={product.name_ar || product.name}
-          className="absolute right-0 top-0 z-10"
+          className="absolute right-1 top-1 z-10"
         />
 
         {/* نظرة سريعة: على الشاشات الكبيرة فقط */}
@@ -159,30 +154,30 @@ export function ProductCard({
               e.stopPropagation();
               onOpen(product);
             }}
-            aria-label={`نظرة سريعة على ${product.name}`}
-            className="absolute right-1.5 top-11 z-10 hidden h-9 w-9 place-items-center rounded-full bg-card/95 text-muted-foreground opacity-0 shadow-card transition-opacity hover:text-primary group-hover:opacity-100 md:grid"
+            aria-label={`نظرة سريعة على ${product.name_ar || product.name}`}
+            className="absolute right-2 top-11 z-10 hidden h-9 w-9 place-items-center rounded-full border border-border/60 bg-white/95 text-slate-700 opacity-0 shadow-card transition-opacity hover:text-primary group-hover:opacity-100 md:grid"
           >
             <Eye className="h-4 w-4" aria-hidden="true" />
           </button>
         )}
 
-        {/* زر (+) يتحول لعداد في نفس الموضع فوق الصورة */}
-        <div dir="ltr" className="absolute bottom-2 right-2 z-10">
+        {/* زر (+) يتحول لعداد في نفس الموضع */}
+        <div dir="ltr" className="absolute bottom-2.5 right-2.5 z-10">
           {outOfStock ? (
-            <span className="rounded-full bg-muted px-2.5 py-1.5 text-xs font-bold text-muted-foreground">
+            <span className="rounded-lg bg-muted px-2.5 py-1.5 text-xs font-bold text-muted-foreground">
               نفدت الكمية
             </span>
           ) : qty > 0 ? (
-            <div className="flex h-11 items-center gap-0.5 rounded-full bg-primary/10 p-0.5 shadow-card ring-1 ring-primary/20 backdrop-blur-sm">
+            <div className="flex h-10 items-center gap-0.5 rounded-full bg-white/95 p-0.5 shadow-float ring-1 ring-primary/25">
               <button
                 type="button"
                 onClick={handleDec}
                 aria-label="تقليل الكمية"
-                className="grid h-10 w-10 place-items-center rounded-full bg-card text-primary active:scale-90"
+                className="grid h-9 w-9 place-items-center rounded-full bg-secondary text-primary active:scale-90"
               >
                 <Minus className="h-4 w-4" aria-hidden="true" />
               </button>
-              <span className="min-w-8 text-center text-sm font-bold tabular-nums text-primary-dark">
+              <span className="min-w-7 text-center text-sm font-black tabular-nums text-emerald-950">
                 {product.is_by_weight
                   ? toArabicDigits(formatWeightLabel(qty))
                   : formatNumberAr(qty)}
@@ -192,7 +187,7 @@ export function ProductCard({
                 onClick={handleInc}
                 disabled={!product.is_by_weight && qty >= stock}
                 aria-label="زيادة الكمية"
-                className="grid h-10 w-10 place-items-center rounded-full bg-primary text-primary-foreground active:scale-90 disabled:opacity-50"
+                className="grid h-9 w-9 place-items-center rounded-full bg-primary text-primary-foreground active:scale-90 disabled:opacity-50"
               >
                 <Plus className="h-4 w-4" aria-hidden="true" />
               </button>
@@ -201,8 +196,8 @@ export function ProductCard({
             <button
               type="button"
               onClick={handleAdd}
-              aria-label={`أضف ${product.name} للسلة`}
-              className="grid h-11 w-11 place-items-center rounded-full bg-primary text-primary-foreground shadow-float transition-transform active:scale-90"
+              aria-label={`أضف ${product.name_ar || product.name} للسلة`}
+              className="grid h-10 w-10 place-items-center rounded-full bg-primary text-primary-foreground shadow-float transition-transform hover:scale-105 active:scale-90"
             >
               <Plus className="h-5 w-5" aria-hidden="true" />
             </button>
@@ -211,31 +206,31 @@ export function ProductCard({
       </div>
 
       {/* التفاصيل */}
-      <div className="flex flex-1 flex-col gap-1 px-3 pb-3 pt-2 text-right">
+      <div className="flex flex-1 flex-col gap-1 px-3 pb-3 pt-2.5 text-right">
         <Link
           to="/products/$productId"
           params={{ productId: product.id }}
           className="focus-visible:outline-2 focus-visible:outline-ring"
         >
-          <h4 className="line-clamp-2 min-h-[2.5rem] font-sans text-xs font-medium leading-snug text-slate-800 md:text-sm dark:text-foreground">
+          <h4 className="line-clamp-2 min-h-[2.5rem] font-sans text-xs font-bold leading-snug text-foreground md:text-sm">
             {product.name_ar || product.name}
           </h4>
         </Link>
 
-        <p className="text-xs text-muted-foreground">{toArabicDigits(unitText)}</p>
+        <p className="text-xs font-medium text-muted-foreground">{unitText}</p>
 
-        <div className="mt-auto flex flex-wrap items-baseline gap-x-2 pt-1">
-          <span className="text-base font-extrabold text-slate-900 md:text-lg dark:text-foreground">
+        <div className="mt-auto flex flex-wrap items-baseline gap-x-2 pt-1.5">
+          <span className="text-base font-black tabular-nums text-foreground md:text-lg">
             {formatPriceAr(displayedPrice)}
           </span>
           {hasDiscount && (
-            <span className="text-xs text-muted-foreground line-through">
+            <span className="text-xs tabular-nums text-muted-foreground line-through">
               {formatPriceAr(product.old_price! * (product.is_by_weight ? selectedWeight : 1))}
             </span>
           )}
         </div>
 
-        {lowStock && <span className="text-xs font-medium text-destructive">كمية محدودة</span>}
+        {lowStock && <span className="text-xs font-semibold text-destructive">كمية محدودة</span>}
 
         {product.is_by_weight && !outOfStock && (
           <div dir="ltr" className="mt-1 grid grid-cols-4 gap-1 tabular-nums">

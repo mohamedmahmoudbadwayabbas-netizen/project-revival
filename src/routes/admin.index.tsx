@@ -1,42 +1,45 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchOrdersWithItems } from "@/services/orderDataService";
 import {
-  Receipt,
-  DollarSign,
-  ShoppingCart,
-  AlertTriangle,
-  TrendingUp,
-  Layers,
-  Tag,
-  Truck,
-  Ticket,
-  Image,
-  ArrowUpRight,
   Activity,
-  Clock,
-  CheckCircle2,
-  Sparkles,
-  PackageCheck,
-  Zap,
-  Eye,
-  Store,
-  ChevronLeft,
+  AlertTriangle,
+  ArrowLeft,
+  DollarSign,
   Package,
+  Receipt,
+  ShoppingBag,
+  ShoppingCart,
+  Sparkles,
+  TrendingUp,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid } from "recharts";
 import { toast } from "sonner";
-import { motion, AnimatePresence } from "motion/react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AnimatedCounter } from "@/components/admin/AnimatedCounter";
 import { SmartInsights } from "@/components/admin/SmartInsights";
 import { BranchSelector } from "@/components/admin/BranchSelector";
 import { StockAndExpiryAlertsModal } from "@/components/admin/StockAndExpiryAlertsModal";
 import { ExecutiveSummaryWidget } from "@/components/admin/ExecutiveSummaryWidget";
 import { BranchCardsOverview } from "@/components/admin/BranchCardsOverview";
 import { LiveBranch, fetchLiveBranches, UNIFIED_ALL_BRANCHES_ID } from "@/lib/branches-data";
+import {
+  buildLowStockAlertItems,
+  buildSalesChartData,
+  computeBestSellers,
+  computeDashboardKpis,
+  filterOrdersByBranch,
+  getArabicTimeGreeting,
+  getOrderStatusMeta,
+  getRelativeTimeAr,
+  type AdminOrderRow,
+  type AdminProductRow,
+  type ChartFilter,
+  type ChartMetric,
+} from "@/lib/admin-dashboard";
 
 export const Route = createFileRoute("/admin/")({
   head: () => ({
@@ -45,673 +48,696 @@ export const Route = createFileRoute("/admin/")({
   component: OverviewPage,
 });
 
-type OrderRow = {
-  id: string;
-  customer_name?: string;
-  phone?: string;
-  address?: string;
-  delivery_zone_id?: string;
-  total_amount: number;
-  status: string;
-  created_at: string;
-  notes?: string | null;
-  items?: { id?: string; name: string; quantity: number; subtotal: number }[];
-};
-
-type ChartFilter = "today" | "7days" | "month";
-type ChartMetric = "sales" | "count";
-
-function AnimatedCounter({
-  value,
-  prefix = "",
-  suffix = "",
-  decimals = 0,
-}: {
-  value: number;
-  prefix?: string;
-  suffix?: string;
-  decimals?: number;
-}) {
-  const [current, setCurrent] = useState(0);
-
-  useEffect(() => {
-    let frameId: number;
-    const startTime = performance.now();
-    const duration = 1000;
-    const startVal = 0;
-    const endVal = value;
-
-    const animate = (now: number) => {
-      const elapsed = now - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      const ease = 1 - Math.pow(1 - progress, 3);
-      setCurrent(startVal + (endVal - startVal) * ease);
-
-      if (progress < 1) {
-        frameId = requestAnimationFrame(animate);
-      }
-    };
-
-    frameId = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(frameId);
-  }, [value]);
-
-  return (
-    <span>
-      {prefix}
-      {current.toLocaleString("en-US", {
-        minimumFractionDigits: decimals,
-        maximumFractionDigits: decimals,
-      })}
-      {suffix ? ` ${suffix}` : ""}
-    </span>
-  );
-}
-
-function getRelativeTime(dateString: string) {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffSec = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-  if (diffSec < 15) return "الآن";
-  if (diffSec < 60) return `منذ ${diffSec} ثانية`;
-  const diffMin = Math.floor(diffSec / 60);
-  if (diffMin < 60) return `منذ ${diffMin} دقيقة`;
-  const diffHour = Math.floor(diffMin / 60);
-  if (diffHour < 24) return `منذ ${diffHour} ساعة`;
-  const diffDay = Math.floor(diffHour / 24);
-  return `منذ ${diffDay} يوم`;
-}
-
 function OverviewPage() {
-  const [orders, setOrders] = useState<OrderRow[]>([]);
-  const [lowStock, setLowStock] = useState<{ id: string; name: string; stock: number }[]>([]);
+  const [orders, setOrders] = useState<AdminOrderRow[]>([]);
+  const [products, setProducts] = useState<AdminProductRow[]>([]);
   const [branches, setBranches] = useState<LiveBranch[]>([]);
-  const [selectedBranchId, setSelectedBranchId] = useState<string>("all");
+  const [selectedBranchId, setSelectedBranchId] = useState<string>(UNIFIED_ALL_BRANCHES_ID);
   const [alertsModalOpen, setAlertsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [chartFilter, setChartFilter] = useState<ChartFilter>("7days");
   const [chartMetric, setChartMetric] = useState<ChartMetric>("sales");
-  const [previewOrder, setPreviewOrder] = useState<OrderRow | null>(null);
+  const [previewOrder, setPreviewOrder] = useState<AdminOrderRow | null>(null);
 
-  const loadData = async () => {
+  const loadProducts = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("products")
+      .select(
+        "id,name,name_ar,stock,stock_quantity,low_stock_threshold,unit_label,unit,is_active,categories(name,name_ar)",
+      )
+      .eq("is_active", true);
+    if (!error) {
+      setProducts((data ?? []) as AdminProductRow[]);
+    }
+  }, []);
+
+  const loadData = useCallback(async () => {
     try {
-      const [ords, { data: prods }, liveBranches] = await Promise.all([
+      const [ords, liveBranches] = await Promise.all([
         fetchOrdersWithItems({ limit: 500 }),
-        supabase.from("products").select("id,name,stock"),
         fetchLiveBranches(),
+        loadProducts(),
       ]);
-      setOrders((ords ?? []) as unknown as OrderRow[]);
-      const low = (prods ?? []).filter((p: any) => (p.stock ?? 0) <= 5);
-      setLowStock(low as any);
+      setOrders((ords ?? []) as unknown as AdminOrderRow[]);
       setBranches(liveBranches);
     } catch (err) {
       console.error("Error loading admin overview data:", err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [loadProducts]);
 
   useEffect(() => {
-    loadData();
+    void loadData();
 
     const channel = supabase
       .channel("admin-overview-live")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "orders" }, (payload) => {
-        const newOrd = payload.new as OrderRow;
+        const newOrd = payload.new as AdminOrderRow;
         setOrders((prev) => [newOrd, ...prev.filter((o) => o.id !== newOrd.id)]);
-        toast.success(`طلب جديد بقيمة ${newOrd.total_amount} ج.م`);
+        toast.success(
+          `طلب جديد بقيمة ${Number(newOrd.total_amount ?? (newOrd as any).total_price ?? 0).toFixed(2)} ج.م`,
+        );
       })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "orders" }, (payload) => {
-        const updated = payload.new as OrderRow;
-        setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
+        const updated = payload.new as AdminOrderRow;
+        setOrders((prev) => prev.map((o) => (o.id === updated.id ? { ...o, ...updated } : o)));
       })
       .on("postgres_changes", { event: "DELETE", schema: "public", table: "orders" }, (payload) => {
-        const delId = payload.old.id;
-        setOrders((prev) => prev.filter((o) => o.id !== delId));
+        const delId = payload.old?.id;
+        if (delId) {
+          setOrders((prev) => prev.filter((o) => o.id !== delId));
+        }
       })
-      .on("postgres_changes", { event: "*", schema: "public", table: "products" }, async () => {
-        const { data: prods } = await supabase.from("products").select("id,name,stock");
-        const low = (prods ?? []).filter((p: any) => (p.stock ?? 0) <= 5);
-        setLowStock(low as any);
+      .on("postgres_changes", { event: "*", schema: "public", table: "products" }, () => {
+        void loadProducts();
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "delivery_zones" }, () => {
-        loadData();
+        void loadData();
       })
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [loadData, loadProducts]);
 
-  const filteredOrders = useMemo(() => {
-    if (selectedBranchId === "all" || !selectedBranchId) return orders;
-    return orders.filter(
-      (o) =>
-        o.delivery_zone_id === selectedBranchId ||
-        (o.address && o.address.toLowerCase().includes(selectedBranchId.toLowerCase())),
-    );
-  }, [orders, selectedBranchId]);
+  const selectedBranchName = useMemo(() => {
+    if (selectedBranchId === UNIFIED_ALL_BRANCHES_ID) return "المخزون الموحد";
+    return branches.find((b) => b.id === selectedBranchId)?.name || "المخزون الموحد";
+  }, [branches, selectedBranchId]);
 
-  const today = useMemo(() => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d;
-  }, []);
-
-  const monthStart = useMemo(() => new Date(today.getFullYear(), today.getMonth(), 1), [today]);
-
-  const revenueOrders = useMemo(
-    () => filteredOrders.filter((o) => o.status !== "cancelled"),
-    [filteredOrders],
+  const filteredOrders = useMemo(
+    () => filterOrdersByBranch(orders, selectedBranchId),
+    [orders, selectedBranchId],
   );
 
-  const salesToday = useMemo(() => {
-    return revenueOrders
-      .filter((o) => new Date(o.created_at) >= today)
-      .reduce((s, o) => s + Number(o.total_amount || 0), 0);
-  }, [revenueOrders, today]);
+  const lowStockItems = useMemo(
+    () => buildLowStockAlertItems(products, selectedBranchName),
+    [products, selectedBranchName],
+  );
 
-  const salesMonth = useMemo(() => {
-    return revenueOrders
-      .filter((o) => new Date(o.created_at) >= monthStart)
-      .reduce((s, o) => s + Number(o.total_amount || 0), 0);
-  }, [revenueOrders, monthStart]);
+  const kpis = useMemo(
+    () => computeDashboardKpis(filteredOrders, lowStockItems),
+    [filteredOrders, lowStockItems],
+  );
 
-  const ordersTodayList = useMemo(() => {
-    return filteredOrders.filter((o) => new Date(o.created_at) >= today);
-  }, [filteredOrders, today]);
+  const chartData = useMemo(
+    () => buildSalesChartData(filteredOrders, chartFilter, chartMetric),
+    [filteredOrders, chartFilter, chartMetric],
+  );
 
-  const newOrdersToday = useMemo(() => {
-    return ordersTodayList.length;
-  }, [ordersTodayList]);
+  const bestSellers = useMemo(() => computeBestSellers(filteredOrders, 5), [filteredOrders]);
 
-  const avgOrderValue = useMemo(() => {
-    if (ordersTodayList.length > 0) {
-      const sum = ordersTodayList.reduce((acc, o) => acc + Number(o.total_amount || 0), 0);
-      return sum / ordersTodayList.length;
-    }
-    return filteredOrders.length > 0
-      ? filteredOrders.reduce((acc, o) => acc + Number(o.total_amount || 0), 0) /
-          filteredOrders.length
-      : 0;
-  }, [ordersTodayList, filteredOrders]);
+  const liveOrdersFeed = useMemo(() => filteredOrders.slice(0, 6), [filteredOrders]);
 
-  const weeklyGrowth = useMemo(() => {
-    const now = new Date();
-    const past7Days = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const prev14To7Days = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+  const executiveKpis = useMemo(
+    () => ({
+      totalRevenue: kpis.salesMonth || kpis.salesToday || 0,
+      totalOrders: kpis.confirmedOrdersCount,
+      averageOrderValue: Math.round(kpis.avgOrderValue),
+      lowStockCount: kpis.lowStockCount,
+      outOfStockCount: kpis.outOfStockCount,
+      topSellingCategory: "كافة الأقسام",
+      abandonedCartsCount: 0,
+    }),
+    [
+      kpis.salesMonth,
+      kpis.salesToday,
+      kpis.confirmedOrdersCount,
+      kpis.avgOrderValue,
+      kpis.lowStockCount,
+      kpis.outOfStockCount,
+    ],
+  );
 
-    const last7Revenue = filteredOrders
-      .filter((o) => o.status !== "cancelled" && new Date(o.created_at) >= past7Days)
-      .reduce((s, o) => s + Number(o.total_amount || 0), 0);
-
-    const prev7Revenue = filteredOrders
-      .filter(
-        (o) =>
-          o.status !== "cancelled" &&
-          new Date(o.created_at) >= prev14To7Days &&
-          new Date(o.created_at) < past7Days,
-      )
-      .reduce((s, o) => s + Number(o.total_amount || 0), 0);
-
-    if (prev7Revenue > 0) {
-      const diff = ((last7Revenue - prev7Revenue) / prev7Revenue) * 100;
-      return diff >= 0 ? `+${diff.toFixed(1)}%` : `${diff.toFixed(1)}%`;
-    }
-    return last7Revenue > 0 ? "+100%" : "0%";
-  }, [filteredOrders]);
-
-  const ordersPipeline = useMemo(() => {
-    const done = ordersTodayList.filter((o) => o.status === "delivered").length;
-    const total = ordersTodayList.length || 1;
-    const completionRate = Math.round((done / total) * 100);
-    return { done, completionRate };
-  }, [ordersTodayList]);
-
-  const chartData = useMemo(() => {
-    if (chartFilter === "today") {
-      const todayStr = new Date().toDateString();
-      const todayOrds = revenueOrders.filter(
-        (o) => new Date(o.created_at).toDateString() === todayStr,
-      );
-
-      const hours = [
-        { label: "12ص-3ص", value: 0 },
-        { label: "3ص-6ص", value: 0 },
-        { label: "6ص-9ص", value: 0 },
-        { label: "9ص-12ظ", value: 0 },
-        { label: "12ظ-3ع", value: 0 },
-        { label: "3ع-6م", value: 0 },
-        { label: "6م-9م", value: 0 },
-        { label: "9م-12ص", value: 0 },
-      ];
-
-      todayOrds.forEach((ord) => {
-        const h = new Date(ord.created_at).getHours();
-        const slot = Math.min(Math.floor(h / 3), 7);
-        hours[slot].value += chartMetric === "sales" ? Number(ord.total_amount) : 1;
-      });
-
-      return hours;
-    }
-
-    if (chartFilter === "7days") {
-      const dayNames = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
-      const result: { label: string; value: number }[] = [];
-
-      for (let i = 6; i >= 0; i--) {
-        const d = new Date();
-        d.setDate(d.getDate() - i);
-        const dateStr = d.toDateString();
-        const dayLabel = i === 0 ? "اليوم" : dayNames[d.getDay()];
-
-        const dayOrds = revenueOrders.filter(
-          (o) => new Date(o.created_at).toDateString() === dateStr,
-        );
-        const val = dayOrds.reduce(
-          (acc, o) => acc + (chartMetric === "sales" ? Number(o.total_amount) : 1),
-          0,
-        );
-
-        result.push({ label: dayLabel, value: Number(val.toFixed(2)) });
-      }
-      return result;
-    }
-
-    const result: { label: string; value: number }[] = [];
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
-
-    for (let step = 1; step <= 6; step++) {
-      const start = (step - 1) * 5 + 1;
-      const end = step * 5;
-      const periodOrds = revenueOrders.filter((o) => {
-        const d = new Date(o.created_at);
-        return (
-          d.getMonth() === currentMonth &&
-          d.getFullYear() === currentYear &&
-          d.getDate() >= start &&
-          d.getDate() <= end
-        );
-      });
-
-      const val = periodOrds.reduce(
-        (acc, o) => acc + (chartMetric === "sales" ? Number(o.total_amount) : 1),
-        0,
-      );
-      result.push({ label: `${start}-${end}`, value: Number(val.toFixed(2)) });
-    }
-    return result;
-  }, [revenueOrders, chartFilter, chartMetric]);
-
-  const bestSellers = useMemo(() => {
-    const tally = new Map<string, number>();
-    for (const o of revenueOrders) {
-      for (const it of o.items ?? []) {
-        if (it.name) {
-          tally.set(it.name, (tally.get(it.name) ?? 0) + Number(it.quantity || 0));
-        }
-      }
-    }
-    return Array.from(tally.entries())
-      .map(([name, qty]) => ({ name, qty: +qty.toFixed(0) }))
-      .sort((a, b) => b.qty - a.qty)
-      .slice(0, 5);
-  }, [revenueOrders]);
-
-  const liveOrdersFeed = useMemo(() => orders.slice(0, 6), [orders]);
+  const greeting = getArabicTimeGreeting();
+  const formattedToday = useMemo(
+    () =>
+      new Intl.DateTimeFormat("ar-EG", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+      }).format(new Date()),
+    [],
+  );
 
   if (loading) {
     return <OverviewSkeleton />;
   }
 
+  const maxBestSellerQty = Math.max(bestSellers[0]?.qty || 1, 1);
+
   return (
-    <div className="admin-dashboard space-y-6 p-4 sm:p-6 font-sans">
+    <div className="admin-dashboard space-y-6 font-sans">
+      {/* 1. Unified Command Header */}
       <section className="admin-dashboard__hero">
-        <div>
-          <span className="admin-dashboard__eyebrow">
-            <Activity size={14} /> لوحة المتجر اليوم
-          </span>
-          <h2>صباح الخير، مدير المتجر</h2>
-          <p>هذه نظرة سريعة على نشاط متجرك اليوم ومؤشرات التشغيل.</p>
-        </div>
-        <div className="admin-dashboard__hero-meta">
-          <span>
-            <i /> البيانات متصلة مباشرة
-          </span>
-          <small>
-            {new Intl.DateTimeFormat("ar-EG", {
-              weekday: "long",
-              day: "numeric",
-              month: "long",
-            }).format(new Date())}
-          </small>
-        </div>
-      </section>
-      <SmartInsights />
-      {/* 1. Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-200/80 dark:border-zinc-800 pb-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">الرئيسية</h1>
-            <span className="inline-flex items-center gap-1 px-1.5 py-0.2 text-[10px] font-medium rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 animate-pulse" />
+        <div className="space-y-1.5 min-w-0">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <span className="admin-dashboard__eyebrow">
+              <Activity size={14} /> لوحة المتجر اليوم
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[11px] font-semibold rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
               مزامنة فورية
             </span>
+            <span className="text-[11px] text-muted-foreground">{formattedToday}</span>
           </div>
-          <p className="text-xs text-zinc-500 mt-0.5">متابعة المبيعات ومسار الطلبات والمخزون</p>
+          <h1>{greeting}، مدير المتجر</h1>
+          <p>ملخص تشغيلي مباشر للمبيعات ومسار الطلبات وحالة المخزون.</p>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="grid grid-cols-2 gap-2 w-full lg:w-auto sm:flex sm:items-center sm:flex-wrap">
           <BranchSelector
             selectedBranchId={selectedBranchId}
             branches={branches}
-            onBranchChange={(b) => {
-              setSelectedBranchId(b.id);
-            }}
+            onBranchChange={(b) => setSelectedBranchId(b.id)}
+            className="col-span-2 w-full sm:w-auto justify-between sm:justify-start"
           />
 
-          <StockAndExpiryAlertsModal open={alertsModalOpen} onOpenChange={setAlertsModalOpen} />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setAlertsModalOpen(true)}
+            className={`h-10 px-3 rounded-2xl text-xs font-bold gap-2 cursor-pointer w-full sm:w-auto justify-center ${
+              lowStockItems.length > 0
+                ? "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20"
+                : "border-border bg-card text-foreground hover:bg-accent"
+            }`}
+          >
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+            <span>التنبيهات</span>
+            <span
+              className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${
+                lowStockItems.length > 0
+                  ? "bg-amber-600 text-white"
+                  : "bg-muted text-muted-foreground"
+              }`}
+            >
+              {lowStockItems.length}
+            </span>
+          </Button>
 
-          <Link to="/admin/products">
+          <Link to="/admin/products" className="w-full sm:w-auto">
             <Button
               size="sm"
               variant="outline"
-              className="h-9 rounded-xl text-xs font-bold gap-1.5"
+              className="h-10 w-full sm:w-auto rounded-2xl text-xs font-bold gap-1.5 cursor-pointer"
             >
-              <Package className="h-3.5 w-3.5" strokeWidth={1.5} />
+              <Package className="h-4 w-4" strokeWidth={1.5} />
               <span>إضافة منتج</span>
             </Button>
           </Link>
-          <Link to="/admin/orders">
+
+          <Link to="/admin/orders" className="col-span-2 w-full sm:w-auto">
             <Button
               size="sm"
-              className="h-9 rounded-xl hero-gradient text-primary-foreground text-xs font-bold gap-1.5"
+              className="h-10 w-full sm:w-auto rounded-2xl hero-gradient text-primary-foreground text-xs font-bold gap-1.5 cursor-pointer shadow-xs"
             >
-              <Receipt className="h-3.5 w-3.5" />
-              طلب جديد
+              <Receipt className="h-4 w-4" />
+              <span>إدارة الطلبات</span>
             </Button>
           </Link>
         </div>
-      </div>
+      </section>
 
-      {/* 2. Branch Cards Overview */}
-      {/* 3. STRICT KPI CARDS (3 Elements Only: Label, Value, Delta Badge) */}
-      <div className="admin-dashboard__kpis grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {/* Card 1: Revenue */}
-        <Card className="rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-zinc-500">مبيعات اليوم</span>
-            <span className="text-[11px] font-medium text-emerald-700 bg-emerald-50 dark:bg-emerald-950/50 dark:text-emerald-300 px-1.5 py-0.2 rounded border border-emerald-200/60 dark:border-emerald-800">
-              {weeklyGrowth}
-            </span>
-          </div>
-          <div className="mt-2 text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">
-            <AnimatedCounter value={salesToday} decimals={2} suffix="ج.م" />
-          </div>
-        </Card>
-
-        {/* Card 2: Orders */}
-        <Card className="rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-zinc-500">طلبات اليوم</span>
-            <span className="text-[11px] font-medium text-zinc-700 bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-300 px-1.5 py-0.2 rounded">
-              %{ordersPipeline.completionRate} إنجاز
-            </span>
-          </div>
-          <div className="mt-2 text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">
-            <AnimatedCounter value={newOrdersToday} decimals={0} suffix="طلب" />
-          </div>
-        </Card>
-
-        {/* Card 3: Stock Alert */}
-        <Card
-          onClick={() => setAlertsModalOpen(true)}
-          className="rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-xs cursor-pointer hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-zinc-500">أصناف تحت حد الأمان</span>
-            <span
-              className={`text-[11px] font-medium px-1.5 py-0.2 rounded ${
-                lowStock.length > 0
-                  ? "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800"
-                  : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
-              }`}
-            >
-              {lowStock.length > 0 ? "تنبيه" : "مستقر"}
-            </span>
-          </div>
-          <div className="mt-2 text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">
-            <AnimatedCounter value={lowStock.length} decimals={0} suffix="صنف" />
-          </div>
-        </Card>
-
-        {/* Card 4: Average order value */}
-        <Card className="rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-zinc-500">متوسط قيمة الطلب</span>
-            <span className="admin-dashboard__metric-icon">
-              <ShoppingCart className="h-4 w-4" />
-            </span>
-          </div>
-          <div className="mt-2 text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">
-            <AnimatedCounter value={avgOrderValue} decimals={0} suffix="ج.م" />
-          </div>
-          <small className="admin-dashboard__metric-note">
-            من إجمالي {filteredOrders.length.toLocaleString("ar-EG")} طلب
-          </small>
-        </Card>
-      </div>
-
-      {/* 4. AI Advisory Widget */}
-      <ExecutiveSummaryWidget
-        kpis={{
-          totalRevenue: salesMonth || salesToday || 0,
-          totalOrders: filteredOrders.length,
-          averageOrderValue: Math.round(avgOrderValue),
-          lowStockCount: lowStock.filter((p) => (p.stock ?? 0) > 0).length,
-          outOfStockCount: lowStock.filter((p) => (p.stock ?? 0) <= 0).length,
-          topSellingCategory: "كافة الأقسام",
-          abandonedCartsCount: 0,
-        }}
+      {/* Alerts Dialog (controlled via header button & Stock KPI card) */}
+      <StockAndExpiryAlertsModal
+        hideTrigger
+        open={alertsModalOpen}
+        onOpenChange={setAlertsModalOpen}
+        lowStockItems={lowStockItems}
       />
 
-      {/* 5. Charts & Live Orders */}
+      {/* 2. Balanced 4-Card KPI Strip */}
+      <div className="admin-dashboard__kpis grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {/* Card 1: Today's Revenue */}
+        <Card className="border border-border bg-card p-4 sm:p-5 flex flex-col justify-between gap-3">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="grid h-8 w-8 place-items-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                <DollarSign className="h-4 w-4" />
+              </span>
+              <span className="text-xs font-bold text-muted-foreground">مبيعات اليوم</span>
+            </div>
+            <span
+              title="نسبة التغير مقارنة بالأسبوع الماضي"
+              className={`text-[11px] font-bold px-2 py-0.5 rounded-md border ${
+                kpis.weeklyGrowthPositive
+                  ? "text-emerald-700 bg-emerald-50 border-emerald-200/70 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800"
+                  : "text-rose-700 bg-rose-50 border-rose-200/70 dark:bg-rose-950/50 dark:text-rose-300 dark:border-rose-800"
+              }`}
+            >
+              أسبوعياً {kpis.weeklyGrowth}
+            </span>
+          </div>
+          <div>
+            <div className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">
+              <AnimatedCounter value={kpis.salesToday} decimals={2} suffix="ج.م" />
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              إجمالي الشهر: {kpis.salesMonth.toLocaleString("en-US", { maximumFractionDigits: 0 })}{" "}
+              ج.م
+            </p>
+          </div>
+        </Card>
+
+        {/* Card 2: Today's Orders */}
+        <Card className="border border-border bg-card p-4 sm:p-5 flex flex-col justify-between gap-3">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="grid h-8 w-8 place-items-center rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                <Receipt className="h-4 w-4" />
+              </span>
+              <span className="text-xs font-bold text-muted-foreground">طلبات اليوم</span>
+            </div>
+            <span className="text-[11px] font-bold text-foreground bg-muted px-2 py-0.5 rounded-md">
+              %{kpis.completionRate} مكتمل
+            </span>
+          </div>
+          <div>
+            <div className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">
+              <AnimatedCounter value={kpis.ordersTodayCount} decimals={0} suffix="طلب" />
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              تم تسليم {kpis.deliveredTodayCount.toLocaleString("en-US")} من طلبات اليوم
+            </p>
+          </div>
+        </Card>
+
+        {/* Card 3: Low Stock Alerts (Accessible interactive button card) */}
+        <button
+          type="button"
+          onClick={() => setAlertsModalOpen(true)}
+          className="text-start border border-border bg-card p-4 sm:p-5 flex flex-col justify-between gap-3 cursor-pointer hover:border-amber-500/50 transition-colors"
+        >
+          <div className="flex items-center justify-between gap-2 w-full">
+            <div className="flex items-center gap-2">
+              <span
+                className={`grid h-8 w-8 place-items-center rounded-xl ${
+                  lowStockItems.length > 0
+                    ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                    : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                }`}
+              >
+                <AlertTriangle className="h-4 w-4" />
+              </span>
+              <span className="text-xs font-bold text-muted-foreground">أصناف تحت حد الأمان</span>
+            </div>
+            <span
+              className={`text-[11px] font-bold px-2 py-0.5 rounded-md border ${
+                lowStockItems.length > 0
+                  ? "bg-amber-50 text-amber-700 border-amber-200/70 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800"
+                  : "bg-emerald-50 text-emerald-700 border-emerald-200/70 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800"
+              }`}
+            >
+              {lowStockItems.length > 0 ? "يحتاج مراجعة" : "مستقر"}
+            </span>
+          </div>
+          <div className="w-full">
+            <div className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">
+              <AnimatedCounter value={lowStockItems.length} decimals={0} suffix="صنف" />
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              {lowStockItems.length > 0
+                ? `${kpis.outOfStockCount} منتهي · ${kpis.lowStockCount} منخفض (اضغط للعرض)`
+                : "جميع الأصناف النشطة فوق حد الأمان"}
+            </p>
+          </div>
+        </button>
+
+        {/* Card 4: Average Order Value (excludes cancelled orders) */}
+        <Card className="border border-border bg-card p-4 sm:p-5 flex flex-col justify-between gap-3">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="grid h-8 w-8 place-items-center rounded-xl bg-primary/10 text-primary">
+                <ShoppingCart className="h-4 w-4" />
+              </span>
+              <span className="text-xs font-bold text-muted-foreground">متوسط قيمة الطلب</span>
+            </div>
+            <span className="text-[11px] font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-md">
+              AOV
+            </span>
+          </div>
+          <div>
+            <div className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">
+              <AnimatedCounter value={kpis.avgOrderValue} decimals={0} suffix="ج.م" />
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              من إجمالي {kpis.confirmedOrdersCount.toLocaleString("en-US")} طلب مؤكد
+            </p>
+          </div>
+        </Card>
+      </div>
+
+      {/* 3. Smart Insights */}
+      <SmartInsights />
+
+      {/* 4. Branch Cards Overview (shown when real branches exist) */}
+      {branches.length > 0 && (
+        <BranchCardsOverview
+          branches={branches}
+          selectedBranchId={selectedBranchId}
+          onSelectBranch={setSelectedBranchId}
+        />
+      )}
+
+      {/* 5. Charts & Live Orders Feed */}
       <div className="grid gap-4 lg:grid-cols-3">
-        {/* Sales Chart */}
-        <Card className="rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-xs lg:col-span-2">
-          <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
-            <div>
-              <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100">تحليل المبيعات</h3>
-              <p className="text-[11px] text-zinc-400">تتبع النشاط المالي وعدد الطلبات</p>
+        {/* Sales & Orders Chart */}
+        <Card className="rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-xs lg:col-span-2 flex flex-col justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-border/70">
+            <div className="flex items-center gap-2.5">
+              <span className="grid h-8 w-8 place-items-center rounded-xl bg-primary/10 text-primary">
+                <TrendingUp className="h-4 w-4" />
+              </span>
+              <div>
+                <h2 className="text-sm font-bold text-foreground">تحليل المبيعات والطلبات</h2>
+                <p className="text-[11px] text-muted-foreground">
+                  {chartMetric === "sales"
+                    ? "إجمالي الإيرادات للطلبات غير الملغاة (ج.م)"
+                    : "إجمالي عدد الطلبات النشطة والمكتملة"}
+                </p>
+              </div>
             </div>
 
-            <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-800 p-0.5 rounded-lg text-xs">
-              <button
-                onClick={() => setChartFilter("today")}
-                className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors cursor-pointer ${
-                  chartFilter === "today"
-                    ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-xs"
-                    : "text-zinc-500"
-                }`}
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Metric Switch */}
+              <div
+                className="flex items-center gap-0.5 bg-muted p-0.5 rounded-lg text-[11px]"
+                role="group"
+                aria-label="نوع المقياس"
               >
-                اليوم
-              </button>
-              <button
-                onClick={() => setChartFilter("7days")}
-                className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors cursor-pointer ${
-                  chartFilter === "7days"
-                    ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-xs"
-                    : "text-zinc-500"
-                }`}
+                <button
+                  type="button"
+                  onClick={() => setChartMetric("sales")}
+                  className={`px-2.5 py-1 rounded-md font-bold transition-colors cursor-pointer ${
+                    chartMetric === "sales"
+                      ? "bg-card text-foreground shadow-xs"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  المبيعات
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setChartMetric("count")}
+                  className={`px-2.5 py-1 rounded-md font-bold transition-colors cursor-pointer ${
+                    chartMetric === "count"
+                      ? "bg-card text-foreground shadow-xs"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  الطلبات
+                </button>
+              </div>
+
+              {/* Date Range Switch */}
+              <div
+                className="flex items-center gap-0.5 bg-muted p-0.5 rounded-lg text-[11px]"
+                role="group"
+                aria-label="الفترة الزمنية"
               >
-                7 أيام
-              </button>
-              <button
-                onClick={() => setChartFilter("month")}
-                className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors cursor-pointer ${
-                  chartFilter === "month"
-                    ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-xs"
-                    : "text-zinc-500"
-                }`}
-              >
-                الشهر
-              </button>
+                <button
+                  type="button"
+                  onClick={() => setChartFilter("today")}
+                  className={`px-2.5 py-1 rounded-md font-bold transition-colors cursor-pointer ${
+                    chartFilter === "today"
+                      ? "bg-card text-foreground shadow-xs"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  اليوم
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setChartFilter("7days")}
+                  className={`px-2.5 py-1 rounded-md font-bold transition-colors cursor-pointer ${
+                    chartFilter === "7days"
+                      ? "bg-card text-foreground shadow-xs"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  7 أيام
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setChartFilter("month")}
+                  className={`px-2.5 py-1 rounded-md font-bold transition-colors cursor-pointer ${
+                    chartFilter === "month"
+                      ? "bg-card text-foreground shadow-xs"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  الشهر
+                </button>
+              </div>
             </div>
           </div>
 
-          <div className="h-64 w-full pt-3" dir="ltr">
+          <div className="relative h-64 w-full pt-4" dir="ltr">
+            {chartData.every((d) => d.value === 0) && (
+              <div
+                dir="rtl"
+                className="pointer-events-none absolute inset-0 flex items-center justify-center z-10"
+              >
+                <span className="rounded-xl border border-border bg-card/95 px-3.5 py-1.5 text-xs font-semibold text-muted-foreground shadow-xs">
+                  لا توجد بيانات مسجلة لهذه الفترة حتى الآن
+                </span>
+              </div>
+            )}
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="#e4e4e7"
-                  opacity={0.5}
-                  vertical={false}
-                />
+              <BarChart data={chartData} margin={{ top: 6, right: 8, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" opacity={0.45} vertical={false} />
                 <XAxis
                   dataKey="label"
-                  tick={{ fontSize: 10, fill: "#71717a" }}
-                  axisLine={{ stroke: "#e4e4e7" }}
+                  tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                  axisLine={{ stroke: "hsl(var(--border))" }}
                   tickLine={false}
                 />
-                <YAxis tick={{ fontSize: 10, fill: "#71717a" }} axisLine={false} tickLine={false} />
-                <Tooltip
-                  contentStyle={{
-                    borderRadius: 8,
-                    border: "1px solid #e4e4e7",
-                    background: "#ffffff",
-                    fontSize: 11,
-                    padding: "6px 10px",
-                  }}
-                  formatter={(val: any) => [`${val} ج.م`, "المبيعات"]}
+                <YAxis
+                  tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                  axisLine={false}
+                  tickLine={false}
+                  allowDecimals={chartMetric === "sales"}
                 />
-                <Bar dataKey="value" fill="#315f4c" radius={[8, 8, 0, 0]} maxBarSize={42} />
+                <Tooltip
+                  cursor={{ fill: "hsl(var(--muted) / 0.4)" }}
+                  contentStyle={{
+                    borderRadius: 10,
+                    border: "1px solid hsl(var(--border))",
+                    background: "hsl(var(--popover))",
+                    color: "hsl(var(--popover-foreground))",
+                    fontSize: 12,
+                    padding: "8px 12px",
+                  }}
+                  formatter={(val: any) =>
+                    chartMetric === "sales"
+                      ? [`${Number(val).toLocaleString("en-US")} ج.م`, "المبيعات"]
+                      : [`${Number(val).toLocaleString("en-US")} طلب`, "عدد الطلبات"]
+                  }
+                />
+                <Bar
+                  dataKey="value"
+                  fill="hsl(var(--primary))"
+                  radius={[8, 8, 0, 0]}
+                  maxBarSize={42}
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </Card>
 
-        {/* Live Orders Feed */}
-        <Card className="rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-xs flex flex-col justify-between">
+        {/* Live Orders Feed (filtered by branch!) */}
+        <Card className="rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-xs flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
-              <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100">أحدث الطلبات</h3>
-              <span className="text-[10px] text-zinc-400">مباشر</span>
+            <div className="flex items-center justify-between pb-3 border-b border-border/70">
+              <div className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
+                <h2 className="text-sm font-bold text-foreground">أحدث الطلبات</h2>
+              </div>
+              <span className="text-[11px] font-medium text-muted-foreground">
+                {selectedBranchId === UNIFIED_ALL_BRANCHES_ID ? "جميع الفروع" : selectedBranchName}
+              </span>
             </div>
 
             <div className="space-y-2 pt-3">
               {liveOrdersFeed.length === 0 ? (
-                <div className="p-8 text-center text-xs text-zinc-400">لا توجد طلبات مسجلة</div>
+                <div className="py-10 text-center space-y-1.5">
+                  <ShoppingBag className="h-7 w-7 text-muted-foreground/50 mx-auto" />
+                  <p className="text-xs font-medium text-muted-foreground">
+                    لا توجد طلبات مسجلة لهذا النطاق بعد
+                  </p>
+                </div>
               ) : (
-                liveOrdersFeed.map((ord) => (
-                  <div
-                    key={ord.id}
-                    onClick={() => setPreviewOrder(ord)}
-                    className="flex items-center justify-between p-2 rounded-lg border border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 cursor-pointer transition-colors"
-                  >
-                    <div className="min-w-0">
-                      <div className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 truncate">
-                        {ord.customer_name || "عميل"}
+                liveOrdersFeed.map((ord) => {
+                  const statusMeta = getOrderStatusMeta(ord.status);
+                  return (
+                    <button
+                      key={ord.id}
+                      type="button"
+                      onClick={() => setPreviewOrder(ord)}
+                      className="w-full text-start flex items-center justify-between gap-2 p-2.5 rounded-xl border border-border/70 bg-background/50 hover:bg-accent/60 hover:border-primary/30 cursor-pointer transition-colors"
+                    >
+                      <div className="min-w-0">
+                        <div className="text-xs font-bold text-foreground truncate">
+                          {ord.customer_name || "عميل المتجر"}
+                        </div>
+                        <div className="text-[11px] text-muted-foreground">
+                          {getRelativeTimeAr(ord.created_at)}
+                        </div>
                       </div>
-                      <div className="text-[10px] text-zinc-400">
-                        {getRelativeTime(ord.created_at)}
+                      <div className="text-end shrink-0 space-y-1">
+                        <div className="text-xs font-black text-emerald-700 dark:text-emerald-400">
+                          {Number(ord.total_amount || 0).toFixed(2)} ج.م
+                        </div>
+                        <span
+                          className={`inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded-md border ${statusMeta.badgeClass}`}
+                        >
+                          {statusMeta.label}
+                        </span>
                       </div>
-                    </div>
-                    <div className="text-end">
-                      <div className="text-xs font-bold text-emerald-700 dark:text-emerald-400">
-                        {Number(ord.total_amount).toFixed(2)} ج.م
-                      </div>
-                      <span className="text-[10px] text-zinc-400">
-                        {ord.status === "pending" ? "جديد" : ord.status}
-                      </span>
-                    </div>
-                  </div>
-                ))
+                    </button>
+                  );
+                })
               )}
             </div>
           </div>
 
           <Link to="/admin/orders" className="pt-3 block">
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
-              className="w-full text-xs font-medium text-zinc-500 hover:text-zinc-900 h-7"
+              className="w-full h-8 rounded-xl text-xs font-bold gap-1.5 cursor-pointer"
             >
-              عرض كافة الطلبات ←
+              <span>عرض كافة الطلبات</span>
+              <ArrowLeft className="h-3.5 w-3.5" />
             </Button>
           </Link>
         </Card>
       </div>
 
-      {/* 6. Top Selling Products */}
-      <Card className="rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-xs">
-        <div className="pb-3 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
-          <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
-            المنتجات الأكثر طلباً
-          </h3>
-          <Link
-            to="/admin/products"
-            className="text-[11px] text-emerald-700 dark:text-emerald-400 hover:underline"
-          >
-            إدارة المنتجات
-          </Link>
-        </div>
-
-        <div className="pt-3 space-y-2">
-          {bestSellers.length === 0 ? (
-            <div className="p-6 text-center text-xs text-zinc-400">لا توجد بيانات مبيعات بعد</div>
-          ) : (
-            bestSellers.map((item, idx) => (
-              <div key={item.name} className="flex items-center justify-between text-xs py-1">
-                <span className="text-zinc-800 dark:text-zinc-200 font-medium truncate">
-                  {idx + 1}. {item.name}
-                </span>
-                <span className="text-zinc-500 font-mono text-[11px]">{item.qty} وحدة</span>
+      {/* 6. Top Selling Products & AI Advisory Summary */}
+      <div className="grid gap-4 lg:grid-cols-3">
+        {/* Top Selling Products */}
+        <Card className="rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-xs flex flex-col justify-between">
+          <div>
+            <div className="pb-3 border-b border-border/70 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <h2 className="text-sm font-bold text-foreground">الأصناف الأكثر طلبًا</h2>
               </div>
-            ))
-          )}
+              <Link
+                to="/admin/products"
+                className="text-[11px] font-bold text-primary hover:underline"
+              >
+                إدارة المنتجات
+              </Link>
+            </div>
+
+            <div className="pt-3 space-y-3">
+              {bestSellers.length === 0 ? (
+                <div className="py-8 text-center text-xs text-muted-foreground">
+                  لا توجد بيانات مبيعات مسجلة بعد
+                </div>
+              ) : (
+                bestSellers.map((item, idx) => {
+                  const widthPct = Math.max(Math.round((item.qty / maxBestSellerQty) * 100), 8);
+                  return (
+                    <div key={item.name} className="space-y-1">
+                      <div className="flex items-center justify-between gap-2 text-xs">
+                        <span className="text-foreground font-semibold truncate">
+                          {idx + 1}. {item.name}
+                        </span>
+                        <span className="text-muted-foreground font-mono text-[11px] shrink-0">
+                          {item.qty} وحدة
+                        </span>
+                      </div>
+                      <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-primary/80 transition-all"
+                          style={{ width: `${widthPct}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </Card>
+
+        {/* Executive Advisory Widget (stabilized props) */}
+        <div className="lg:col-span-2">
+          <ExecutiveSummaryWidget kpis={executiveKpis} />
         </div>
-      </Card>
+      </div>
 
       {/* Order Preview Dialog */}
       <Dialog open={!!previewOrder} onOpenChange={() => setPreviewOrder(null)}>
-        <DialogContent
-          className="max-w-sm rounded-xl p-5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800"
-          dir="rtl"
-        >
-          <DialogHeader className="pb-2 border-b border-zinc-100 dark:border-zinc-800">
-            <DialogTitle className="text-sm font-bold flex items-center justify-between">
-              <span>تفاصيل الطلب</span>
-              <span className="text-xs font-normal text-zinc-500">{previewOrder?.status}</span>
+        <DialogContent className="max-w-md rounded-2xl p-5 bg-card border border-border" dir="rtl">
+          <DialogHeader className="pb-3 border-b border-border/70">
+            <DialogTitle className="text-sm font-bold flex items-center justify-between gap-2">
+              <span>تفاصيل الطلب السريع</span>
+              {previewOrder && (
+                <span
+                  className={`text-[11px] font-bold px-2 py-0.5 rounded-md border ${
+                    getOrderStatusMeta(previewOrder.status).badgeClass
+                  }`}
+                >
+                  {getOrderStatusMeta(previewOrder.status).label}
+                </span>
+              )}
             </DialogTitle>
           </DialogHeader>
 
           {previewOrder && (
-            <div className="space-y-3 pt-2 text-xs">
-              <div className="space-y-1">
-                <div className="text-zinc-500">العميل:</div>
-                <div className="font-semibold text-zinc-900 dark:text-zinc-100">
-                  {previewOrder.customer_name || "بدون اسم"} • {previewOrder.phone || ""}
+            <div className="space-y-3.5 pt-2 text-xs">
+              <div className="rounded-xl bg-muted/50 p-3 space-y-1">
+                <div className="text-muted-foreground">بيانات العميل والتوصيل:</div>
+                <div className="font-bold text-foreground">
+                  {previewOrder.customer_name || "بدون اسم"}
+                  {previewOrder.phone ? ` • ${previewOrder.phone}` : ""}
                 </div>
-                <div className="text-zinc-400 text-[11px]">
+                <div className="text-muted-foreground text-[11px]">
                   {previewOrder.address || "استلام من الفرع"}
                 </div>
               </div>
 
-              <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between font-bold">
+              {previewOrder.items && previewOrder.items.length > 0 && (
+                <div className="space-y-1.5">
+                  <div className="text-muted-foreground font-semibold">
+                    الأصناف ({previewOrder.items.length}):
+                  </div>
+                  <div className="max-h-36 overflow-y-auto space-y-1 pe-1">
+                    {previewOrder.items.map((item, idx) => (
+                      <div
+                        key={item.id || `${item.name}-${idx}`}
+                        className="flex items-center justify-between py-1 border-b border-border/40 last:border-b-0"
+                      >
+                        <span className="truncate text-foreground">
+                          {item.name} × {item.quantity}
+                        </span>
+                        <span className="font-semibold text-muted-foreground shrink-0">
+                          {Number(item.subtotal || 0).toFixed(2)} ج.م
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="pt-2 border-t border-border/70 flex items-center justify-between font-bold">
                 <span>الإجمالي:</span>
                 <span className="text-emerald-700 dark:text-emerald-400 text-sm">
-                  {Number(previewOrder.total_amount).toFixed(2)} ج.م
+                  {Number(previewOrder.total_amount || 0).toFixed(2)} ج.م
                 </span>
               </div>
 
-              <Link to="/admin/orders" className="block pt-2">
-                <Button className="w-full h-8 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs">
-                  الانتقال لصفحة الطلبات
+              <Link to="/admin/orders" className="block pt-1">
+                <Button className="w-full h-9 rounded-xl hero-gradient text-primary-foreground text-xs font-bold cursor-pointer">
+                  الانتقال لإدارة الطلبات
                 </Button>
               </Link>
             </div>
@@ -724,14 +750,19 @@ function OverviewPage() {
 
 function OverviewSkeleton() {
   return (
-    <div className="space-y-4 p-4 sm:p-6 animate-pulse">
-      <div className="h-8 w-48 bg-zinc-200 dark:bg-zinc-800 rounded-lg" />
-      <div className="grid gap-3 sm:grid-cols-3">
-        <div className="h-24 bg-zinc-200 dark:bg-zinc-800 rounded-xl" />
-        <div className="h-24 bg-zinc-200 dark:bg-zinc-800 rounded-xl" />
-        <div className="h-24 bg-zinc-200 dark:bg-zinc-800 rounded-xl" />
+    <div className="admin-dashboard space-y-6 animate-pulse">
+      <div className="h-28 w-full bg-muted rounded-2xl" />
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="h-28 bg-muted rounded-2xl" />
+        <div className="h-28 bg-muted rounded-2xl" />
+        <div className="h-28 bg-muted rounded-2xl" />
+        <div className="h-28 bg-muted rounded-2xl" />
       </div>
-      <div className="h-48 bg-zinc-200 dark:bg-zinc-800 rounded-xl" />
+      <div className="h-44 bg-muted rounded-2xl" />
+      <div className="grid gap-4 lg:grid-cols-3">
+        <div className="h-72 bg-muted rounded-2xl lg:col-span-2" />
+        <div className="h-72 bg-muted rounded-2xl" />
+      </div>
     </div>
   );
 }
